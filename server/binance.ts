@@ -1,303 +1,113 @@
-import { storage } from "./storage";
-import { ApiKey, Strategy, InsertTradeHistory } from "@shared/schema";
-import { sendTradeExecutionEmail } from "./email";
+import { BinanceAPI, MarketData, CryptoPair } from "@shared/schema";
 
-// Mock Binance API Types
-interface BinanceCandle {
-  openTime: number;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: string;
-  closeTime: number;
-  quoteAssetVolume: string;
-  trades: number;
-  takerBaseAssetVolume: string;
-  takerQuoteAssetVolume: string;
-}
+// Mock pairs to avoid creating new API keys during development
+const AVAILABLE_PAIRS: CryptoPair[] = [
+  { symbol: "BTCUSDT", baseAsset: "BTC", quoteAsset: "USDT" },
+  { symbol: "ETHUSDT", baseAsset: "ETH", quoteAsset: "USDT" },
+  { symbol: "BNBUSDT", baseAsset: "BNB", quoteAsset: "USDT" },
+  { symbol: "SOLUSDT", baseAsset: "SOL", quoteAsset: "USDT" },
+  { symbol: "ADAUSDT", baseAsset: "ADA", quoteAsset: "USDT" },
+  { symbol: "XRPUSDT", baseAsset: "XRP", quoteAsset: "USDT" },
+  { symbol: "DOGEUSDT", baseAsset: "DOGE", quoteAsset: "USDT" },
+  { symbol: "DOTUSDT", baseAsset: "DOT", quoteAsset: "USDT" },
+];
 
-interface BinancePrice {
-  symbol: string;
-  price: string;
-}
-
-// Trading strategies
-const strategies = {
-  // Moving Average Crossover Strategy
-  movingAverage: async (userId: number, strategyId: number, pair: string, params: any) => {
-    try {
-      // Mock implementation of moving average strategy
-      // In production, this would use actual Binance API data and calculations
-      const decision = Math.random() > 0.5 ? "buy" : "sell";
-      const price = (Math.random() * 1000).toFixed(2);
-      const amount = (Math.random() * 0.1).toFixed(6);
-      const profit = ((Math.random() * 5) - 2.5).toFixed(2);
-      
-      // Create trade record
-      const trade: InsertTradeHistory = {
-        userId,
-        strategyId,
-        pair,
-        type: decision,
-        price,
-        amount,
-        profit
-      };
-      
-      const createdTrade = await storage.createTradeHistory(trade);
-      
-      // Get user and notification settings
-      const user = await storage.getUser(userId);
-      const settings = await storage.getNotificationSettings(userId);
-      
-      // Send email notification if enabled
-      if (user && settings?.tradeExecution) {
-        await sendTradeExecutionEmail(
-          user.email,
-          pair,
-          decision,
-          price,
-          amount,
-          profit
-        );
-      }
-      
-      return createdTrade;
-    } catch (error) {
-      console.error("Error executing moving average strategy:", error);
-      throw new Error("Failed to execute trading strategy");
-    }
-  },
-  
-  // RSI Strategy
-  rsi: async (userId: number, strategyId: number, pair: string, params: any) => {
-    try {
-      // Mock implementation of RSI strategy
-      const decision = Math.random() > 0.5 ? "buy" : "sell";
-      const price = (Math.random() * 1000).toFixed(2);
-      const amount = (Math.random() * 0.1).toFixed(6);
-      const profit = ((Math.random() * 5) - 2.5).toFixed(2);
-      
-      // Create trade record
-      const trade: InsertTradeHistory = {
-        userId,
-        strategyId,
-        pair,
-        type: decision,
-        price,
-        amount,
-        profit
-      };
-      
-      const createdTrade = await storage.createTradeHistory(trade);
-      
-      // Get user and notification settings
-      const user = await storage.getUser(userId);
-      const settings = await storage.getNotificationSettings(userId);
-      
-      // Send email notification if enabled
-      if (user && settings?.tradeExecution) {
-        await sendTradeExecutionEmail(
-          user.email,
-          pair,
-          decision,
-          price,
-          amount,
-          profit
-        );
-      }
-      
-      return createdTrade;
-    } catch (error) {
-      console.error("Error executing RSI strategy:", error);
-      throw new Error("Failed to execute trading strategy");
-    }
-  },
-  
-  // MACD Strategy
-  macd: async (userId: number, strategyId: number, pair: string, params: any) => {
-    try {
-      // Mock implementation of MACD strategy
-      const decision = Math.random() > 0.5 ? "buy" : "sell";
-      const price = (Math.random() * 1000).toFixed(2);
-      const amount = (Math.random() * 0.1).toFixed(6);
-      const profit = ((Math.random() * 5) - 2.5).toFixed(2);
-      
-      // Create trade record
-      const trade: InsertTradeHistory = {
-        userId,
-        strategyId,
-        pair,
-        type: decision,
-        price,
-        amount,
-        profit
-      };
-      
-      const createdTrade = await storage.createTradeHistory(trade);
-      
-      // Get user and notification settings
-      const user = await storage.getUser(userId);
-      const settings = await storage.getNotificationSettings(userId);
-      
-      // Send email notification if enabled
-      if (user && settings?.tradeExecution) {
-        await sendTradeExecutionEmail(
-          user.email,
-          pair,
-          decision,
-          price,
-          amount,
-          profit
-        );
-      }
-      
-      return createdTrade;
-    } catch (error) {
-      console.error("Error executing MACD strategy:", error);
-      throw new Error("Failed to execute trading strategy");
-    }
-  }
-};
-
-class BinanceService {
+export class BinanceService {
   private apiKey: string;
-  private secretKey: string;
+  private apiSecret: string;
   
-  constructor(apiKey: string, secretKey: string) {
+  constructor(apiKey: string, apiSecret: string) {
     this.apiKey = apiKey;
-    this.secretKey = secretKey;
+    this.apiSecret = apiSecret;
   }
-  
-  // Get current prices for a list of symbols
-  async getPrices(symbols: string[]): Promise<BinancePrice[]> {
+
+  async testConnection(): Promise<boolean> {
     try {
-      // In production, this would make an actual API call to Binance
-      return symbols.map(symbol => ({
-        symbol,
-        price: (Math.random() * 10000).toFixed(2)
+      const url = "https://api.binance.com/api/v3/ping";
+      const response = await fetch(url);
+      return response.ok;
+    } catch (error) {
+      console.error("Binance connection test failed:", error);
+      return false;
+    }
+  }
+
+  async getMarketData(symbols: string[] = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]): Promise<MarketData[]> {
+    try {
+      // Get 24hr ticker price change statistics for all symbols
+      const url = "https://api.binance.com/api/v3/ticker/24hr";
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch market data: ${response.statusText}`);
+      }
+      
+      const allData = await response.json();
+      
+      // Filter for our requested symbols
+      const filteredData = allData.filter((item: any) => 
+        symbols.includes(item.symbol)
+      );
+      
+      return filteredData.map((item: any) => ({
+        symbol: item.symbol,
+        price: item.lastPrice,
+        priceChangePercent: item.priceChangePercent,
+        volume: item.volume,
+        high: item.highPrice,
+        low: item.lowPrice,
       }));
     } catch (error) {
-      console.error("Error fetching prices from Binance:", error);
-      throw new Error("Failed to get prices from Binance");
+      console.error("Error fetching market data:", error);
+      throw error;
     }
   }
-  
-  // Get historical candle data
-  async getKlines(symbol: string, interval: string, limit: number): Promise<BinanceCandle[]> {
+
+  async getAvailablePairs(): Promise<CryptoPair[]> {
     try {
-      // In production, this would make an actual API call to Binance
-      const candles: BinanceCandle[] = [];
-      const now = Date.now();
+      const url = "https://api.binance.com/api/v3/exchangeInfo";
+      const response = await fetch(url);
       
-      for (let i = 0; i < limit; i++) {
-        const time = now - (i * 60000); // 1 minute intervals
-        const open = 100 + Math.random() * 10;
-        const close = open + (Math.random() * 2 - 1);
-        const high = Math.max(open, close) + Math.random();
-        const low = Math.min(open, close) - Math.random();
-        
-        candles.push({
-          openTime: time,
-          open: open.toFixed(2),
-          high: high.toFixed(2),
-          low: low.toFixed(2),
-          close: close.toFixed(2),
-          volume: (Math.random() * 100).toFixed(2),
-          closeTime: time + 60000,
-          quoteAssetVolume: (Math.random() * 1000).toFixed(2),
-          trades: Math.floor(Math.random() * 100),
-          takerBaseAssetVolume: (Math.random() * 50).toFixed(2),
-          takerQuoteAssetVolume: (Math.random() * 500).toFixed(2)
-        });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch exchange info: ${response.statusText}`);
       }
       
-      return candles.reverse(); // Most recent first
+      const data = await response.json();
+      
+      return data.symbols
+        .filter((s: any) => s.status === "TRADING" && s.quoteAsset === "USDT")
+        .map((s: any) => ({
+          symbol: s.symbol,
+          baseAsset: s.baseAsset,
+          quoteAsset: s.quoteAsset,
+        }));
     } catch (error) {
-      console.error("Error fetching klines from Binance:", error);
-      throw new Error("Failed to get historical data from Binance");
+      console.error("Error fetching available pairs:", error);
+      // Return mock data for development
+      return AVAILABLE_PAIRS;
     }
   }
-  
-  // Execute a strategy
-  async executeStrategy(strategy: Strategy): Promise<any> {
+
+  // This would normally trigger a trade on Binance
+  // It's simplified for demo purposes
+  async executeTrade(symbol: string, side: 'BUY' | 'SELL', quantity: number): Promise<any> {
     try {
-      switch (strategy.type) {
-        case "movingAverage":
-          return await strategies.movingAverage(
-            strategy.userId,
-            strategy.id,
-            strategy.pair,
-            strategy.parameters
-          );
-        case "rsi":
-          return await strategies.rsi(
-            strategy.userId,
-            strategy.id,
-            strategy.pair,
-            strategy.parameters
-          );
-        case "macd":
-          return await strategies.macd(
-            strategy.userId,
-            strategy.id,
-            strategy.pair,
-            strategy.parameters
-          );
-        default:
-          throw new Error(`Unsupported strategy type: ${strategy.type}`);
-      }
+      // In a real implementation, this would connect to Binance API
+      // For demo, we'll just simulate a successful response
+      return {
+        symbol,
+        side,
+        quantity,
+        price: side === 'BUY' ? (Math.random() * 100).toFixed(2) : (Math.random() * 100).toFixed(2),
+        status: 'FILLED',
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error(`Error executing strategy ${strategy.name}:`, error);
-      throw new Error("Failed to execute trading strategy");
+      console.error(`Error executing trade for ${symbol}:`, error);
+      throw error;
     }
   }
 }
 
-export async function getBinanceService(userId: number): Promise<BinanceService | null> {
-  try {
-    // Get user's active API key
-    const apiKeys = await storage.getApiKeys(userId);
-    const activeKey = apiKeys.find(key => key.isActive);
-    
-    if (!activeKey) {
-      return null;
-    }
-    
-    return new BinanceService(activeKey.apiKey, activeKey.secretKey);
-  } catch (error) {
-    console.error("Error creating Binance service:", error);
-    return null;
-  }
+export function createBinanceService(apiKey: string, apiSecret: string): BinanceService {
+  return new BinanceService(apiKey, apiSecret);
 }
-
-// Common cryptocurrency symbols
-export const commonSymbols = [
-  { symbol: "BTCUSDT", name: "Bitcoin", shortName: "BTC" },
-  { symbol: "ETHUSDT", name: "Ethereum", shortName: "ETH" },
-  { symbol: "BNBUSDT", name: "Binance Coin", shortName: "BNB" },
-  { symbol: "ADAUSDT", name: "Cardano", shortName: "ADA" },
-  { symbol: "XRPUSDT", name: "Ripple", shortName: "XRP" },
-  { symbol: "DOGEUSDT", name: "Dogecoin", shortName: "DOGE" },
-  { symbol: "DOTUSDT", name: "Polkadot", shortName: "DOT" },
-  { symbol: "SOLUSDT", name: "Solana", shortName: "SOL" }
-];
-
-// Available strategy types
-export const strategyTypes = [
-  { id: "movingAverage", name: "Moving Average Crossover" },
-  { id: "rsi", name: "RSI Divergence" },
-  { id: "macd", name: "MACD Oscillator" }
-];
-
-// Available timeframes
-export const timeframes = [
-  { value: "1m", name: "1 minute" },
-  { value: "5m", name: "5 minutes" },
-  { value: "15m", name: "15 minutes" },
-  { value: "30m", name: "30 minutes" },
-  { value: "1h", name: "1 hour" },
-  { value: "4h", name: "4 hours" },
-  { value: "1d", name: "1 day" }
-];

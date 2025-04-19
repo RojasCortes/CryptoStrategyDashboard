@@ -4,28 +4,19 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
+import { insertUserSchema, User as SelectUser, InsertUser, LoginUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
 
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<Omit<SelectUser, "password">, Error, LoginData>;
+  loginMutation: UseMutationResult<SelectUser, Error, LoginUser>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<Omit<SelectUser, "password">, Error, RegisterData>;
+  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  updateApiKeysMutation: UseMutationResult<SelectUser, Error, { apiKey: string; apiSecret: string }>;
 };
-
-type LoginData = Pick<InsertUser, "username" | "password">;
-
-// Extend the user schema to include email for registration
-const extendedUserSchema = insertUserSchema.extend({
-  email: z.string().email("Please enter a valid email"),
-});
-
-type RegisterData = z.infer<typeof extendedUserSchema>;
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -35,21 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
-  } = useQuery<Omit<SelectUser, "password"> | null, Error>({
+  } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginData) => {
+    mutationFn: async (credentials: LoginUser) => {
       const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },
-    onSuccess: (userData: Omit<SelectUser, "password">) => {
-      queryClient.setQueryData(["/api/user"], userData);
+    onSuccess: (user: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], user);
       toast({
-        title: "Welcome back!",
-        description: `You've successfully logged in as ${userData.username}.`,
+        title: "Logged in successfully",
+        description: `Welcome back, ${user.username}!`,
       });
     },
     onError: (error: Error) => {
@@ -62,15 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (userData: RegisterData) => {
-      const res = await apiRequest("POST", "/api/register", userData);
+    mutationFn: async (credentials: InsertUser) => {
+      const res = await apiRequest("POST", "/api/register", credentials);
       return await res.json();
     },
-    onSuccess: (userData: Omit<SelectUser, "password">) => {
-      queryClient.setQueryData(["/api/user"], userData);
+    onSuccess: (user: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], user);
       toast({
-        title: "Registration successful!",
-        description: "Your account has been created.",
+        title: "Registration successful",
+        description: `Welcome, ${user.username}!`,
       });
     },
     onError: (error: Error) => {
@@ -89,13 +80,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
       toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
+        title: "Logged out successfully",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Logout failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateApiKeysMutation = useMutation({
+    mutationFn: async (data: { apiKey: string; apiSecret: string }) => {
+      const res = await apiRequest("POST", "/api/user/apikeys", data);
+      return await res.json();
+    },
+    onSuccess: (user: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], user);
+      toast({
+        title: "API keys updated",
+        description: "Your Binance API keys have been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update API keys",
         description: error.message,
         variant: "destructive",
       });
@@ -111,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        updateApiKeysMutation,
       }}
     >
       {children}

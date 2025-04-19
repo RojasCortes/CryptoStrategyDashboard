@@ -1,112 +1,100 @@
-import { pgTable, text, serial, integer, boolean, json, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
+  apiKey: text("api_key"),
+  apiSecret: text("api_secret"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   email: true,
-});
-
-// Binance API key schema
-export const apiKeys = pgTable("api_keys", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  apiKey: text("api_key").notNull(),
-  secretKey: text("secret_key").notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertApiKeySchema = createInsertSchema(apiKeys).pick({
-  userId: true,
   apiKey: true,
-  secretKey: true,
+  apiSecret: true,
 });
 
-// Trading Strategy schema
 export const strategies = pgTable("strategies", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull(),
   name: text("name").notNull(),
-  type: text("type").notNull(), // MovingAverage, RSI, MACD, etc.
-  pair: text("pair").notNull(), // BTC/USDT, ETH/USDT, etc.
-  timeframe: text("timeframe").notNull(), // 1m, 5m, 15m, 1h, etc.
-  parameters: json("parameters").notNull(), // Strategy-specific parameters
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  pair: text("pair").notNull(),
+  strategyType: text("strategy_type").notNull(),
+  timeframe: text("timeframe").notNull(),
+  parameters: jsonb("parameters").notNull(),
+  riskPerTrade: doublePrecision("risk_per_trade").notNull(),
+  isActive: boolean("is_active").default(false).notNull(),
+  emailNotifications: boolean("email_notifications").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertStrategySchema = createInsertSchema(strategies).pick({
   userId: true,
   name: true,
-  type: true,
   pair: true,
+  strategyType: true,
   timeframe: true,
   parameters: true,
+  riskPerTrade: true,
+  isActive: true,
+  emailNotifications: true,
 });
 
-// Email Notification Settings schema
-export const notificationSettings = pgTable("notification_settings", {
+export const trades = pgTable("trades", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  tradeExecution: boolean("trade_execution").notNull().default(true),
-  dailyReports: boolean("daily_reports").notNull().default(true),
-  priceAlerts: boolean("price_alerts").notNull().default(false),
-  systemNotifications: boolean("system_notifications").notNull().default(true),
-});
-
-export const insertNotificationSettingsSchema = createInsertSchema(notificationSettings).pick({
-  userId: true,
-  tradeExecution: true,
-  dailyReports: true,
-  priceAlerts: true,
-  systemNotifications: true,
-});
-
-// Trade History schema
-export const tradeHistory = pgTable("trade_history", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  strategyId: integer("strategy_id").notNull().references(() => strategies.id),
+  userId: integer("user_id").notNull(),
+  strategyId: integer("strategy_id").notNull(),
   pair: text("pair").notNull(),
-  type: text("type").notNull(), // Buy or Sell
-  price: text("price").notNull(),
-  amount: text("amount").notNull(),
-  profit: text("profit").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  type: text("type").notNull(),
+  price: doublePrecision("price").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  status: text("status").notNull(),
+  profitLoss: doublePrecision("profit_loss"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertTradeHistorySchema = createInsertSchema(tradeHistory).pick({
+export const insertTradeSchema = createInsertSchema(trades).pick({
   userId: true,
-  strategyId: true, 
+  strategyId: true,
   pair: true,
   type: true,
   price: true,
   amount: true,
-  profit: true,
+  status: true,
+  profitLoss: true,
 });
 
-// ---- Types ----
-export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-
-export type ApiKey = typeof apiKeys.$inferSelect;
-export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
-
+export type User = typeof users.$inferSelect;
 export type Strategy = typeof strategies.$inferSelect;
 export type InsertStrategy = z.infer<typeof insertStrategySchema>;
+export type Trade = typeof trades.$inferSelect;
+export type InsertTrade = z.infer<typeof insertTradeSchema>;
 
-export type NotificationSetting = typeof notificationSettings.$inferSelect;
-export type InsertNotificationSetting = z.infer<typeof insertNotificationSettingsSchema>;
+export const loginUserSchema = insertUserSchema.pick({
+  username: true,
+  password: true,
+});
 
-export type TradeHistory = typeof tradeHistory.$inferSelect;
-export type InsertTradeHistory = z.infer<typeof insertTradeHistorySchema>;
+export type LoginUser = z.infer<typeof loginUserSchema>;
+
+export interface MarketData {
+  symbol: string;
+  price: string;
+  priceChangePercent: string;
+  volume: string;
+  high: string;
+  low: string;
+}
+
+export interface CryptoPair {
+  symbol: string;
+  baseAsset: string;
+  quoteAsset: string;
+}

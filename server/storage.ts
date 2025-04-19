@@ -1,138 +1,82 @@
-import { users, apiKeys, strategies, notificationSettings, tradeHistory } from "@shared/schema";
-import type { User, InsertUser, ApiKey, InsertApiKey, Strategy, InsertStrategy, NotificationSetting, InsertNotificationSetting, TradeHistory, InsertTradeHistory } from "@shared/schema";
+import { users, strategies, trades, type User, type InsertUser, type Strategy, type InsertStrategy, type Trade, type InsertTrade } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
-  // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-
-  // API Key operations
-  getApiKeys(userId: number): Promise<ApiKey[]>;
-  getApiKey(id: number): Promise<ApiKey | undefined>;
-  createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
-  updateApiKey(id: number, isActive: boolean): Promise<ApiKey | undefined>;
-  deleteApiKey(id: number): Promise<void>;
-
-  // Strategy operations
+  updateUserApiKeys(userId: number, apiKey: string, apiSecret: string): Promise<User>;
+  
   getStrategies(userId: number): Promise<Strategy[]>;
   getStrategy(id: number): Promise<Strategy | undefined>;
   createStrategy(strategy: InsertStrategy): Promise<Strategy>;
-  updateStrategy(id: number, updates: Partial<Strategy>): Promise<Strategy | undefined>;
-  deleteStrategy(id: number): Promise<void>;
-
-  // Notification Settings operations
-  getNotificationSettings(userId: number): Promise<NotificationSetting | undefined>;
-  createNotificationSettings(settings: InsertNotificationSetting): Promise<NotificationSetting>;
-  updateNotificationSettings(userId: number, updates: Partial<NotificationSetting>): Promise<NotificationSetting | undefined>;
-
-  // Trade History operations
-  getTradeHistory(userId: number, limit?: number): Promise<TradeHistory[]>;
-  getTradeHistoryByStrategy(strategyId: number, limit?: number): Promise<TradeHistory[]>;
-  createTradeHistory(trade: InsertTradeHistory): Promise<TradeHistory>;
-
-  // Session store for authentication
-  sessionStore: session.SessionStore;
+  updateStrategy(id: number, strategy: Partial<InsertStrategy>): Promise<Strategy | undefined>;
+  toggleStrategyStatus(id: number, isActive: boolean): Promise<Strategy | undefined>;
+  deleteStrategy(id: number): Promise<boolean>;
+  
+  getTrades(userId: number, limit?: number): Promise<Trade[]>;
+  getTradesByStrategy(strategyId: number): Promise<Trade[]>;
+  createTrade(trade: InsertTrade): Promise<Trade>;
+  updateTradeStatus(id: number, status: string, profitLoss?: number): Promise<Trade | undefined>;
+  
+  sessionStore: session.Store;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
-  private apiKeys: Map<number, ApiKey>;
   private strategies: Map<number, Strategy>;
-  private notificationSettings: Map<number, NotificationSetting>;
-  private tradeHistory: TradeHistory[];
+  private trades: Map<number, Trade>;
+  private currentUserId: number;
+  private currentStrategyId: number;
+  private currentTradeId: number;
   sessionStore: session.SessionStore;
-  private currentIds: {
-    user: number;
-    apiKey: number;
-    strategy: number;
-    notificationSetting: number;
-    tradeHistory: number;
-  };
 
   constructor() {
     this.users = new Map();
-    this.apiKeys = new Map();
     this.strategies = new Map();
-    this.notificationSettings = new Map();
-    this.tradeHistory = [];
-    this.currentIds = {
-      user: 1,
-      apiKey: 1,
-      strategy: 1,
-      notificationSetting: 1,
-      tradeHistory: 1
-    };
+    this.trades = new Map();
+    this.currentUserId = 1;
+    this.currentStrategyId = 1;
+    this.currentTradeId = 1;
     this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000, // 24 hours
+      checkPeriod: 86400000,
     });
   }
 
-  // User operations
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      (user) => user.username === username
+      (user) => user.username === username,
     );
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email === email
-    );
-  }
-
-  async createUser(userData: InsertUser): Promise<User> {
-    const id = this.currentIds.user++;
-    const user: User = { ...userData, id };
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = this.currentUserId++;
+    const now = new Date();
+    const user: User = { ...insertUser, id, createdAt: now };
     this.users.set(id, user);
     return user;
   }
 
-  // API Key operations
-  async getApiKeys(userId: number): Promise<ApiKey[]> {
-    return Array.from(this.apiKeys.values()).filter(
-      (apiKey) => apiKey.userId === userId
-    );
+  async updateUserApiKeys(userId: number, apiKey: string, apiSecret: string): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const updatedUser = { ...user, apiKey, apiSecret };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
   }
 
-  async getApiKey(id: number): Promise<ApiKey | undefined> {
-    return this.apiKeys.get(id);
-  }
-
-  async createApiKey(apiKeyData: InsertApiKey): Promise<ApiKey> {
-    const id = this.currentIds.apiKey++;
-    const createdAt = new Date();
-    const apiKey: ApiKey = { ...apiKeyData, id, isActive: true, createdAt };
-    this.apiKeys.set(id, apiKey);
-    return apiKey;
-  }
-
-  async updateApiKey(id: number, isActive: boolean): Promise<ApiKey | undefined> {
-    const apiKey = this.apiKeys.get(id);
-    if (!apiKey) return undefined;
-    
-    const updatedApiKey = { ...apiKey, isActive };
-    this.apiKeys.set(id, updatedApiKey);
-    return updatedApiKey;
-  }
-
-  async deleteApiKey(id: number): Promise<void> {
-    this.apiKeys.delete(id);
-  }
-
-  // Strategy operations
   async getStrategies(userId: number): Promise<Strategy[]> {
     return Array.from(this.strategies.values()).filter(
-      (strategy) => strategy.userId === userId
+      (strategy) => strategy.userId === userId,
     );
   }
 
@@ -140,75 +84,67 @@ export class MemStorage implements IStorage {
     return this.strategies.get(id);
   }
 
-  async createStrategy(strategyData: InsertStrategy): Promise<Strategy> {
-    const id = this.currentIds.strategy++;
-    const createdAt = new Date();
-    const strategy: Strategy = { ...strategyData, id, isActive: true, createdAt };
+  async createStrategy(insertStrategy: InsertStrategy): Promise<Strategy> {
+    const id = this.currentStrategyId++;
+    const now = new Date();
+    const strategy: Strategy = { ...insertStrategy, id, createdAt: now };
     this.strategies.set(id, strategy);
     return strategy;
   }
 
-  async updateStrategy(id: number, updates: Partial<Strategy>): Promise<Strategy | undefined> {
-    const strategy = this.strategies.get(id);
-    if (!strategy) return undefined;
-    
-    const updatedStrategy = { ...strategy, ...updates };
+  async updateStrategy(id: number, updateData: Partial<InsertStrategy>): Promise<Strategy | undefined> {
+    const strategy = await this.getStrategy(id);
+    if (!strategy) {
+      return undefined;
+    }
+    const updatedStrategy = { ...strategy, ...updateData };
     this.strategies.set(id, updatedStrategy);
     return updatedStrategy;
   }
 
-  async deleteStrategy(id: number): Promise<void> {
-    this.strategies.delete(id);
+  async toggleStrategyStatus(id: number, isActive: boolean): Promise<Strategy | undefined> {
+    return this.updateStrategy(id, { isActive });
   }
 
-  // Notification Settings operations
-  async getNotificationSettings(userId: number): Promise<NotificationSetting | undefined> {
-    return Array.from(this.notificationSettings.values()).find(
-      (settings) => settings.userId === userId
+  async deleteStrategy(id: number): Promise<boolean> {
+    return this.strategies.delete(id);
+  }
+
+  async getTrades(userId: number, limit?: number): Promise<Trade[]> {
+    let trades = Array.from(this.trades.values()).filter(
+      (trade) => trade.userId === userId,
     );
+    trades.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    if (limit) {
+      trades = trades.slice(0, limit);
+    }
+    return trades;
   }
 
-  async createNotificationSettings(settingsData: InsertNotificationSetting): Promise<NotificationSetting> {
-    const id = this.currentIds.notificationSetting++;
-    const settings: NotificationSetting = { ...settingsData, id };
-    this.notificationSettings.set(id, settings);
-    return settings;
-  }
-
-  async updateNotificationSettings(userId: number, updates: Partial<NotificationSetting>): Promise<NotificationSetting | undefined> {
-    const settings = Array.from(this.notificationSettings.values()).find(
-      (settings) => settings.userId === userId
+  async getTradesByStrategy(strategyId: number): Promise<Trade[]> {
+    const trades = Array.from(this.trades.values()).filter(
+      (trade) => trade.strategyId === strategyId,
     );
-    if (!settings) return undefined;
-    
-    const updatedSettings = { ...settings, ...updates };
-    this.notificationSettings.set(settings.id, updatedSettings);
-    return updatedSettings;
+    trades.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return trades;
   }
 
-  // Trade History operations
-  async getTradeHistory(userId: number, limit?: number): Promise<TradeHistory[]> {
-    const trades = this.tradeHistory
-      .filter(trade => trade.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
-    return limit ? trades.slice(0, limit) : trades;
-  }
-
-  async getTradeHistoryByStrategy(strategyId: number, limit?: number): Promise<TradeHistory[]> {
-    const trades = this.tradeHistory
-      .filter(trade => trade.strategyId === strategyId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
-    return limit ? trades.slice(0, limit) : trades;
-  }
-
-  async createTradeHistory(tradeData: InsertTradeHistory): Promise<TradeHistory> {
-    const id = this.currentIds.tradeHistory++;
-    const createdAt = new Date();
-    const trade: TradeHistory = { ...tradeData, id, createdAt };
-    this.tradeHistory.push(trade);
+  async createTrade(insertTrade: InsertTrade): Promise<Trade> {
+    const id = this.currentTradeId++;
+    const now = new Date();
+    const trade: Trade = { ...insertTrade, id, createdAt: now };
+    this.trades.set(id, trade);
     return trade;
+  }
+
+  async updateTradeStatus(id: number, status: string, profitLoss?: number): Promise<Trade | undefined> {
+    const trade = this.trades.get(id);
+    if (!trade) {
+      return undefined;
+    }
+    const updatedTrade = { ...trade, status, profitLoss: profitLoss ?? trade.profitLoss };
+    this.trades.set(id, updatedTrade);
+    return updatedTrade;
   }
 }
 

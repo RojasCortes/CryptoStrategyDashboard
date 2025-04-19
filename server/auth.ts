@@ -5,8 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser, insertUserSchema } from "@shared/schema";
-import { z } from "zod";
+import { User as SelectUser, loginUserSchema } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -30,7 +29,7 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  const sessionSecret = process.env.SESSION_SECRET || randomBytes(32).toString("hex");
+  const sessionSecret = process.env.SESSION_SECRET || "binance-dashboard-secret-key";
   
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
@@ -38,9 +37,8 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
     }
   };
 
@@ -51,78 +49,81 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
-      const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
-        return done(null, false);
-      } else {
-        return done(null, user);
+      try {
+        const user = await storage.getUserByUsername(username);
+        if (!user || !(await comparePasswords(password, user.password))) {
+          return done(null, false);
+        } else {
+          return done(null, user);
+        }
+      } catch (error) {
+        return done(error);
       }
     }),
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
-    const user = await storage.getUser(id);
-    done(null, user);
-  });
-
-  const registerSchema = insertUserSchema.extend({
-    email: z.string().email("Please enter a valid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
   });
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const userData = registerSchema.parse(req.body);
-      
-      const existingUser = await storage.getUserByUsername(userData.username);
+      const parseResult = loginUserSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ message: "Invalid registration data" });
+      }
+
+      const { username, password, email } = req.body;
+
+      const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
-        return res.status(400).send("Username already exists");
-      }
-      
-      const existingEmail = await storage.getUserByEmail(userData.email);
-      if (existingEmail) {
-        return res.status(400).send("Email already in use");
+        return res.status(400).json({ message: "Username already exists" });
       }
 
+      const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
-        ...userData,
-        password: await hashPassword(userData.password),
-      });
-
-      // Create default notification settings for the user
-      await storage.createNotificationSettings({
-        userId: user.id,
-        tradeExecution: true,
-        dailyReports: true,
-        priceAlerts: false,
-        systemNotifications: true
+        username,
+        password: hashedPassword,
+        email,
+        apiKey: "",
+        apiSecret: ""
       });
 
       // Remove password from response
-      const { password, ...userWithoutPassword } = user;
+      const { password: _, ...userWithoutPassword } = user;
 
       req.login(user, (err) => {
         if (err) return next(err);
         res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ errors: error.errors });
-      }
       next(error);
     }
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ message: "Invalid username or password" });
+    passport.authenticate("local", (err: Error, user: Express.User) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
       
       req.login(user, (err) => {
-        if (err) return next(err);
-        const { password, ...userWithoutPassword } = user;
-        res.status(200).json(userWithoutPassword);
+        if (err) {
+          return next(err);
+        }
+        
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = user;
+        return res.status(200).json(userWithoutPassword);
       });
     })(req, res, next);
   });
@@ -135,8 +136,32 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const { password, ...userWithoutPassword } = req.user;
+    if (!req.isAuthenticated()) {
+      return res.sendStatus(401);
+    }
+    
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
+  });
+
+  // Update user API keys
+  app.post("/api/user/apikeys", (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const { apiKey, apiSecret } = req.body;
+    if (!apiKey || !apiSecret) {
+      return res.status(400).json({ message: "API key and secret are required" });
+    }
+
+    storage.updateUserApiKeys(req.user.id, apiKey, apiSecret)
+      .then(user => {
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = user;
+        res.json(userWithoutPassword);
+      })
+      .catch(next);
   });
 }
