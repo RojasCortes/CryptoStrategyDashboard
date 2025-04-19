@@ -459,6 +459,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Notifications API
+  // For now, we'll return mock data, but in a production app this would be stored in the database
+  
+  // Get all notifications for the authenticated user
+  app.get("/api/notifications", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // Mock data - in a real app, this would be from the database
+    const notifications = [
+      {
+        id: 1,
+        type: "trade",
+        title: "Trade Executed",
+        message: "Your BTC/USDT buy order has been executed at $45,000.",
+        isRead: false,
+        createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 2,
+        type: "strategy",
+        title: "Strategy Activated",
+        message: "The 'BTC Daily Swing' strategy has been activated successfully.",
+        isRead: false,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 3,
+        type: "price",
+        title: "Price Alert",
+        message: "ETH price reached your target of $3,000.",
+        isRead: true,
+        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 4,
+        type: "system",
+        title: "System Update",
+        message: "The platform will undergo maintenance tonight at 2 AM UTC.",
+        isRead: true,
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 5,
+        type: "trade",
+        title: "Trade Executed",
+        message: "Your SOL/USDT sell order has been executed at $125.",
+        isRead: true,
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+    
+    res.json(notifications);
+  });
+  
+  // Mark a notification as read
+  app.put("/api/notifications/:id/read", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // In a real app, update in database
+    res.json({ success: true });
+  });
+  
+  // Mark all notifications as read
+  app.put("/api/notifications/read-all", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // In a real app, update in database
+    res.json({ success: true });
+  });
+  
+  // Delete a notification
+  app.delete("/api/notifications/:id", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // In a real app, delete from database
+    res.json({ success: true });
+  });
+  
+  // Delete all read notifications
+  app.delete("/api/notifications/read", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // In a real app, delete from database
+    res.json({ success: true });
+  });
 
   const httpServer = createServer(app);
   return httpServer;

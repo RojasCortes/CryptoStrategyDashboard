@@ -12,6 +12,7 @@ import HomePage from "@/pages/home-page";
 import DashboardPage from "@/pages/dashboard-page";
 import AuthPage from "@/pages/auth-page";
 import SettingsPage from "@/pages/settings-page";
+import NotificationsPage from "@/pages/notifications-page";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
+      <ProtectedRoute path="/notifications" component={NotificationsPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

@@ -1,0 +1,330 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { AppBar } from "@/components/dashboard/app-bar";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Bell,
+  CheckCircle,
+  XCircle,
+  ChevronDown,
+  Filter,
+  AlertTriangle,
+  Info,
+  Trash2,
+} from "lucide-react";
+import { format } from "date-fns";
+
+// Notification type
+interface Notification {
+  id: number;
+  type: "trade" | "strategy" | "price" | "system";
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+// We don't need demo notifications anymore since we're using the API
+
+export default function NotificationsPage(): JSX.Element {
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [activeFilter, setActiveFilter] = useState<string>("all");
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  // Fetch notifications from the API
+  const { data = [], isLoading } = useQuery<Notification[]>({
+    queryKey: ["/api/notifications"],
+    enabled: !!user,
+  });
+  
+  // Use the fetched data from the API
+  const notifications = data;
+
+  // Filter notifications based on the active tab
+  const filteredNotifications = notifications.filter(notification => {
+    if (activeFilter === "all") return true;
+    if (activeFilter === "unread") return !notification.isRead;
+    return notification.type === activeFilter;
+  });
+
+  // Mark a notification as read
+  const markAsReadMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("PUT", `/api/notifications/${id}/read`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      toast({
+        title: "Notification marked as read",
+      });
+    },
+  });
+
+  // Mark all notifications as read
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PUT", "/api/notifications/read-all");
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "All notifications marked as read",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+  });
+
+  // Delete a notification
+  const deleteNotificationMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/notifications/${id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Notification deleted",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+  });
+
+  // Delete all read notifications
+  const deleteAllReadMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", "/api/notifications/read");
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Read notifications deleted",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+  });
+
+  // Calculate unread count
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  // Format notification date
+  const formatNotificationDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMinutes = Math.round((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffMinutes < 60) {
+      return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+    } else if (diffMinutes < 24 * 60) {
+      const hours = Math.floor(diffMinutes / 60);
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    } else {
+      return format(date, 'MMM d, yyyy h:mm a');
+    }
+  };
+
+  // Get notification icon based on type
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "trade":
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case "strategy":
+        return <Info className="h-5 w-5 text-blue-500" />;
+      case "price":
+        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+      case "system":
+        return <Info className="h-5 w-5 text-gray-500" />;
+      default:
+        return <Bell className="h-5 w-5" />;
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Please log in to access notifications.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen bg-muted/30">
+      <Sidebar isMobile={isMobile} isOpen={sidebarOpen} />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AppBar toggleSidebar={toggleSidebar} />
+        
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-semibold">Notifications</h1>
+              
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => markAllAsReadMutation.mutate()}
+                    disabled={markAllAsReadMutation.isPending}
+                  >
+                    Mark all as read
+                  </Button>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => deleteAllReadMutation.mutate()}
+                  disabled={deleteAllReadMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear read
+                </Button>
+              </div>
+            </div>
+            
+            {unreadCount > 0 && (
+              <Alert className="mb-6">
+                <Bell className="h-4 w-4" />
+                <AlertTitle>You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}</AlertTitle>
+                <AlertDescription>
+                  Stay up to date with your trading activities and platform updates.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <Tabs defaultValue="all" onValueChange={setActiveFilter} className="space-y-6">
+              <div className="flex justify-between items-center">
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="unread">
+                    Unread
+                    {unreadCount > 0 && (
+                      <Badge variant="destructive" className="ml-2">
+                        {unreadCount}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="trade">Trades</TabsTrigger>
+                  <TabsTrigger value="strategy">Strategies</TabsTrigger>
+                  <TabsTrigger value="price">Price Alerts</TabsTrigger>
+                  <TabsTrigger value="system">System</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle>Your Notifications</CardTitle>
+                  <CardDescription>
+                    {activeFilter === 'all' ? 'All notifications' : 
+                     activeFilter === 'unread' ? 'Unread notifications' : 
+                     `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} notifications`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {filteredNotifications.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Bell className="h-12 w-12 mx-auto text-muted-foreground opacity-30 mb-4" />
+                      <p className="text-muted-foreground">No notifications found</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {filteredNotifications.map((notification) => (
+                        <div 
+                          key={notification.id} 
+                          className={`p-4 rounded-lg border transition-colors ${
+                            notification.isRead ? 'bg-background' : 'bg-muted/50'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5">
+                                {getNotificationIcon(notification.type)}
+                              </div>
+                              
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-medium">{notification.title}</h4>
+                                  {!notification.isRead && (
+                                    <Badge variant="default" className="h-1.5 w-1.5 rounded-full p-0" />
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground">{notification.message}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {formatNotificationDate(notification.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              {!notification.isRead && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => markAsReadMutation.mutate(notification.id)}
+                                  disabled={markAsReadMutation.isPending}
+                                >
+                                  Mark as read
+                                </Button>
+                              )}
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => deleteNotificationMutation.mutate(notification.id)}
+                                disabled={deleteNotificationMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </Tabs>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
