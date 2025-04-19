@@ -53,6 +53,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -152,7 +153,7 @@ export default function StrategiesPage() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: pairs = [] } = useAvailablePairs();
+  const { pairs = [] } = useAvailablePairs();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -231,7 +232,7 @@ export default function StrategiesPage() {
         pair: selectedStrategy.pair,
         strategyType: selectedStrategy.strategyType,
         timeframe: selectedStrategy.timeframe,
-        parameters: selectedStrategy.parameters,
+        parameters: selectedStrategy.parameters as any,
         riskPerTrade: selectedStrategy.riskPerTrade,
         isActive: selectedStrategy.isActive,
         emailNotifications: selectedStrategy.emailNotifications,
@@ -510,7 +511,7 @@ export default function StrategiesPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {pairs.map((pair) => (
+                                    {pairs.map((pair: any) => (
                                       <SelectItem key={pair.symbol} value={pair.symbol}>
                                         {pair.baseAsset}/{pair.quoteAsset} ({pair.symbol})
                                       </SelectItem>
@@ -908,7 +909,7 @@ export default function StrategiesPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {pairs.map((pair) => (
+                          {pairs.map((pair: any) => (
                             <SelectItem key={pair.symbol} value={pair.symbol}>
                               {pair.baseAsset}/{pair.quoteAsset} ({pair.symbol})
                             </SelectItem>
