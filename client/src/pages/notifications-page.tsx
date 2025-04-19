@@ -77,10 +77,10 @@ export default function NotificationsPage(): JSX.Element {
   });
   
   // Use the fetched data from the API
-  const notifications = data;
+  const notifications: Notification[] = data || [];
 
   // Filter notifications based on the active tab
-  const filteredNotifications = notifications.filter(notification => {
+  const filteredNotifications = notifications.filter((notification: Notification) => {
     if (activeFilter === "all") return true;
     if (activeFilter === "unread") return !notification.isRead;
     return notification.type === activeFilter;
@@ -143,7 +143,7 @@ export default function NotificationsPage(): JSX.Element {
   });
 
   // Calculate unread count
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
 
   // Format notification date
   const formatNotificationDate = (dateString: string) => {
@@ -267,7 +267,7 @@ export default function NotificationsPage(): JSX.Element {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {filteredNotifications.map((notification) => (
+                      {filteredNotifications.map((notification: Notification) => (
                         <div 
                           key={notification.id} 
                           className={`p-4 rounded-lg border transition-colors ${
