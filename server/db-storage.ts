@@ -56,6 +56,34 @@ export class DatabaseStorage implements IStorage {
     
     return user;
   }
+  
+  async updateUserProfile(userId: number, username: string, email: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ username, email })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    return user;
+  }
+  
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    return user;
+  }
 
   async getStrategies(userId: number): Promise<Strategy[]> {
     return db

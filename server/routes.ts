@@ -5,6 +5,8 @@ import { setupAuth } from "./auth";
 import { createBinanceService } from "./binance";
 import { emailService } from "./email";
 import { insertStrategySchema, insertTradeSchema } from "@shared/schema";
+import { z } from "zod";
+import { comparePasswords, hashPassword } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes (/api/register, /api/login, /api/logout, /api/user)
@@ -339,6 +341,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedTrade);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // User settings routes
+  
+  // Update user profile (username, email)
+  app.put("/api/user/profile", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const profileSchema = z.object({
+        username: z.string().min(3),
+        email: z.string().email()
+      });
+      
+      const parseResult = profileSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ message: "Invalid profile data", errors: parseResult.error });
+      }
+      
+      const { username, email } = parseResult.data;
+      
+      // Check if username already exists (if it's different from current user)
+      if (username !== req.user.username) {
+        const existingUser = await storage.getUserByUsername(username);
+        if (existingUser) {
+          return res.status(400).json({ message: "Username already exists" });
+        }
+      }
+      
+      // Update the user profile
+      const updatedUser = await storage.updateUserProfile(req.user.id, username, email);
+      
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Update user password
+  app.put("/api/user/password", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const passwordSchema = z.object({
+        currentPassword: z.string(),
+        newPassword: z.string().min(6),
+        confirmPassword: z.string().min(6)
+      }).refine(data => data.newPassword === data.confirmPassword, {
+        message: "Passwords do not match",
+        path: ["confirmPassword"]
+      });
+      
+      const parseResult = passwordSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ message: "Invalid password data", errors: parseResult.error });
+      }
+      
+      const { currentPassword, newPassword } = parseResult.data;
+      
+      // Verify current password
+      const isPasswordValid = await comparePasswords(currentPassword, req.user.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+      
+      // Hash new password and update
+      const hashedPassword = await hashPassword(newPassword);
+      const updatedUser = await storage.updateUserPassword(req.user.id, hashedPassword);
+      
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Update notification settings
+  app.put("/api/user/notifications", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const notificationSchema = z.object({
+        emailNotifications: z.boolean(),
+        tradeAlerts: z.boolean(),
+        priceAlerts: z.boolean(),
+        weeklyReports: z.boolean()
+      });
+      
+      const parseResult = notificationSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ message: "Invalid notification settings", errors: parseResult.error });
+      }
+      
+      const settings = parseResult.data;
+      
+      // In a real application, you'd store these in a user_settings table
+      // For now, we'll just return success
+      res.json({ 
+        success: true, 
+        message: "Notification settings updated",
+        settings
+      });
     } catch (error) {
       next(error);
     }

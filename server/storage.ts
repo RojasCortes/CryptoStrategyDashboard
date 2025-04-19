@@ -9,6 +9,8 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserApiKeys(userId: number, apiKey: string, apiSecret: string): Promise<User>;
+  updateUserProfile(userId: number, username: string, email: string): Promise<User>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<User>;
   
   getStrategies(userId: number): Promise<Strategy[]>;
   getStrategy(id: number): Promise<Strategy | undefined>;
@@ -77,6 +79,26 @@ export class MemStorage implements IStorage {
       throw new Error("User not found");
     }
     const updatedUser = { ...user, apiKey, apiSecret };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserProfile(userId: number, username: string, email: string): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const updatedUser = { ...user, username, email };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const updatedUser = { ...user, password: hashedPassword };
     this.users.set(userId, updatedUser);
     return updatedUser;
   }
