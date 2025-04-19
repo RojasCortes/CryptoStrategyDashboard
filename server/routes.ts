@@ -555,6 +555,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // In a real app, delete from database
     res.json({ success: true });
   });
+  
+  // ----- Strategy API Endpoints -----
+  
+  // Get all strategies for the authenticated user
+  app.get("/api/strategies", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const userStrategies = await storage.getStrategies(req.user.id);
+      res.json(userStrategies);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Get a specific strategy
+  app.get("/api/strategies/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const strategy = await storage.getStrategy(parseInt(req.params.id));
+      
+      if (!strategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+      
+      // Security check - only allow access to user's own strategies
+      if (strategy.userId !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to access this strategy" });
+      }
+      
+      res.json(strategy);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Create a new strategy
+  app.post("/api/strategies", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      // Validate request body against schema
+      const parseResult = insertStrategySchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid strategy data", 
+          errors: parseResult.error 
+        });
+      }
+      
+      // Ensure the strategy belongs to the authenticated user
+      const strategyData = {
+        ...parseResult.data,
+        userId: req.user.id,
+      };
+      
+      const newStrategy = await storage.createStrategy(strategyData);
+      res.status(201).json(newStrategy);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Update a strategy
+  app.put("/api/strategies/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const strategyId = parseInt(req.params.id);
+      const existingStrategy = await storage.getStrategy(strategyId);
+      
+      if (!existingStrategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+      
+      // Security check - only allow updates to user's own strategies
+      if (existingStrategy.userId !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to update this strategy" });
+      }
+      
+      // Validate request body against schema
+      const parseResult = insertStrategySchema.partial().safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid strategy data", 
+          errors: parseResult.error 
+        });
+      }
+      
+      const updatedStrategy = await storage.updateStrategy(strategyId, parseResult.data);
+      res.json(updatedStrategy);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Toggle strategy active status
+  app.put("/api/strategies/:id/toggle", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const strategyId = parseInt(req.params.id);
+      const existingStrategy = await storage.getStrategy(strategyId);
+      
+      if (!existingStrategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+      
+      // Security check - only allow updates to user's own strategies
+      if (existingStrategy.userId !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to update this strategy" });
+      }
+      
+      const isActive = req.body.isActive === true;
+      const updatedStrategy = await storage.toggleStrategyStatus(strategyId, isActive);
+      res.json(updatedStrategy);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Delete a strategy
+  app.delete("/api/strategies/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const strategyId = parseInt(req.params.id);
+      const existingStrategy = await storage.getStrategy(strategyId);
+      
+      if (!existingStrategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+      
+      // Security check - only allow deletion of user's own strategies
+      if (existingStrategy.userId !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to delete this strategy" });
+      }
+      
+      const success = await storage.deleteStrategy(strategyId);
+      if (success) {
+        res.status(200).json({ message: "Strategy deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete strategy" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // ----- Portfolio API Endpoints -----
+  
+  // Get portfolio data
+  app.get("/api/portfolio", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // In a real implementation, we would fetch the user's portfolio data from Binance API
+    // For now, we'll return mock data
+    const portfolioData = {
+      assets: [
+        { symbol: "BTC", name: "Bitcoin", amount: 0.5, value: 25000, price: 50000, change24h: 3.5, lastUpdated: new Date().toISOString() },
+        { symbol: "ETH", name: "Ethereum", amount: 5, value: 15000, price: 3000, change24h: -1.2, lastUpdated: new Date().toISOString() },
+        { symbol: "SOL", name: "Solana", amount: 50, value: 7500, price: 150, change24h: 7.8, lastUpdated: new Date().toISOString() },
+        { symbol: "BNB", name: "Binance Coin", amount: 10, value: 5000, price: 500, change24h: 0.5, lastUpdated: new Date().toISOString() },
+        { symbol: "ADA", name: "Cardano", amount: 2000, value: 2500, price: 1.25, change24h: -2.3, lastUpdated: new Date().toISOString() },
+      ],
+      overview: {
+        totalValue: 55000,
+        dayChange: 1200,
+        dayChangePercentage: 2.2,
+        weekChange: 3500,
+        weekChangePercentage: 6.8,
+        monthChange: 7500,
+        monthChangePercentage: 15.8,
+        allTimeProfit: 12000,
+        allTimeProfitPercentage: 27.9,
+      },
+      historicalData: [
+        { date: "2023-01-01", value: 35000 },
+        { date: "2023-02-01", value: 38000 },
+        { date: "2023-03-01", value: 36000 },
+        { date: "2023-04-01", value: 40000 },
+        { date: "2023-05-01", value: 42000 },
+        { date: "2023-06-01", value: 41000 },
+        { date: "2023-07-01", value: 45000 },
+        { date: "2023-08-01", value: 47000 },
+        { date: "2023-09-01", value: 49000 },
+        { date: "2023-10-01", value: 52000 },
+        { date: "2023-11-01", value: 51000 },
+        { date: "2023-12-01", value: 55000 },
+      ],
+    };
+    
+    res.json(portfolioData);
+  });
 
   const httpServer = createServer(app);
   return httpServer;

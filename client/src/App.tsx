@@ -13,12 +13,16 @@ import DashboardPage from "@/pages/dashboard-page";
 import AuthPage from "@/pages/auth-page";
 import SettingsPage from "@/pages/settings-page";
 import NotificationsPage from "@/pages/notifications-page";
+import PortfolioPage from "@/pages/portfolio-page";
+import StrategiesPage from "@/pages/strategies-page";
 
 function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
+      <ProtectedRoute path="/portfolio" component={PortfolioPage} />
+      <ProtectedRoute path="/strategies" component={StrategiesPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/notifications" component={NotificationsPage} />
       <Route path="/auth" component={AuthPage} />
