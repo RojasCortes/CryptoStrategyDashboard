@@ -32,7 +32,7 @@ export class MemStorage implements IStorage {
   private currentUserId: number;
   private currentStrategyId: number;
   private currentTradeId: number;
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
@@ -59,7 +59,14 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
     const now = new Date();
-    const user: User = { ...insertUser, id, createdAt: now };
+    // Ensure apiKey and apiSecret are initialized properly
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      createdAt: now,
+      apiKey: insertUser.apiKey ?? null,
+      apiSecret: insertUser.apiSecret ?? null 
+    };
     this.users.set(id, user);
     return user;
   }
@@ -87,7 +94,14 @@ export class MemStorage implements IStorage {
   async createStrategy(insertStrategy: InsertStrategy): Promise<Strategy> {
     const id = this.currentStrategyId++;
     const now = new Date();
-    const strategy: Strategy = { ...insertStrategy, id, createdAt: now };
+    // Ensure isActive and emailNotifications are set correctly
+    const strategy: Strategy = { 
+      ...insertStrategy, 
+      id, 
+      createdAt: now,
+      isActive: insertStrategy.isActive ?? false,
+      emailNotifications: insertStrategy.emailNotifications ?? true
+    };
     this.strategies.set(id, strategy);
     return strategy;
   }
@@ -132,7 +146,13 @@ export class MemStorage implements IStorage {
   async createTrade(insertTrade: InsertTrade): Promise<Trade> {
     const id = this.currentTradeId++;
     const now = new Date();
-    const trade: Trade = { ...insertTrade, id, createdAt: now };
+    // Ensure profitLoss is set correctly
+    const trade: Trade = { 
+      ...insertTrade, 
+      id, 
+      createdAt: now,
+      profitLoss: insertTrade.profitLoss ?? null 
+    };
     this.trades.set(id, trade);
     return trade;
   }

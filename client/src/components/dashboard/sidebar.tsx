@@ -77,7 +77,7 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
           {sidebarItems.map((item) => (
             <li key={item.path}>
               <Link href={item.path}>
-                <a
+                <div
                   className={cn(
                     "flex items-center px-4 py-3 hover:bg-muted cursor-pointer",
                     {
@@ -95,7 +95,7 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
                       {item.badge}
                     </Badge>
                   )}
-                </a>
+                </div>
               </Link>
             </li>
           ))}
