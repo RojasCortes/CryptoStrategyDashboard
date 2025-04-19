@@ -1,123 +1,177 @@
 import { useState } from "react";
-import { Bell, Menu } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useBinanceData } from "@/hooks/use-binance";
+import { useTestBinanceConnection } from "@/hooks/use-binance";
+import {
+  Menu,
+  Search,
+  Bell,
+  Settings,
+  User,
+  LogOut,
+  SunMoon,
+  HelpCircle,
+  ChevronDown,
+  Sun,
+  Moon,
+  Globe,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { useTheme } from "@/components/ui/theme-provider";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/use-auth";
 
 interface AppBarProps {
   toggleSidebar: () => void;
 }
 
 export function AppBar({ toggleSidebar }: AppBarProps) {
-  const { theme, setTheme } = useTheme();
-  const { logoutMutation } = useAuth();
-  const [notifications, setNotifications] = useState<any[]>([
-    { id: 1, message: "Strategy MACD Crossover activated", read: false },
-    { id: 2, message: "New trade executed: BUY BTC/USDT", read: false },
-  ]);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const handleToggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
+  const { user, logoutMutation } = useAuth();
+  const { marketData = [], isLoading } = useBinanceData();
+  const { mutate: testConnection, isSuccess: isConnected } = useTestBinanceConnection();
+  
+  // Get user initials for avatar
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    const parts = name.split(" ");
+    if (parts.length === 1) return name.charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   };
+  
+  const userInitials = getInitials(user?.username || "");
 
-  const markAsRead = (id: number) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
-
-  const handleLogout = () => {
-    logoutMutation.mutate();
-  };
+  // Get top 3 cryptocurrencies by price
+  const topCryptos = marketData.slice(0, 3);
 
   return (
-    <header className="bg-background shadow-sm z-10">
-      <div className="flex justify-between items-center py-2 px-4">
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden mr-2"
-            onClick={toggleSidebar}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <h1 className="text-xl font-medium hidden md:block">Dashboard</h1>
-        </div>
-        <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                  >
-                    {unreadCount}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <div className="p-2 font-medium border-b">Notifications</div>
-              {notifications.length > 0 ? (
-                notifications.map((notification) => (
-                  <DropdownMenuItem
-                    key={notification.id}
-                    className={`px-4 py-3 cursor-pointer ${
-                      !notification.read ? "font-medium" : "opacity-70"
-                    }`}
-                    onClick={() => markAsRead(notification.id)}
-                  >
-                    {notification.message}
-                  </DropdownMenuItem>
-                ))
-              ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  No notifications
-                </div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Theme Toggle */}
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="theme-toggle"
-              checked={theme === "dark"}
-              onCheckedChange={handleToggleTheme}
-            />
-            <Label htmlFor="theme-toggle" className="sr-only">
-              Dark Mode
-            </Label>
-          </div>
-
-          {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                Account
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <div className="h-16 border-b bg-white flex items-center justify-between px-4">
+      {/* Left section with menu toggle and search */}
+      <div className="flex items-center gap-3">
+        <Button
+          onClick={toggleSidebar}
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        
+        <div className="relative hidden md:flex items-center">
+          <Search className="absolute left-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Buscar..."
+            className="w-[200px] lg:w-[300px] bg-transparent pl-8 focus-visible:ring-blue-500"
+          />
         </div>
       </div>
-    </header>
+
+      {/* Center section with market data */}
+      <div className="hidden lg:flex items-center gap-4">
+        {topCryptos.map((crypto) => (
+          <div key={crypto.symbol} className="flex items-center gap-1.5">
+            <span className="font-medium text-sm">{crypto.symbol.replace("USDT", "")}</span>
+            <span className="text-sm">${parseFloat(crypto.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+            <Badge variant={parseFloat(crypto.priceChangePercent) >= 0 ? "default" : "destructive"} className="text-xs">
+              {parseFloat(crypto.priceChangePercent) >= 0 ? '+' : ''}{parseFloat(crypto.priceChangePercent).toFixed(2)}%
+            </Badge>
+          </div>
+        ))}
+      </div>
+
+      {/* Right section with user menu and notifications */}
+      <div className="flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                3
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[300px]">
+            <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="max-h-[300px] overflow-y-auto">
+              <DropdownMenuItem className="flex flex-col items-start">
+                <div className="font-medium">Nueva operación completada</div>
+                <div className="text-xs text-muted-foreground">Compra de BTC completada</div>
+                <div className="text-xs text-muted-foreground">Hace 5 minutos</div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start">
+                <div className="font-medium">Alerta de mercado</div>
+                <div className="text-xs text-muted-foreground">BTC bajó un 5% en la última hora</div>
+                <div className="text-xs text-muted-foreground">Hace 15 minutos</div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start">
+                <div className="font-medium">Estrategia actualizada</div>
+                <div className="text-xs text-muted-foreground">MACD Crossover ahora está activa</div>
+                <div className="text-xs text-muted-foreground">Hace 1 hora</div>
+              </DropdownMenuItem>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="justify-center text-primary">
+              Ver todas las notificaciones
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        <Button variant="ghost" size="icon" className="hidden md:flex">
+          <Globe className="h-5 w-5" />
+        </Button>
+        
+        <Button variant="ghost" size="icon" className="hidden md:flex">
+          <SunMoon className="h-5 w-5" />
+        </Button>
+        
+        <Separator orientation="vertical" className="h-6 hidden md:block" />
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2 p-1 px-2">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback>{userInitials}</AvatarFallback>
+              </Avatar>
+              <div className="hidden md:block text-left">
+                <p className="text-sm font-medium line-clamp-1">{user?.username}</p>
+                <p className="text-xs text-muted-foreground truncate max-w-[100px]">{user?.email}</p>
+              </div>
+              <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[200px]">
+            <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              <span>Perfil</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Configuración</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <HelpCircle className="mr-2 h-4 w-4" />
+              <span>Ayuda</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => logoutMutation.mutate()}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Cerrar sesión</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   );
 }
