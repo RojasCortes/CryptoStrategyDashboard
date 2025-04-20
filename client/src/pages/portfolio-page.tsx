@@ -433,7 +433,7 @@ export default function PortfolioPage(): JSX.Element {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          label={false}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"
@@ -447,6 +447,20 @@ export default function PortfolioPage(): JSX.Element {
                         />
                       </RechartsPieChart>
                     </ResponsiveContainer>
+                  </div>
+                  
+                  {/* Leyenda personalizada con íconos */}
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    {assetAllocation.map((entry, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                        <div className="flex items-center gap-1">
+                          <CryptoIcon symbol={entry.name} size={16} />
+                          <span className="text-sm">{entry.name}</span>
+                        </div>
+                        <span className="text-sm ml-auto font-medium">{entry.percentage.toFixed(1)}%</span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
