@@ -1,11 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  createChart,
-  ColorType,
-  IChartApi,
-  ISeriesApi,
-  Time,
-} from 'lightweight-charts';
+import { createChart, ColorType, Time } from 'lightweight-charts';
 import { Loader2 } from 'lucide-react';
 
 // Chart types and interfaces
@@ -48,25 +42,45 @@ export function TradingChart({
   loading = false,
 }: TradingChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const [chart, setChart] = useState<IChartApi | null>(null);
-  const [resizeObserver, setResizeObserver] = useState<ResizeObserver | null>(
-    null
-  );
+  
+  // Solo para tener un estado que controle cuando el gráfico está completamente renderizado
+  const [isChartReady, setIsChartReady] = useState(false);
 
-  // Create/destroy chart
+  // Renderizado simple para el caso de carga
+  if (loading) {
+    return (
+      <div
+        style={{ height: `${height}px`, width: '100%' }}
+        className="flex items-center justify-center bg-slate-50/50 rounded-lg"
+      >
+        <div className="flex flex-col items-center justify-center gap-2">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Cargando datos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Creación del gráfico
   useEffect(() => {
-    // Only create the chart after we have a ref to the container
-    if (!chartContainerRef.current) return;
-
+    if (!chartContainerRef.current || data.length === 0) return;
+    
+    let chartInstance: any = null;
+    
     const handleResize = () => {
-      if (chart) {
-        chart.applyOptions({
+      if (chartInstance) {
+        chartInstance.applyOptions({
           width: chartContainerRef.current?.clientWidth || width,
         });
       }
     };
 
-    const newChart = createChart(chartContainerRef.current, {
+    // Limpiar cualquier gráfico existente
+    const element = chartContainerRef.current;
+    element.innerHTML = '';
+    
+    // Crear un nuevo gráfico
+    chartInstance = createChart(element, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: 'rgba(33, 56, 77, 0.8)',
@@ -88,54 +102,36 @@ export function TradingChart({
         borderColor: 'rgba(197, 203, 206, 0.4)',
         visible: true,
       },
-      crosshair: {
-        mode: 0,
-        vertLine: {
-          width: 1,
-          color: 'rgba(32, 38, 46, 0.1)',
-          style: 2,
-        },
-        horzLine: {
-          width: 1,
-          color: 'rgba(32, 38, 46, 0.1)',
-          style: 2,
-          labelVisible: true,
-        },
-      },
-      width: chartContainerRef.current?.clientWidth || width,
+      width: element.clientWidth || width,
       height: height,
     });
 
-    // Keep track of series
-    const series: ISeriesApi<any>[] = [];
-
-    // Add candle series
-    const candleSeries = newChart.addSeries({
-      type: 'candlestick',
+    // Series de velas (candlestick)
+    const candlestickSeries = chartInstance.addSeries({
+      type: 'Candlestick',
       upColor: '#26a69a',
       downColor: '#ef5350',
       borderVisible: false,
       wickUpColor: '#26a69a',
       wickDownColor: '#ef5350',
     });
-    series.push(candleSeries);
-
-    // Add MA line if data exists
+    candlestickSeries.setData(data);
+    
+    // Serie de medias móviles si hay datos
     if (maData && maData.length > 0) {
-      const maSeries = newChart.addSeries({
-        type: 'line',
+      const maSeries = chartInstance.addSeries({
+        type: 'Line',
         color: '#2196F3',
         lineWidth: 2,
         priceScaleId: 'right',
       });
-      series.push(maSeries);
       maSeries.setData(maData);
     }
 
-    // Add volume histogram if data exists
+    // Serie de volumen si hay datos
     if (volumeData && volumeData.length > 0) {
-      const volumeSeries = newChart.addSeries({
-        type: 'histogram',
+      const volumeSeries = chartInstance.addSeries({
+        type: 'Histogram',
         color: 'rgba(76, 175, 80, 0.5)',
         priceFormat: {
           type: 'volume',
@@ -146,11 +142,10 @@ export function TradingChart({
           bottom: 0,
         },
       });
-      series.push(volumeSeries);
       volumeSeries.setData(volumeData);
 
-      // Create a separate scale for volume
-      newChart.priceScale('volume').applyOptions({
+      // Escala separada para el volumen
+      chartInstance.priceScale('volume').applyOptions({
         scaleMargins: {
           top: 0.8,
           bottom: 0,
@@ -159,81 +154,27 @@ export function TradingChart({
       });
     }
 
-    // Initialize with the data
-    candleSeries.setData(data);
-
+    // Ajustar para mostrar todos los datos
+    chartInstance.timeScale().fitContent();
+    
+    // Configurar el observer para redimensionar
     const observer = new ResizeObserver(handleResize);
-    if (chartContainerRef.current) {
-      observer.observe(chartContainerRef.current);
-    }
-
-    setChart(newChart);
-    setResizeObserver(observer);
-
+    observer.observe(element);
+    
+    setIsChartReady(true);
+    
+    // Limpiar al desmontar
     return () => {
-      if (observer) {
-        observer.disconnect();
-      }
-      if (newChart) {
-        newChart.remove();
-      }
+      observer.disconnect();
+      chartInstance.remove();
     };
-  }, []);
-
-  // Update data when it changes
-  useEffect(() => {
-    if (!chart || !chartContainerRef.current) return;
-
-    // Update the data on the first series (candlestick)
-    const series = chart.series();
-    if (series.length > 0 && series[0]) {
-      series[0].setData(data);
-    }
-
-    // Update MA data on the second series if it exists
-    if (series.length > 1 && series[1] && maData.length > 0) {
-      series[1].setData(maData);
-    }
-
-    // Update volume data on the third series if it exists
-    if (series.length > 2 && series[2] && volumeData.length > 0) {
-      series[2].setData(volumeData);
-    }
-
-    // Fit the content
-    chart.timeScale().fitContent();
-  }, [data, maData, volumeData]);
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-      if (chart) {
-        chart.remove();
-      }
-    };
-  }, [chart, resizeObserver]);
-
-  if (loading) {
-    return (
-      <div
-        style={{ height: `${height}px`, width: '100%' }}
-        className="flex items-center justify-center bg-slate-50/50 rounded-lg"
-      >
-        <div className="flex flex-col items-center justify-center gap-2">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Cargando datos...</p>
-        </div>
-      </div>
-    );
-  }
+  }, [data, volumeData, maData, height, width]);
 
   return (
     <div
       ref={chartContainerRef}
       className="w-full overflow-hidden rounded-lg bg-card"
+      style={{ minHeight: `${height}px` }}
     />
   );
 }
