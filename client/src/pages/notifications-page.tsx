@@ -6,7 +6,7 @@ import { AppBar } from "@/components/dashboard/app-bar";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useNotifications } from "@/hooks/use-notifications";
+import { useNotifications, AppNotification } from "@/hooks/use-notifications";
 
 import {
   Card,
@@ -48,15 +48,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-// Notification type
-interface Notification {
-  id: number;
-  type: "trade" | "strategy" | "price" | "system";
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-}
+// Utilizamos el tipo Notification importado desde el hook
 
 // We don't need demo notifications anymore since we're using the API
 
@@ -75,7 +67,7 @@ export default function NotificationsPage(): JSX.Element {
   const { notifications, isLoading, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   
   // Filter notifications based on the active tab
-  const filteredNotifications = notifications.filter((notification: Notification) => {
+  const filteredNotifications = notifications.filter((notification: AppNotification) => {
     if (activeFilter === "all") return true;
     if (activeFilter === "unread") return !notification.isRead;
     return notification.type === activeFilter;
@@ -232,7 +224,7 @@ export default function NotificationsPage(): JSX.Element {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {filteredNotifications.map((notification: Notification) => (
+                      {filteredNotifications.map((notification: AppNotification) => (
                         <div 
                           key={notification.id} 
                           className={`p-4 rounded-lg border transition-colors ${

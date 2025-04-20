@@ -2,7 +2,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
-export interface Notification {
+export interface AppNotification {
   id: number;
   type: 'trade' | 'strategy' | 'price' | 'system';
   title: string;
@@ -14,7 +14,7 @@ export interface Notification {
 export function useNotifications() {
   const { toast } = useToast();
 
-  const { data: notifications = [], isLoading, refetch } = useQuery<Notification[]>({
+  const { data: notifications = [], isLoading, refetch } = useQuery<AppNotification[]>({
     queryKey: ['/api/notifications'],
     queryFn: async () => {
       const res = await fetch('/api/notifications');

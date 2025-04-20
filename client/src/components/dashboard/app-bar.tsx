@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBinanceData } from "@/hooks/use-binance";
 import { useTestBinanceConnection } from "@/hooks/use-binance";
-import { useNotifications } from "@/hooks/use-notifications";
+import { useNotifications, AppNotification } from "@/hooks/use-notifications";
 import {
   Menu,
   Search,
