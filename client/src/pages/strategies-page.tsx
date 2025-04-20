@@ -485,7 +485,7 @@ export default function StrategiesPage() {
                           name="name"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Strategy Name</FormLabel>
+                              <FormLabel>Nombre de la Estrategia</FormLabel>
                               <FormControl>
                                 <Input placeholder="My Awesome Strategy" {...field} />
                               </FormControl>
@@ -500,7 +500,7 @@ export default function StrategiesPage() {
                             name="pair"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Trading Pair</FormLabel>
+                                <FormLabel>Par de Trading</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
                                   defaultValue={field.value}
@@ -528,7 +528,7 @@ export default function StrategiesPage() {
                             name="strategyType"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Strategy Type</FormLabel>
+                                <FormLabel>Tipo de Estrategia</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
                                   defaultValue={field.value}
@@ -761,12 +761,12 @@ export default function StrategiesPage() {
             <Card className="mb-6">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle>Your Strategies</CardTitle>
+                  <CardTitle>Tus Estrategias</CardTitle>
                   <Tabs defaultValue="all" onValueChange={setFilter}>
                     <TabsList>
-                      <TabsTrigger value="all">All</TabsTrigger>
-                      <TabsTrigger value="active">Active</TabsTrigger>
-                      <TabsTrigger value="inactive">Inactive</TabsTrigger>
+                      <TabsTrigger value="all">Todas</TabsTrigger>
+                      <TabsTrigger value="active">Activas</TabsTrigger>
+                      <TabsTrigger value="inactive">Inactivas</TabsTrigger>
                     </TabsList>
                   </Tabs>
                 </div>
@@ -775,24 +775,24 @@ export default function StrategiesPage() {
                 {filteredStrategies.length === 0 ? (
                   <div className="text-center py-12">
                     <Sliders className="h-12 w-12 mx-auto text-muted-foreground opacity-30 mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No strategies found</h3>
-                    <p className="text-muted-foreground mb-4">You haven't created any trading strategies yet.</p>
+                    <h3 className="text-lg font-medium mb-2">No se encontraron estrategias</h3>
+                    <p className="text-muted-foreground mb-4">Aún no has creado ninguna estrategia de trading.</p>
                     <Button onClick={() => setCreateDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Create Your First Strategy
+                      Crea Tu Primera Estrategia
                     </Button>
                   </div>
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Pair</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Timeframe</TableHead>
-                        <TableHead>Risk</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Par</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Periodo</TableHead>
+                        <TableHead>Riesgo</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -806,10 +806,10 @@ export default function StrategiesPage() {
                           <TableCell>
                             {TIMEFRAMES.find(t => t.id === strategy.timeframe)?.name || strategy.timeframe}
                           </TableCell>
-                          <TableCell>{strategy.riskPerTrade}% per trade</TableCell>
+                          <TableCell>{strategy.riskPerTrade}% por operación</TableCell>
                           <TableCell>
                             <Badge variant={strategy.isActive ? "default" : "secondary"}>
-                              {strategy.isActive ? "Active" : "Inactive"}
+                              {strategy.isActive ? "Activa" : "Inactiva"}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
