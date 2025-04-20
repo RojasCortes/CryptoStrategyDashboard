@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBinanceData } from "@/hooks/use-binance";
 import { useTestBinanceConnection } from "@/hooks/use-binance";
+import { useNotifications } from "@/hooks/use-notifications";
 import {
   Menu,
   Search,
@@ -9,16 +10,12 @@ import {
   Settings,
   User,
   LogOut,
-  SunMoon,
   HelpCircle,
   ChevronDown,
-  Sun,
-  Moon,
-  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -29,7 +26,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SimpleThemeSelector } from "@/components/ui/simple-theme-selector";
+import { CryptoIcon } from "@/components/ui/crypto-icons";
+
 
 interface AppBarProps {
   toggleSidebar: () => void;
@@ -39,6 +37,7 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
   const { user, logoutMutation } = useAuth();
   const { marketData = [], isLoading } = useBinanceData();
   const { mutate: testConnection, isSuccess: isConnected } = useTestBinanceConnection();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   
   // Get user initials for avatar
   const getInitials = (name: string) => {
@@ -80,7 +79,8 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
       <div className="hidden lg:flex items-center gap-4">
         {topCryptos.map((crypto) => (
           <div key={crypto.symbol} className="flex items-center gap-1.5">
-            <span className="font-medium text-sm">{crypto.symbol.replace("USDT", "")}</span>
+            <CryptoIcon symbol={crypto.symbol} size="h-5 w-5" />
+            <span className="font-medium text-sm ml-1">{crypto.symbol.replace("USDT", "")}</span>
             <span className="text-sm">${parseFloat(crypto.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
             <Badge variant={parseFloat(crypto.priceChangePercent) >= 0 ? "default" : "destructive"} className="text-xs">
               {parseFloat(crypto.priceChangePercent) >= 0 ? '+' : ''}{parseFloat(crypto.priceChangePercent).toFixed(2)}%
@@ -91,10 +91,7 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
 
       {/* Right section with user menu and notifications */}
       <div className="flex items-center gap-2">
-        {/* Theme and Language selector */}
-        <div className="hidden md:block">
-          <SimpleThemeSelector />
-        </div>
+        {/* Selector de temas eliminado */}
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -137,7 +134,7 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 p-1 px-2">
-              <Avatar className="h-8 w-8">
+              <Avatar className="h-8 w-8 bg-primary/10">
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
