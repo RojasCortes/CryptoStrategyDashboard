@@ -257,9 +257,9 @@ export default function PortfolioPage(): JSX.Element {
             
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
               <div>
-                <h1 className="text-2xl font-semibold">Portfolio Overview</h1>
+                <h1 className="text-2xl font-semibold">Resumen del Portafolio</h1>
                 <p className="text-muted-foreground">
-                  Total Value: {formatCurrency(portfolioOverview.totalValue)}
+                  Valor Total: {formatCurrency(portfolioOverview.totalValue)}
                 </p>
               </div>
               
@@ -271,14 +271,14 @@ export default function PortfolioPage(): JSX.Element {
                 className="mt-2 md:mt-0"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                Refresh
+                Actualizar
               </Button>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">24h Change</CardTitle>
+                  <CardTitle className="text-sm font-medium">Cambio 24h</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center">
@@ -301,7 +301,7 @@ export default function PortfolioPage(): JSX.Element {
               
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
+                  <CardTitle className="text-sm font-medium">Balance Total</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center">
@@ -309,7 +309,7 @@ export default function PortfolioPage(): JSX.Element {
                     <div>
                       <p className="text-2xl font-bold">{formatCurrency(portfolioOverview.totalValue)}</p>
                       <p className="text-sm text-muted-foreground">
-                        {assets.length} asset{assets.length !== 1 ? 's' : ''}
+                        {assets.length} activo{assets.length !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
@@ -318,7 +318,7 @@ export default function PortfolioPage(): JSX.Element {
               
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">All-Time Profit</CardTitle>
+                  <CardTitle className="text-sm font-medium">Ganancia Total</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center">
@@ -343,7 +343,7 @@ export default function PortfolioPage(): JSX.Element {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <Card className="md:col-span-2 h-auto">
                 <CardHeader>
-                  <CardTitle>Portfolio Value</CardTitle>
+                  <CardTitle>Valor del Portafolio</CardTitle>
                   <div className="flex gap-2">
                     <Button 
                       variant={timeframe === "7days" ? "default" : "outline"} 
@@ -421,7 +421,7 @@ export default function PortfolioPage(): JSX.Element {
               
               <Card>
                 <CardHeader>
-                  <CardTitle>Asset Allocation</CardTitle>
+                  <CardTitle>Distribución de Activos</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px]">
@@ -453,18 +453,18 @@ export default function PortfolioPage(): JSX.Element {
             
             <Card>
               <CardHeader>
-                <CardTitle>Assets</CardTitle>
+                <CardTitle>Activos</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Asset</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead>24h Change</TableHead>
-                      <TableHead>Allocation</TableHead>
+                      <TableHead>Activo</TableHead>
+                      <TableHead>Cantidad</TableHead>
+                      <TableHead>Precio</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Cambio 24h</TableHead>
+                      <TableHead>Distribución</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
