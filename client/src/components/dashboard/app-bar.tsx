@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeSelector } from "@/components/ui/theme-selector";
+import { SimpleThemeSelector } from "@/components/ui/simple-theme-selector";
 
 interface AppBarProps {
   toggleSidebar: () => void;
@@ -93,7 +93,7 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
       <div className="flex items-center gap-2">
         {/* Theme and Language selector */}
         <div className="hidden md:block">
-          <ThemeSelector />
+          <SimpleThemeSelector />
         </div>
         
         <DropdownMenu>

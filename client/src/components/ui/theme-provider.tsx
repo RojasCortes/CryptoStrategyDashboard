@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState, useContext, ReactNode } from "react";
 
-type Theme = "light" | "dark" | "system" | "sovereign-king";
+type Theme = "light" | "dark";
 
 type ThemeProviderProps = {
   children: ReactNode;
@@ -34,16 +34,8 @@ export function ThemeProvider({
     const root = window.document.documentElement;
     
     // Remove all possible theme classes
-    root.classList.remove("light", "dark", "sovereign-king");
+    root.classList.remove("light", "dark");
     
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-        
-      root.classList.add(systemTheme);
-      return;
-    }
     
     root.classList.add(theme);
   }, [theme]);
