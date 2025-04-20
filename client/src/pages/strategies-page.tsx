@@ -314,20 +314,30 @@ export default function StrategiesPage() {
   const deleteStrategyMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/strategies/${id}`);
-      return await res.json();
+      // El servidor devuelve 204 No Content, no intentamos parsear JSON
+      if (res.status === 204) {
+        return { success: true };
+      }
+      
+      // Si no es 204, intentamos parsear el error
+      try {
+        return await res.json();
+      } catch (err) {
+        throw new Error("Error al eliminar la estrategia");
+      }
     },
     onSuccess: () => {
       setDeleteDialogOpen(false);
       setSelectedStrategy(null);
       refetch();
       toast({
-        title: "Strategy deleted",
-        description: "Your strategy has been deleted successfully.",
+        title: "Estrategia eliminada",
+        description: "Tu estrategia ha sido eliminada correctamente.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to delete strategy",
+        title: "Error al eliminar estrategia",
         description: error.message,
         variant: "destructive",
       });
@@ -872,7 +882,8 @@ export default function StrategiesPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setSelectedStrategy(strategy);
                                   setEditDialogOpen(true);
                                 }}
@@ -882,12 +893,13 @@ export default function StrategiesPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => 
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   toggleStrategyMutation.mutate({
                                     id: strategy.id,
                                     isActive: !strategy.isActive
-                                  })
-                                }
+                                  });
+                                }}
                               >
                                 {strategy.isActive ? (
                                   <Pause className="h-4 w-4 text-amber-500" />
@@ -898,7 +910,8 @@ export default function StrategiesPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setSelectedStrategy(strategy);
                                   setDeleteDialogOpen(true);
                                 }}
