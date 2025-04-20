@@ -568,26 +568,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email } = req.body;
       const targetEmail = email || req.user.email;
       
-      // Comprobar si tenemos clave API de SendGrid
-      if (!process.env.SENDGRID_API_KEY && !sendGridService.isInitialized()) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "No se ha configurado la API key de SendGrid. Por favor, contacta al administrador."
-        });
-      }
-      
-      // Enviar email de prueba
-      const success = await sendGridService.sendTestEmail(targetEmail);
+      // Enviar email de prueba usando Nodemailer
+      const success = await emailService.sendTestEmail(targetEmail);
       
       if (success) {
         res.json({ 
           success: true, 
-          message: `Email de prueba enviado con éxito a ${targetEmail}` 
+          message: `Email de prueba enviado con éxito a ${targetEmail}. Verifica la consola del servidor para ver el enlace de previsualización.` 
         });
       } else {
         res.status(500).json({ 
           success: false, 
-          message: "Error al enviar el email de prueba. Verifica la configuración del servidor de correo."
+          message: "Error al enviar el email de prueba. Verifica la consola del servidor para más detalles."
         });
       }
     } catch (error) {
