@@ -102,24 +102,24 @@ import {
 
 // Define available strategies and timeframes
 const STRATEGY_TYPES = [
-  { id: "grid_trading", name: "Grid Trading" },
-  { id: "dca", name: "Dollar Cost Averaging" },
-  { id: "trend_following", name: "Trend Following" },
-  { id: "mean_reversion", name: "Mean Reversion" },
-  { id: "breakout", name: "Breakout" },
-  { id: "rsi_oversold", name: "RSI Oversold" },
-  { id: "macd_crossover", name: "MACD Crossover" },
+  { id: "grid_trading", name: "Trading en Cuadrícula" },
+  { id: "dca", name: "Promediado de Costes" },
+  { id: "trend_following", name: "Seguimiento de Tendencia" },
+  { id: "mean_reversion", name: "Reversión a la Media" },
+  { id: "breakout", name: "Ruptura" },
+  { id: "rsi_oversold", name: "RSI Sobreventa" },
+  { id: "macd_crossover", name: "Cruce MACD" },
 ];
 
 const TIMEFRAMES = [
-  { id: "1m", name: "1 minute" },
-  { id: "5m", name: "5 minutes" },
-  { id: "15m", name: "15 minutes" },
-  { id: "30m", name: "30 minutes" },
-  { id: "1h", name: "1 hour" },
-  { id: "4h", name: "4 hours" },
-  { id: "1d", name: "1 day" },
-  { id: "1w", name: "1 week" },
+  { id: "1m", name: "1 minuto" },
+  { id: "5m", name: "5 minutos" },
+  { id: "15m", name: "15 minutos" },
+  { id: "30m", name: "30 minutos" },
+  { id: "1h", name: "1 hora" },
+  { id: "4h", name: "4 horas" },
+  { id: "1d", name: "1 día" },
+  { id: "1w", name: "1 semana" },
 ];
 
 // Type for strategy performance data
@@ -442,16 +442,16 @@ export default function StrategiesPage() {
             
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
               <div>
-                <h1 className="text-2xl font-semibold">Trading Strategies</h1>
+                <h1 className="text-2xl font-semibold">Estrategias de Trading</h1>
                 <p className="text-muted-foreground">
-                  Manage your automated cryptocurrency trading strategies
+                  Gestiona tus estrategias automatizadas de trading de criptomonedas
                 </p>
               </div>
               
               <div className="flex items-center gap-2 mt-4 md:mt-0">
                 <Button onClick={() => setIsImportDialogOpen(true)} variant="outline">
                   <Copy className="h-4 w-4 mr-2" />
-                  Import
+                  Importar
                 </Button>
                 
                 <Button 
@@ -460,21 +460,21 @@ export default function StrategiesPage() {
                   disabled={isRefreshing}
                 >
                   <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh
+                  Actualizar
                 </Button>
                 
                 <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="h-4 w-4 mr-2" />
-                      New Strategy
+                      Nueva Estrategia
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Create New Strategy</DialogTitle>
+                      <DialogTitle>Crear Nueva Estrategia</DialogTitle>
                       <DialogDescription>
-                        Configure your automated trading strategy. Click save when you're done.
+                        Configura tu estrategia de trading automatizada. Haz clic en guardar cuando hayas terminado.
                       </DialogDescription>
                     </DialogHeader>
                     
