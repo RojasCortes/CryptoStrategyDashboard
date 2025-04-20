@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAvailablePairs } from "@/hooks/use-binance";
-import { useHistoricalData } from "@/hooks/use-market-data";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { AppBar } from "@/components/dashboard/app-bar";
-import { TradingChart } from "@/components/trading/trading-chart";
+import { useQuery } from "@tanstack/react-query";
+import { CandleData } from "@shared/schema";
 
 import {
   Card,
@@ -22,7 +22,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw } from "lucide-react";
+import { CandlestickChart, Loader2, RefreshCw } from "lucide-react";
 import { CryptoIcon } from "@/components/crypto-icon";
 
 export default function ChartPage() {
@@ -35,14 +35,15 @@ export default function ChartPage() {
   const [selectedPair, setSelectedPair] = useState("BTCUSDT");
   const [selectedInterval, setSelectedInterval] = useState("1d");
   
-  // Get historical data
+  // Get historical data directly
   const {
-    candleData,
-    volumeData,
-    maData,
+    data: candleData,
     isLoading: isLoadingCandles,
-    refetch
-  } = useHistoricalData(selectedPair, selectedInterval);
+    refetch,
+  } = useQuery<CandleData[]>({
+    queryKey: [`/api/market/candles?symbol=${selectedPair}&interval=${selectedInterval}&limit=90`],
+    enabled: !!user,
+  });
   
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -66,6 +67,40 @@ export default function ChartPage() {
     return symbol.replace("USDT", "/USDT");
   };
   
+  // Calculate some technical indicators
+  const trendIndicator = () => {
+    if (!candleData || candleData.length === 0) return "Desconocida";
+    return candleData[candleData.length - 1].close > candleData[0].open 
+      ? "Alcista" 
+      : "Bajista";
+  };
+  
+  const supportResistance = () => {
+    if (!candleData || candleData.length === 0) return "S: - / R: -";
+    const low = Math.floor(Math.min(...candleData.map(c => c.low)));
+    const high = Math.ceil(Math.max(...candleData.map(c => c.high)));
+    return `S: ${low} / R: ${high}`;
+  };
+  
+  // Calculate simple moving average
+  const calculatMA = () => {
+    if (!candleData || candleData.length === 0) return "No hay datos";
+    
+    const period = 14;
+    if (candleData.length < period) return "Insuficientes datos";
+    
+    let sum = 0;
+    for(let i = candleData.length - period; i < candleData.length; i++) {
+      sum += candleData[i].close;
+    }
+    const ma = sum / period;
+    
+    const lastClose = candleData[candleData.length - 1].close;
+    return lastClose > ma 
+      ? "Precio por encima (Alcista)" 
+      : "Precio por debajo (Bajista)";
+  };
+  
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -73,6 +108,75 @@ export default function ChartPage() {
       </div>
     );
   }
+  
+  // Render a simple candlestick chart
+  const renderChart = () => {
+    if (isLoadingCandles) {
+      return (
+        <div className="flex items-center justify-center h-[400px] bg-slate-50/50 rounded-lg">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Cargando datos...</p>
+          </div>
+        </div>
+      );
+    }
+    
+    if (!candleData || candleData.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-[400px] bg-slate-50/50 rounded-lg">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <CandlestickChart className="h-10 w-10 text-muted" />
+            <p className="text-sm text-muted-foreground">No hay datos disponibles</p>
+          </div>
+        </div>
+      );
+    }
+    
+    // Simple candlestick chart rendering
+    return (
+      <div className="relative h-[400px] w-full bg-card rounded-lg overflow-hidden p-4">
+        <div className="absolute top-2 left-2 text-sm font-medium">
+          {formatPairName(selectedPair)} - {selectedInterval === "1h" ? "1 Hora" : selectedInterval === "4h" ? "4 Horas" : selectedInterval === "1d" ? "1 Día" : "1 Semana"}
+        </div>
+        
+        <div className="absolute top-2 right-2 text-sm font-medium">
+          Último: {candleData[candleData.length - 1].close.toFixed(2)}
+        </div>
+        
+        <div className="flex h-full items-end">
+          {candleData.slice(-30).map((candle, idx) => {
+            const isUp = candle.close >= candle.open;
+            const height = `${Math.max(1, (candle.close - candle.open) / candle.open * 100 * 5)}%`;
+            const top = `${Math.max(1, (candle.high - Math.max(candle.open, candle.close)) / candle.open * 100 * 5)}%`;
+            const bottom = `${Math.max(1, (Math.min(candle.open, candle.close) - candle.low) / candle.open * 100 * 5)}%`;
+            
+            return (
+              <div key={idx} className="flex-1 flex flex-col items-center justify-end relative mx-0.5">
+                {/* Wick top */}
+                <div 
+                  className={`w-[1px] absolute -top-[${top}] h-[${top}] ${isUp ? "bg-green-500" : "bg-red-500"}`} 
+                  style={{ height: top }}
+                />
+                
+                {/* Body */}
+                <div 
+                  className={`w-full ${isUp ? "bg-green-500" : "bg-red-500"}`} 
+                  style={{ height }}
+                />
+                
+                {/* Wick bottom */}
+                <div 
+                  className={`w-[1px] absolute -bottom-[${bottom}] h-[${bottom}] ${isUp ? "bg-green-500" : "bg-red-500"}`} 
+                  style={{ height: bottom }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
   
   return (
     <div className="flex h-screen bg-muted/10">
@@ -151,15 +255,7 @@ export default function ChartPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <TradingChart 
-                  data={candleData}
-                  volumeData={volumeData}
-                  maData={maData}
-                  symbol={formatPairName(selectedPair)}
-                  height={600}
-                  width={800}
-                  loading={isLoadingCandles}
-                />
+                {renderChart()}
               </CardContent>
             </Card>
             
@@ -179,12 +275,7 @@ export default function ChartPage() {
                       {isLoadingCandles ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <>
-                          {candleData.length > 0 && 
-                           candleData[candleData.length - 1].close > candleData[0].open 
-                            ? "Alcista" 
-                            : "Bajista"}
-                        </>
+                        trendIndicator()
                       )}
                     </div>
                   </div>
@@ -195,11 +286,7 @@ export default function ChartPage() {
                       {isLoadingCandles ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <>
-                          {candleData.length > 0 && 
-                           `S: ${Math.floor(Math.min(...candleData.map(c => c.low)))} / 
-                            R: ${Math.ceil(Math.max(...candleData.map(c => c.high)))}`}
-                        </>
+                        supportResistance()
                       )}
                     </div>
                   </div>
@@ -210,13 +297,7 @@ export default function ChartPage() {
                       {isLoadingCandles ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <>
-                          {maData.length > 0 && 
-                           candleData.length > 0 &&
-                           candleData[candleData.length - 1].close > maData[maData.length - 1].value 
-                            ? "Precio por encima (Alcista)" 
-                            : "Precio por debajo (Bajista)"}
-                        </>
+                        calculatMA()
                       )}
                     </div>
                   </div>

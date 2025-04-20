@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { CandleData } from "@shared/schema";
 import { useAuth } from "./use-auth";
-import { Time } from "lightweight-charts";
 
 /**
  * Hook for fetching historical candle data from the API
@@ -19,9 +18,9 @@ export function useHistoricalData(symbol: string, interval: string = "1d", limit
     enabled: !!user,
   });
   
-  // Transform the data into the format expected by lightweight-charts
+  // Transform the data into the format expected by charts
   const formattedCandles = candleData?.map((candle) => ({
-    time: candle.time as Time,
+    time: candle.time,
     open: candle.open,
     high: candle.high,
     low: candle.low,
@@ -30,7 +29,7 @@ export function useHistoricalData(symbol: string, interval: string = "1d", limit
   
   // Create volume data for the histogram
   const volumeData = candleData?.map((candle) => ({
-    time: candle.time as Time,
+    time: candle.time,
     value: candle.volume,
     color: candle.close > candle.open 
       ? 'rgba(76, 175, 80, 0.5)' // Green for up candles
