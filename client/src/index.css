@@ -3,71 +3,71 @@
 @tailwind utilities;
 
 @layer base {
-  :root, .light {
-    --background: #ffffff;
-    --foreground: #1a1a1a;
-    --card: #ffffff;
-    --card-foreground: #1a1a1a;
-    --popover: #ffffff;
-    --popover-foreground: #1a1a1a;
-    --primary: #2563eb;
-    --primary-foreground: #ffffff;
-    --secondary: #f3f4f6;
-    --secondary-foreground: #1a1a1a;
-    --muted: #f3f4f6;
-    --muted-foreground: #6b7280;
-    --accent: #f3f4f6;
-    --accent-foreground: #1a1a1a;
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-    --border: #e2e8f0;
-    --input: #e2e8f0;
-    --ring: #2563eb;
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 210 100% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: #121212;
-    --foreground: #f3f4f6;
-    --card: #1e1e1e;
-    --card-foreground: #f3f4f6;
-    --popover: #1e1e1e;
-    --popover-foreground: #f3f4f6;
-    --primary: #2563eb;
-    --primary-foreground: #f3f4f6;
-    --secondary: #2d2d2d;
-    --secondary-foreground: #f3f4f6;
-    --muted: #2d2d2d;
-    --muted-foreground: #9ca3af;
-    --accent: #2d2d2d;
-    --accent-foreground: #f3f4f6;
-    --destructive: #7f1d1d;
-    --destructive-foreground: #f3f4f6;
-    --border: #2d2d2d;
-    --input: #2d2d2d;
-    --ring: #2563eb;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 9.8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 100% 50%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 221.2 83.2% 53.3%;
   }
 
   .sovereign-king {
-    --background: #0d1117;
-    --foreground: #e6edf3;
-    --card: #161b22;
-    --card-foreground: #e6edf3;
-    --popover: #161b22;
-    --popover-foreground: #e6edf3;
-    --primary: #39ff14;
-    --primary-foreground: #0d1117;
-    --secondary: #30363d;
-    --secondary-foreground: #e6edf3;
-    --muted: #30363d;
-    --muted-foreground: #8b949e;
-    --accent: #1f6feb;
-    --accent-foreground: #e6edf3;
-    --destructive: #ff0000;
-    --destructive-foreground: #e6edf3;
-    --border: #30363d;
-    --input: #30363d;
-    --ring: #39ff14;
+    --background: 220 24% 7%;
+    --foreground: 220 14% 96%;
+    --card: 222 22% 10%;
+    --card-foreground: 220 14% 96%;
+    --popover: 222 22% 10%;
+    --popover-foreground: 220 14% 96%;
+    --primary: 136 100% 54%;
+    --primary-foreground: 220 24% 7%;
+    --secondary: 218 15% 21%;
+    --secondary-foreground: 220 14% 96%;
+    --muted: 218 15% 21%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 214 82% 52%;
+    --accent-foreground: 220 14% 96%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 220 14% 96%;
+    --border: 218 15% 21%;
+    --input: 218 15% 21%;
+    --ring: 136 100% 54%;
   }
 
   * {

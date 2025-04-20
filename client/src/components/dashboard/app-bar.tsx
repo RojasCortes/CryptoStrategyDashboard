@@ -9,8 +9,11 @@ import {
   Settings,
   User,
   LogOut,
+  SunMoon,
   HelpCircle,
   ChevronDown,
+  Sun,
+  Moon,
   Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import { ThemeSelector } from "@/components/ui/theme-selector";
 
 interface AppBarProps {
   toggleSidebar: () => void;
@@ -88,12 +91,9 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
 
       {/* Right section with user menu and notifications */}
       <div className="flex items-center gap-2">
-        {/* Theme and Language selector placeholder */}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1 hidden md:flex">
-            <Globe className="h-4 w-4" />
-            <span className="hidden md:inline">Español</span>
-          </Button>
+        {/* Theme and Language selector */}
+        <div className="hidden md:block">
+          <ThemeSelector />
         </div>
         
         <DropdownMenu>
