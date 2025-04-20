@@ -81,7 +81,7 @@ export default function NotificationsPage(): JSX.Element {
     },
     onSuccess: () => {
       toast({
-        title: "Notification deleted",
+        title: "Notificación eliminada",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
     },
@@ -95,7 +95,7 @@ export default function NotificationsPage(): JSX.Element {
     },
     onSuccess: () => {
       toast({
-        title: "Read notifications deleted",
+        title: "Notificaciones leídas eliminadas",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
     },
@@ -209,18 +209,21 @@ export default function NotificationsPage(): JSX.Element {
               
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle>Your Notifications</CardTitle>
+                  <CardTitle>Tus Notificaciones</CardTitle>
                   <CardDescription>
-                    {activeFilter === 'all' ? 'All notifications' : 
-                     activeFilter === 'unread' ? 'Unread notifications' : 
-                     `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} notifications`}
+                    {activeFilter === 'all' ? 'Todas las notificaciones' : 
+                     activeFilter === 'unread' ? 'Notificaciones no leídas' : 
+                     activeFilter === 'trade' ? 'Notificaciones de transacciones' :
+                     activeFilter === 'strategy' ? 'Notificaciones de estrategias' :
+                     activeFilter === 'price' ? 'Alertas de precio' :
+                     'Notificaciones del sistema'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {filteredNotifications.length === 0 ? (
                     <div className="text-center py-8">
                       <Bell className="h-12 w-12 mx-auto text-muted-foreground opacity-30 mb-4" />
-                      <p className="text-muted-foreground">No notifications found</p>
+                      <p className="text-muted-foreground">No se encontraron notificaciones</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -258,7 +261,7 @@ export default function NotificationsPage(): JSX.Element {
                                   size="sm"
                                   onClick={() => markAsRead(notification.id)}
                                 >
-                                  Mark as read
+                                  Marcar como leída
                                 </Button>
                               )}
                               <Button 
