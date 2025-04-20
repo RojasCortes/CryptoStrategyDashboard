@@ -96,6 +96,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Get historical candle data
+  app.get("/api/market/candles", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const { symbol, interval, limit } = req.query;
+      
+      if (!symbol) {
+        return res.status(400).json({ error: "Symbol parameter is required" });
+      }
+      
+      const user = req.user;
+      const apiKey = user.apiKey || process.env.BINANCE_API_KEY || "";
+      const apiSecret = user.apiSecret || process.env.BINANCE_API_SECRET || "";
+      
+      const binanceService = createBinanceService(apiKey, apiSecret);
+      const candles = await binanceService.getHistoricalData(
+        symbol as string,
+        interval as string || '1d',
+        limit ? parseInt(limit as string) : 90
+      );
+      
+      res.json(candles);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   app.post("/api/binance/test", async (req, res, next) => {
     if (!req.isAuthenticated()) {
