@@ -378,7 +378,7 @@ export default function PortfolioPage(): JSX.Element {
                       size="sm"
                       onClick={() => setTimeframe("all")}
                     >
-                      All
+                      Todo
                     </Button>
                   </div>
                 </CardHeader>
@@ -403,7 +403,7 @@ export default function PortfolioPage(): JSX.Element {
                           tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                         />
                         <Tooltip 
-                          formatter={(value) => [`$${value.toLocaleString()}`, 'Portfolio Value']}
+                          formatter={(value) => [`$${value.toLocaleString()}`, 'Valor del Portafolio']}
                           labelFormatter={(label) => new Date(label).toLocaleDateString()}
                         />
                         <Area 
@@ -442,7 +442,7 @@ export default function PortfolioPage(): JSX.Element {
                           ))}
                         </Pie>
                         <Tooltip 
-                          formatter={(value) => [`$${value.toLocaleString()}`, 'Value']}
+                          formatter={(value) => [`$${value.toLocaleString()}`, 'Valor']}
                         />
                       </RechartsPieChart>
                     </ResponsiveContainer>
