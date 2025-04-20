@@ -1,4 +1,4 @@
-import { MarketData, CryptoPair } from "@shared/schema";
+import { MarketData, CryptoPair, CandleData } from "@shared/schema";
 
 // Mock pairs to avoid creating new API keys during development
 const AVAILABLE_PAIRS: CryptoPair[] = [
@@ -163,6 +163,96 @@ export class BinanceService {
     } catch (error) {
       console.error(`Error executing trade for ${symbol}:`, error);
       throw error;
+    }
+  }
+  
+  async getHistoricalData(symbol: string, interval: string = '1d', limit: number = 90): Promise<CandleData[]> {
+    try {
+      // Para desarrollo, generamos datos simulados
+      const candleData: CandleData[] = [];
+      const currentDate = new Date();
+      
+      // Determinar factor de precio basado en símbolo
+      let basePrice = 0;
+      if (symbol.includes('BTC')) {
+        basePrice = 45000;
+      } else if (symbol.includes('ETH')) {
+        basePrice = 3000;
+      } else if (symbol.includes('BNB')) {
+        basePrice = 500;
+      } else if (symbol.includes('SOL')) {
+        basePrice = 150;
+      } else {
+        basePrice = 50;
+      }
+      
+      let price = basePrice;
+      let time = new Date(currentDate);
+      
+      // Ajustar intervalo
+      let intervalHours = 24; // Por defecto 1 día
+      if (interval === '1h') intervalHours = 1;
+      if (interval === '4h') intervalHours = 4;
+      if (interval === '1w') intervalHours = 168; // 7 días * 24 horas
+      
+      time.setHours(time.getHours() - (limit * intervalHours));
+      
+      for (let i = 0; i < limit; i++) {
+        // Simular movimiento de precio con tendencia
+        const trend = Math.sin(i / 10) * 0.03; // tendencia sinusoidal
+        const volatility = 0.02; // 2% de volatilidad
+        const change = trend + (Math.random() - 0.5) * volatility;
+        
+        const open = price;
+        const close = open * (1 + change);
+        const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+        const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+        const volume = Math.floor(Math.random() * 10000 + 1000) * (Math.random() > 0.8 ? 3 : 1);
+        
+        // Timestamp en formato Unix (segundos)
+        const timestamp = Math.floor(time.getTime() / 1000);
+        
+        candleData.push({
+          time: timestamp,
+          open: open,
+          high: high,
+          low: low,
+          close: close,
+          volume: volume
+        });
+        
+        // Actualizar para la siguiente vela
+        price = close;
+        time = new Date(time.getTime() + (intervalHours * 60 * 60 * 1000));
+      }
+      
+      return candleData;
+      
+      /* 
+      // En producción, utilizaríamos la API real de Binance
+      const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching klines: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Convertir el formato de Binance a nuestro formato
+      return data.map((item: any) => ({
+        time: Math.floor(item[0] / 1000), // Convertir de milisegundos a segundos
+        open: parseFloat(item[1]),
+        high: parseFloat(item[2]),
+        low: parseFloat(item[3]),
+        close: parseFloat(item[4]),
+        volume: parseFloat(item[5])
+      }));
+      */
+    } catch (error) {
+      console.error(`Error obteniendo datos históricos para ${symbol}:`, error);
+      // En caso de error, devolvemos un conjunto de datos vacío
+      return [];
     }
   }
 }
