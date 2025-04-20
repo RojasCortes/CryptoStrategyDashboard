@@ -15,6 +15,10 @@ import SettingsPage from "@/pages/settings-page";
 import NotificationsPage from "@/pages/notifications-page";
 import PortfolioPage from "@/pages/portfolio-page";
 import StrategiesPage from "@/pages/strategies-page";
+import MarketsPage from "@/pages/markets-page";
+import PerformancePage from "@/pages/performance-page";
+import OpportunitiesPage from "@/pages/opportunities-page";
+import HelpPage from "@/pages/help-page";
 
 function Router() {
   return (
@@ -25,6 +29,10 @@ function Router() {
       <ProtectedRoute path="/strategies" component={StrategiesPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/notifications" component={NotificationsPage} />
+      <ProtectedRoute path="/markets" component={MarketsPage} />
+      <ProtectedRoute path="/performance" component={PerformancePage} />
+      <ProtectedRoute path="/opportunities" component={OpportunitiesPage} />
+      <ProtectedRoute path="/help" component={HelpPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
