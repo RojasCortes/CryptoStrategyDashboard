@@ -13,7 +13,7 @@ export function MarketOverview() {
 
   // Helper function to format price
   const formatPrice = (price: string) => {
-    return parseFloat(price).toLocaleString("en-US", {
+    return parseFloat(price).toLocaleString("es-ES", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 2,
@@ -34,7 +34,7 @@ export function MarketOverview() {
 
   return (
     <section className="mb-6">
-      <h2 className="text-xl font-medium mb-4">Market Overview</h2>
+      <h2 className="text-xl font-medium mb-4">Resumen del Mercado</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading
           ? Array(4)

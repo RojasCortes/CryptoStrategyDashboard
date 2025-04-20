@@ -37,13 +37,13 @@ export function StrategyList({ onStrategySelect }: StrategyListProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/strategies"] });
       toast({
-        title: "Strategy updated",
-        description: "Strategy status has been updated successfully",
+        title: "Estrategia actualizada",
+        description: "El estado de la estrategia ha sido actualizado correctamente",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to update strategy",
+        title: "Error al actualizar la estrategia",
         description: error.message,
         variant: "destructive",
       });
@@ -81,10 +81,10 @@ export function StrategyList({ onStrategySelect }: StrategyListProps) {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-medium">Trading Strategies</h2>
+        <h2 className="text-xl font-medium">Estrategias de Trading</h2>
         <Button onClick={handleNewStrategy} className="flex items-center gap-1">
           <PlusIcon className="h-4 w-4" />
-          New Strategy
+          Nueva Estrategia
         </Button>
       </div>
       
@@ -134,10 +134,10 @@ export function StrategyList({ onStrategySelect }: StrategyListProps) {
                   </div>
                   <div className="flex space-x-2">
                     <Badge 
-                      variant={strategy.isActive ? "success" : "destructive"}
-                      className={`px-2 py-1 text-xs`}
+                      variant={strategy.isActive ? "default" : "destructive"}
+                      className={`px-2 py-1 text-xs ${strategy.isActive ? "bg-green-600" : ""}`}
                     >
-                      {strategy.isActive ? "Active" : "Paused"}
+                      {strategy.isActive ? "Activa" : "Pausada"}
                     </Badge>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -147,12 +147,12 @@ export function StrategyList({ onStrategySelect }: StrategyListProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleSelectStrategy(strategy)}>
-                          Edit
+                          Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => handleToggleStrategy(strategy.id, !strategy.isActive)}
                         >
-                          {strategy.isActive ? "Pause" : "Activate"}
+                          {strategy.isActive ? "Pausar" : "Activar"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
