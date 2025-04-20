@@ -115,8 +115,24 @@ interface SeasonalPattern {
   timeframe: string;
 }
 
+// Type definitions for strategy configuration
+type StrategyType = "buy" | "sell";
+type RiskLevel = "low" | "medium" | "high";
+
+// Strategy configurations
+interface StrategyConfig {
+  name: string;
+  signalGetter: (data: MarketData) => string;
+  minStrength: number;
+  maxStrength: number;
+  type: (data: MarketData) => StrategyType;
+  timeframes: string[];
+  potentialReturn: () => number;
+  risk: () => RiskLevel;
+}
+
 // Strategies to use for trading opportunities
-const availableStrategies = [
+const availableStrategies: StrategyConfig[] = [
   {
     name: "MACD Crossover",
     signalGetter: (data: MarketData) => {
@@ -250,7 +266,7 @@ const availableStrategies = [
 // Function to generate indicators based on strategy and data
 function generateIndicators(strategy: string, data: MarketData, type: "buy" | "sell"): { name: string; value: string; signal: "buy" | "sell" | "neutral" }[] {
   const priceChange = parseFloat(data.priceChangePercent);
-  const indicators = [];
+  const indicators: { name: string; value: string; signal: "buy" | "sell" | "neutral" }[] = [];
   
   // Strategy-specific indicators
   if (strategy === "MACD Crossover") {
@@ -804,10 +820,21 @@ export default function OpportunitiesPage() {
                   )}
                 </div>
                 
-                {filteredOpportunities.length > 0 && (
+                {filteredOpportunities.length > 0 && filteredOpportunities.length > visibleOpportunities && (
                   <div className="flex justify-center">
-                    <Button variant="outline">
-                      Cargar más oportunidades
+                    <Button 
+                      variant="outline"
+                      onClick={loadMoreOpportunities}
+                      disabled={isLoadingMore}
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Cargando...
+                        </>
+                      ) : (
+                        <>Cargar más oportunidades</>
+                      )}
                     </Button>
                   </div>
                 )}
