@@ -48,6 +48,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { CryptoIcon } from "@/components/crypto-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -595,8 +596,8 @@ export default function MarketsPage() {
                                 <TableCell className="font-medium">{index + 1}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center">
-                                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mr-2">
-                                      {crypto.symbol.charAt(0)}
+                                    <div className="w-7 h-7 flex items-center justify-center mr-2">
+                                      <CryptoIcon symbol={crypto.symbol} size={28} />
                                     </div>
                                     <div>
                                       <div className="font-medium">{crypto.name}</div>
