@@ -161,6 +161,7 @@ export default function StrategiesPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
   const [filter, setFilter] = useState<string>("all");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [importCode, setImportCode] = useState<string>("");
 
   // Fetch strategies from API
   const { data: strategies = [], isLoading, refetch } = useQuery<Strategy[]>({
@@ -333,28 +334,82 @@ export default function StrategiesPage() {
     },
   });
 
-  // Import strategy mutation (for future feature)
+  // Import strategy mutation
   const importStrategyMutation = useMutation({
     mutationFn: async (importCode: string) => {
-      // In a real implementation, this would validate and import the strategy
-      return { success: true };
+      try {
+        // Parseamos el JSON de la estrategia
+        const strategyData = JSON.parse(importCode);
+        
+        // Convertimos el formato importado al formato de nuestra aplicación
+        const convertedStrategy: InsertStrategy = {
+          userId: user?.id || 0,
+          name: strategyData.name || "Estrategia Importada",
+          pair: strategyData.symbol || "BTCUSDT",
+          strategyType: mapStrategyType(strategyData),
+          timeframe: strategyData.timeframe || "1h",
+          parameters: {
+            buyThreshold: 0,
+            sellThreshold: 0,
+            stopLoss: strategyData.riskManagement?.stopLoss ? strategyData.riskManagement.stopLoss * 100 : 5,
+            takeProfit: 10,
+            trailingStop: 2,
+            leverageMultiplier: 1,
+            interval: 5,
+            indicatorPeriod: getIndicatorPeriod(strategyData),
+          },
+          riskPerTrade: strategyData.riskManagement?.positionSize ? strategyData.riskManagement.positionSize * 100 : 1,
+          isActive: false,
+          emailNotifications: true,
+        };
+        
+        // Enviamos la estrategia al servidor
+        const res = await apiRequest("POST", "/api/strategies", convertedStrategy);
+        return await res.json();
+      } catch (error) {
+        console.error("Error importando estrategia:", error);
+        throw new Error("Formato de estrategia inválido. Asegúrate de que es un JSON válido.");
+      }
     },
     onSuccess: () => {
+      setImportCode("");
       setIsImportDialogOpen(false);
       refetch();
       toast({
-        title: "Strategy imported",
-        description: "The strategy has been imported successfully.",
+        title: "Estrategia importada",
+        description: "Tu estrategia ha sido importada correctamente.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to import strategy",
+        title: "Error al importar estrategia",
         description: error.message,
         variant: "destructive",
       });
     },
   });
+  
+  // Función auxiliar para mapear el tipo de estrategia
+  const mapStrategyType = (strategyData: any): string => {
+    if (strategyData.indicators?.fastMA && strategyData.indicators?.slowMA) {
+      return "macd_crossover";
+    }
+    if (strategyData.entryRules?.some((rule: any) => rule.indicator.includes("RSI"))) {
+      return "rsi_oversold";
+    }
+    return "trend_following"; // Valor por defecto
+  };
+  
+  // Función auxiliar para extraer el periodo del indicador
+  const getIndicatorPeriod = (strategyData: any): number => {
+    if (strategyData.indicators?.fastMA?.period) {
+      return strategyData.indicators.fastMA.period;
+    }
+    if (strategyData.indicators?.RSI?.period) {
+      return strategyData.indicators.RSI.period;
+    }
+    return 14; // Valor por defecto
+  };
 
   // Handle form submission for creating/editing strategy
   const onSubmit = (values: StrategyFormValues) => {
@@ -1153,36 +1208,38 @@ export default function StrategiesPage() {
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Import Strategy</DialogTitle>
+            <DialogTitle>Importar Estrategia</DialogTitle>
             <DialogDescription>
-              Paste a strategy configuration code to import it.
+              Pega el código JSON de la estrategia para importarla.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="importCode" className="text-sm font-medium">
-                Strategy Code
+                Código de la Estrategia (JSON)
               </label>
               <textarea 
                 id="importCode"
                 className="w-full min-h-[150px] border rounded-md p-3 resize-none"
-                placeholder="Paste strategy code here..."
+                placeholder="Pega el código JSON de la estrategia aquí..."
+                value={importCode}
+                onChange={(e) => setImportCode(e.target.value)}
               />
             </div>
             
             <DialogFooter>
               <Button 
-                onClick={() => importStrategyMutation.mutate('sample-code')}
-                disabled={importStrategyMutation.isPending}
+                onClick={() => importStrategyMutation.mutate(importCode)}
+                disabled={importStrategyMutation.isPending || !importCode.trim()}
               >
                 {importStrategyMutation.isPending ? (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Importing...
+                    Importando...
                   </>
                 ) : (
-                  'Import Strategy'
+                  'Importar Estrategia'
                 )}
               </Button>
             </DialogFooter>
