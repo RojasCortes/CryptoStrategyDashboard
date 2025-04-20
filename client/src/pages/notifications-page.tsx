@@ -3,9 +3,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { AppBar } from "@/components/dashboard/app-bar";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/use-notifications";
 
 import {
   Card,
@@ -70,48 +71,14 @@ export default function NotificationsPage(): JSX.Element {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Fetch notifications from the API
-  const { data = [], isLoading } = useQuery<Notification[]>({
-    queryKey: ["/api/notifications"],
-    enabled: !!user,
-  });
+  // Use our custom notification hook
+  const { notifications, isLoading, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   
-  // Use the fetched data from the API
-  const notifications: Notification[] = data || [];
-
   // Filter notifications based on the active tab
   const filteredNotifications = notifications.filter((notification: Notification) => {
     if (activeFilter === "all") return true;
     if (activeFilter === "unread") return !notification.isRead;
     return notification.type === activeFilter;
-  });
-
-  // Mark a notification as read
-  const markAsReadMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest("PUT", `/api/notifications/${id}/read`);
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-      toast({
-        title: "Notification marked as read",
-      });
-    },
-  });
-
-  // Mark all notifications as read
-  const markAllAsReadMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("PUT", "/api/notifications/read-all");
-      return await res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "All notifications marked as read",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-    },
   });
 
   // Delete a notification
@@ -142,8 +109,7 @@ export default function NotificationsPage(): JSX.Element {
     },
   });
 
-  // Calculate unread count
-  const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
+  // We already have unreadCount from our hook
 
   // Format notification date
   const formatNotificationDate = (dateString: string) => {
@@ -202,8 +168,7 @@ export default function NotificationsPage(): JSX.Element {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => markAllAsReadMutation.mutate()}
-                    disabled={markAllAsReadMutation.isPending}
+                    onClick={() => markAllAsRead()}
                   >
                     Mark all as read
                   </Button>
@@ -299,8 +264,7 @@ export default function NotificationsPage(): JSX.Element {
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
-                                  onClick={() => markAsReadMutation.mutate(notification.id)}
-                                  disabled={markAsReadMutation.isPending}
+                                  onClick={() => markAsRead(notification.id)}
                                 >
                                   Mark as read
                                 </Button>

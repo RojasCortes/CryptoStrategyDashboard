@@ -97,34 +97,68 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                3
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                  {unreadCount}
+                </span>
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[300px]">
-            <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
+            <DropdownMenuLabel className="flex justify-between items-center">
+              <span>Notificaciones</span>
+              {unreadCount > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs h-7 px-2"
+                  onClick={() => markAllAsRead()}
+                >
+                  Marcar todas como leídas
+                </Button>
+              )}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <div className="max-h-[300px] overflow-y-auto">
-              <DropdownMenuItem className="flex flex-col items-start">
-                <div className="font-medium">Nueva operación completada</div>
-                <div className="text-xs text-muted-foreground">Compra de BTC completada</div>
-                <div className="text-xs text-muted-foreground">Hace 5 minutos</div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start">
-                <div className="font-medium">Alerta de mercado</div>
-                <div className="text-xs text-muted-foreground">BTC bajó un 5% en la última hora</div>
-                <div className="text-xs text-muted-foreground">Hace 15 minutos</div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start">
-                <div className="font-medium">Estrategia actualizada</div>
-                <div className="text-xs text-muted-foreground">MACD Crossover ahora está activa</div>
-                <div className="text-xs text-muted-foreground">Hace 1 hora</div>
-              </DropdownMenuItem>
+              {notifications.length === 0 ? (
+                <div className="py-2 px-2 text-center text-sm text-muted-foreground">
+                  No hay notificaciones
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <DropdownMenuItem 
+                    key={notification.id} 
+                    className={`flex flex-col items-start transition-colors ${notification.isRead ? 'bg-transparent' : 'bg-primary/5'}`}
+                    onClick={() => {
+                      if (!notification.isRead) {
+                        markAsRead(notification.id);
+                      }
+                    }}
+                  >
+                    <div className="font-medium">{notification.title}</div>
+                    <div className="text-xs text-muted-foreground">{notification.message}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {notification.createdAt && typeof notification.createdAt === 'string' ? 
+                        new Date(notification.createdAt).toLocaleDateString('es-ES', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) 
+                        : 'Hace unos momentos'}
+                    </div>
+                    {!notification.isRead && (
+                      <div className="w-full flex justify-end">
+                        <span className="inline-block w-2 h-2 rounded-full bg-primary mt-1"></span>
+                      </div>
+                    )}
+                  </DropdownMenuItem>
+                ))
+              )}
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center text-primary">
-              Ver todas las notificaciones
+            <DropdownMenuItem asChild>
+              <a href="/notifications" className="justify-center text-primary cursor-pointer w-full">
+                Ver todas las notificaciones
+              </a>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
