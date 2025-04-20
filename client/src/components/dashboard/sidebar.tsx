@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useNotifications } from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -65,6 +66,7 @@ const SidebarItem = ({ icon, label, href, active, badge }: SidebarItemProps) => 
 export function Sidebar({ isMobile, isOpen }: SidebarProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const { unreadCount } = useNotifications();
   
   // Get user initials for avatar
   const getInitials = (name: string) => {
@@ -144,7 +146,7 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
             label="Notificaciones"
             href="/notifications"
             active={location === "/notifications"}
-            badge={3}
+            badge={unreadCount > 0 ? unreadCount : undefined}
           />
         </div>
         

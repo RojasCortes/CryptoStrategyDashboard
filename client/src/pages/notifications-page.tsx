@@ -110,12 +110,12 @@ export default function NotificationsPage(): JSX.Element {
     const diffMinutes = Math.round((now.getTime() - date.getTime()) / (1000 * 60));
     
     if (diffMinutes < 60) {
-      return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+      return `hace ${diffMinutes} minuto${diffMinutes !== 1 ? 's' : ''}`;
     } else if (diffMinutes < 24 * 60) {
       const hours = Math.floor(diffMinutes / 60);
-      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+      return `hace ${hours} hora${hours !== 1 ? 's' : ''}`;
     } else {
-      return format(date, 'MMM d, yyyy h:mm a');
+      return format(date, 'd MMM, yyyy h:mm a');
     }
   };
 
@@ -138,7 +138,7 @@ export default function NotificationsPage(): JSX.Element {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>Please log in to access notifications.</p>
+        <p>Por favor, inicia sesión para acceder a las notificaciones.</p>
       </div>
     );
   }
@@ -153,7 +153,7 @@ export default function NotificationsPage(): JSX.Element {
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-semibold">Notifications</h1>
+              <h1 className="text-2xl font-semibold">Notificaciones</h1>
               
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
@@ -162,7 +162,7 @@ export default function NotificationsPage(): JSX.Element {
                     size="sm"
                     onClick={() => markAllAsRead()}
                   >
-                    Mark all as read
+                    Marcar todas como leídas
                   </Button>
                 )}
                 
@@ -173,7 +173,7 @@ export default function NotificationsPage(): JSX.Element {
                   disabled={deleteAllReadMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Clear read
+                  Eliminar leídas
                 </Button>
               </div>
             </div>
@@ -181,9 +181,9 @@ export default function NotificationsPage(): JSX.Element {
             {unreadCount > 0 && (
               <Alert className="mb-6">
                 <Bell className="h-4 w-4" />
-                <AlertTitle>You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}</AlertTitle>
+                <AlertTitle>Tienes {unreadCount} notificación{unreadCount !== 1 ? 'es' : ''} sin leer</AlertTitle>
                 <AlertDescription>
-                  Stay up to date with your trading activities and platform updates.
+                  Mantente al día con tus actividades de trading y actualizaciones de la plataforma.
                 </AlertDescription>
               </Alert>
             )}
@@ -191,19 +191,19 @@ export default function NotificationsPage(): JSX.Element {
             <Tabs defaultValue="all" onValueChange={setActiveFilter} className="space-y-6">
               <div className="flex justify-between items-center">
                 <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="all">Todas</TabsTrigger>
                   <TabsTrigger value="unread">
-                    Unread
+                    No leídas
                     {unreadCount > 0 && (
                       <Badge variant="destructive" className="ml-2">
                         {unreadCount}
                       </Badge>
                     )}
                   </TabsTrigger>
-                  <TabsTrigger value="trade">Trades</TabsTrigger>
-                  <TabsTrigger value="strategy">Strategies</TabsTrigger>
-                  <TabsTrigger value="price">Price Alerts</TabsTrigger>
-                  <TabsTrigger value="system">System</TabsTrigger>
+                  <TabsTrigger value="trade">Transacciones</TabsTrigger>
+                  <TabsTrigger value="strategy">Estrategias</TabsTrigger>
+                  <TabsTrigger value="price">Alertas de Precio</TabsTrigger>
+                  <TabsTrigger value="system">Sistema</TabsTrigger>
                 </TabsList>
               </div>
               
