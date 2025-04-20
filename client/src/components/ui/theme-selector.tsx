@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import { useTheme } from "@/components/ui/theme-provider";
+import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sun, Moon, Palette, Check, Globe } from "lucide-react";
 
-export const languages = [
+const languages = [
   { code: "es", name: "Español" },
   { code: "en", name: "English" },
 ];
@@ -19,29 +19,21 @@ export const languages = [
 type ThemeType = "light" | "dark" | "system" | "sovereign-king";
 
 const themes = [
-  { id: "light" as ThemeType, name: "Claro", icon: <Sun className="h-4 w-4 mr-2" /> },
-  { id: "dark" as ThemeType, name: "Oscuro", icon: <Moon className="h-4 w-4 mr-2" /> },
-  { id: "sovereign-king" as ThemeType, name: "Sovereign King", icon: <Palette className="h-4 w-4 mr-2" /> },
+  { id: "light" as ThemeType, name: "theme.light", icon: <Sun className="h-4 w-4 mr-2" /> },
+  { id: "dark" as ThemeType, name: "theme.dark", icon: <Moon className="h-4 w-4 mr-2" /> },
+  { id: "sovereign-king" as ThemeType, name: "theme.sovereignKing", icon: <Palette className="h-4 w-4 mr-2" /> },
 ];
 
 export function ThemeSelector() {
   const { theme, setTheme } = useTheme();
-  const [currentLanguage, setCurrentLanguage] = useState<string>("es");
-  
-  // Load language from localStorage on component mount
-  useEffect(() => {
-    const storedLanguage = localStorage.getItem("language") || "es";
-    setCurrentLanguage(storedLanguage);
-  }, []);
+  const { language, setLanguage, t } = useLanguage();
   
   const handleLanguageChange = (code: string) => {
-    setCurrentLanguage(code);
-    localStorage.setItem("language", code);
-    // Additional language change logic would go here
+    setLanguage(code as "es" | "en");
   };
   
-  const currentThemeLabel = themes.find(t => t.id === theme)?.name || "Claro";
-  const currentLanguageLabel = languages.find(l => l.code === currentLanguage)?.name || "Español";
+  const currentThemeLabel = t(themes.find(item => item.id === theme)?.name || "theme.light");
+  const currentLanguageLabel = languages.find(l => l.code === language)?.name || "Español";
   
   return (
     <div className="flex gap-2">
@@ -54,16 +46,16 @@ export function ThemeSelector() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Idioma</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("settings.language")}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {languages.map((language) => (
+          {languages.map((lang) => (
             <DropdownMenuItem
-              key={language.code}
-              onClick={() => handleLanguageChange(language.code)}
+              key={lang.code}
+              onClick={() => handleLanguageChange(lang.code)}
               className="flex items-center justify-between"
             >
-              {language.name}
-              {currentLanguage === language.code && (
+              {lang.name}
+              {language === lang.code && (
                 <Check className="h-4 w-4" />
               )}
             </DropdownMenuItem>
@@ -82,7 +74,7 @@ export function ThemeSelector() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Tema</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("settings.theme")}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {themes.map((item) => (
             <DropdownMenuItem
@@ -92,7 +84,7 @@ export function ThemeSelector() {
             >
               <div className="flex items-center">
                 {item.icon}
-                {item.name}
+                {t(item.name)}
               </div>
               {theme === item.id && (
                 <Check className="h-4 w-4" />
