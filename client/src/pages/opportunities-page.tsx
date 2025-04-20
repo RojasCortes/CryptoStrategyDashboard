@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useBinanceData } from "@/hooks/use-binance";
+import { useBinanceData, useAvailablePairs } from "@/hooks/use-binance";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { AppBar } from "@/components/dashboard/app-bar";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
+import { MarketData, CryptoPair } from "@shared/schema";
 
 import {
   Card,
@@ -49,6 +50,7 @@ import {
   ArrowRightCircle,
   CandlestickChart,
   AreaChart,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +72,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CryptoIcon } from "@/components/crypto-icon";
 
 // Types
 interface TradingOpportunity {
@@ -93,276 +96,482 @@ interface TradingOpportunity {
   }[];
 }
 
-// Sample trading opportunities data
-const tradingOpportunities: TradingOpportunity[] = [
+interface MarketInsight {
+  id: number;
+  title: string;
+  description: string;
+  impact: "low" | "medium" | "high";
+  category: "technical" | "fundamental" | "market";
+  timestamp: string;
+}
+
+interface SeasonalPattern {
+  id: number;
+  asset: string;
+  pattern: string;
+  probability: number;
+  description: string;
+  averageReturn: string;
+  timeframe: string;
+}
+
+// Strategies to use for trading opportunities
+const availableStrategies = [
   {
-    id: 1,
-    pair: "BTC/USDT",
-    type: "buy",
-    strategy: "MACD Crossover",
-    signal: "MACD cruzó la línea de señal hacia arriba",
-    strength: 85,
-    timeframe: "4h",
-    price: 45000,
-    targetPrice: 48000,
-    stopLoss: 43500,
-    potentialReturn: 6.67,
-    risk: "medium",
-    timestamp: "2023-12-22T14:30:00Z",
-    indicators: [
-      { name: "MACD", value: "Positivo", signal: "buy" },
-      { name: "RSI", value: "54", signal: "neutral" },
-      { name: "MA 200", value: "Por encima", signal: "buy" }
-    ]
+    name: "MACD Crossover",
+    signalGetter: (data: MarketData) => {
+      const priceChange = parseFloat(data.priceChangePercent);
+      if (priceChange > 1.5) return "MACD cruzó la línea de señal hacia arriba";
+      if (priceChange < -1.5) return "MACD cruzó la línea de señal hacia abajo";
+      return "";
+    },
+    minStrength: 60,
+    maxStrength: 90,
+    type: (data: MarketData) => parseFloat(data.priceChangePercent) > 0 ? "buy" : "sell",
+    timeframes: ["1h", "4h", "1d"],
+    potentialReturn: () => Math.random() * 10 + 5,  // 5-15%
+    risk: () => {
+      const chance = Math.random();
+      if (chance < 0.33) return "low";
+      if (chance < 0.66) return "medium";
+      return "high";
+    }
   },
   {
-    id: 2,
-    pair: "ETH/USDT",
-    type: "buy",
-    strategy: "RSI Oversold",
-    signal: "RSI saliendo de la zona de sobreventa",
-    strength: 78,
-    timeframe: "1d",
-    price: 3100,
-    targetPrice: 3400,
-    stopLoss: 2950,
-    potentialReturn: 9.68,
-    risk: "low",
-    timestamp: "2023-12-22T12:15:00Z",
-    indicators: [
-      { name: "RSI", value: "32", signal: "buy" },
-      { name: "MACD", value: "Cruzando", signal: "buy" },
-      { name: "Stoch", value: "25/15", signal: "buy" }
-    ]
+    name: "RSI Oversold",
+    signalGetter: (data: MarketData) => {
+      const priceChange = parseFloat(data.priceChangePercent);
+      if (priceChange < -3) return "RSI saliendo de la zona de sobreventa";
+      return "";
+    },
+    minStrength: 70,
+    maxStrength: 85,
+    type: () => "buy",
+    timeframes: ["4h", "1d"],
+    potentialReturn: () => Math.random() * 12 + 8,  // 8-20%
+    risk: () => "low"
   },
   {
-    id: 3,
-    pair: "SOL/USDT",
-    type: "sell",
-    strategy: "Bollinger Bands",
-    signal: "Precio tocando la banda superior",
-    strength: 72,
-    timeframe: "1h",
-    price: 108,
-    targetPrice: 98,
-    stopLoss: 112,
-    potentialReturn: 9.26,
-    risk: "medium",
-    timestamp: "2023-12-22T16:45:00Z",
-    indicators: [
-      { name: "BB", value: "Banda superior", signal: "sell" },
-      { name: "RSI", value: "78", signal: "sell" },
-      { name: "Volume", value: "Alto", signal: "neutral" }
-    ]
+    name: "Bollinger Bands",
+    signalGetter: (data: MarketData) => {
+      const priceChange = parseFloat(data.priceChangePercent);
+      if (priceChange > 3) return "Precio tocando la banda superior";
+      if (priceChange < -3) return "Precio tocando la banda inferior";
+      return "";
+    },
+    minStrength: 65,
+    maxStrength: 80,
+    type: (data: MarketData) => parseFloat(data.priceChangePercent) > 0 ? "sell" : "buy",
+    timeframes: ["1h", "4h", "6h"],
+    potentialReturn: () => Math.random() * 8 + 7,  // 7-15%
+    risk: () => {
+      const chance = Math.random();
+      if (chance < 0.5) return "medium";
+      if (chance < 0.8) return "low";
+      return "high";
+    }
   },
   {
-    id: 4,
-    pair: "BNB/USDT",
-    type: "buy",
-    strategy: "Moving Average",
-    signal: "EMA 20 cruzó por encima de EMA 50",
-    strength: 65,
-    timeframe: "12h",
-    price: 460,
-    targetPrice: 485,
-    stopLoss: 445,
-    potentialReturn: 5.43,
-    risk: "low",
-    timestamp: "2023-12-22T08:30:00Z",
-    indicators: [
-      { name: "EMA 20/50", value: "Cruce alcista", signal: "buy" },
-      { name: "RSI", value: "58", signal: "neutral" },
-      { name: "Volume", value: "Creciente", signal: "buy" }
-    ]
+    name: "Moving Average",
+    signalGetter: (data: MarketData) => {
+      const priceChange = parseFloat(data.priceChangePercent);
+      if (priceChange > 0) return "EMA 20 cruzó por encima de EMA 50";
+      return "EMA 20 cruzó por debajo de EMA 50";
+    },
+    minStrength: 60,
+    maxStrength: 75,
+    type: (data: MarketData) => parseFloat(data.priceChangePercent) > 0 ? "buy" : "sell",
+    timeframes: ["4h", "12h", "1d"],
+    potentialReturn: () => Math.random() * 6 + 4,  // 4-10%
+    risk: () => "low"
   },
   {
-    id: 5,
-    pair: "ADA/USDT",
-    type: "sell",
-    strategy: "Toma de Beneficios",
-    signal: "Nivel de resistencia fuerte alcanzado",
-    strength: 68,
-    timeframe: "4h",
-    price: 0.55,
-    targetPrice: 0.48,
-    stopLoss: 0.58,
-    potentialReturn: 12.73,
-    risk: "high",
-    timestamp: "2023-12-22T15:15:00Z",
-    indicators: [
-      { name: "Resist", value: "0.55-0.56", signal: "sell" },
-      { name: "RSI", value: "72", signal: "sell" },
-      { name: "MACD", value: "Divergencia", signal: "sell" }
-    ]
+    name: "Soporte Fuerte",
+    signalGetter: (data: MarketData) => {
+      const priceChange = parseFloat(data.priceChangePercent);
+      if (priceChange < -2 && priceChange > -5) return "Rebote en nivel de soporte clave";
+      return "";
+    },
+    minStrength: 75,
+    maxStrength: 90,
+    type: () => "buy",
+    timeframes: ["4h", "1d"],
+    potentialReturn: () => Math.random() * 10 + 8,  // 8-18%
+    risk: () => "medium"
   },
   {
-    id: 6,
-    pair: "DOT/USDT",
-    type: "buy",
-    strategy: "Soporte Fuerte",
-    signal: "Rebote en nivel de soporte clave",
-    strength: 82,
-    timeframe: "1d",
-    price: 8.2,
-    targetPrice: 9.1,
-    stopLoss: 7.8,
-    potentialReturn: 10.98,
-    risk: "medium",
-    timestamp: "2023-12-22T10:00:00Z",
-    indicators: [
-      { name: "Support", value: "8.10-8.20", signal: "buy" },
-      { name: "Stoch", value: "15/10", signal: "buy" },
-      { name: "RSI", value: "30", signal: "buy" }
-    ]
+    name: "Divergencia Alcista",
+    signalGetter: (data: MarketData) => {
+      const priceChange = parseFloat(data.priceChangePercent);
+      if (priceChange < -1 && priceChange > -4) return "Divergencia alcista en RSI";
+      return "";
+    },
+    minStrength: 70,
+    maxStrength: 85,
+    type: () => "buy",
+    timeframes: ["4h", "6h", "1d"],
+    potentialReturn: () => Math.random() * 9 + 6,  // 6-15%
+    risk: () => "medium"
   },
   {
-    id: 7,
-    pair: "AVAX/USDT",
-    type: "buy",
-    strategy: "Divergencia Alcista",
-    signal: "Divergencia alcista en RSI",
-    strength: 76,
-    timeframe: "6h",
-    price: 37.5,
-    targetPrice: 41.0,
-    stopLoss: 36.0,
-    potentialReturn: 9.33,
-    risk: "medium",
-    timestamp: "2023-12-22T13:20:00Z",
-    indicators: [
-      { name: "RSI Div", value: "Alcista", signal: "buy" },
-      { name: "MA 50", value: "Por encima", signal: "buy" },
-      { name: "Volume", value: "Creciente", signal: "buy" }
-    ]
+    name: "Patrón Doble Suelo",
+    signalGetter: (data: MarketData) => {
+      const priceChange = parseFloat(data.priceChangePercent);
+      if (priceChange > -1 && priceChange < 1) return "Completando patrón de doble suelo";
+      return "";
+    },
+    minStrength: 75,
+    maxStrength: 90,
+    type: () => "buy",
+    timeframes: ["1d"],
+    potentialReturn: () => Math.random() * 15 + 10,  // 10-25%
+    risk: () => "medium"
   },
   {
-    id: 8,
-    pair: "MATIC/USDT",
-    type: "buy",
-    strategy: "Patrón Doble Suelo",
-    signal: "Completando patrón de doble suelo",
-    strength: 80,
-    timeframe: "1d",
-    price: 0.85,
-    targetPrice: 0.98,
-    stopLoss: 0.79,
-    potentialReturn: 15.29,
-    risk: "medium",
-    timestamp: "2023-12-22T09:45:00Z",
-    indicators: [
-      { name: "Patrón", value: "Doble suelo", signal: "buy" },
-      { name: "RSI", value: "42", signal: "neutral" },
-      { name: "Volume", value: "Confirmación", signal: "buy" }
-    ]
+    name: "Breakout de Resistencia",
+    signalGetter: (data: MarketData) => {
+      const priceChange = parseFloat(data.priceChangePercent);
+      if (priceChange > 2) return "Ruptura de nivel de resistencia importante";
+      return "";
+    },
+    minStrength: 80,
+    maxStrength: 95,
+    type: () => "buy",
+    timeframes: ["4h", "1d"],
+    potentialReturn: () => Math.random() * 20 + 15,  // 15-35%
+    risk: () => {
+      const chance = Math.random();
+      if (chance < 0.4) return "medium";
+      return "high";
+    }
   }
 ];
 
-// Market insights data
-const marketInsights = [
-  {
-    title: "Bitcoin muestra señales de fortaleza en soporte clave",
-    description: "BTC ha rebotado consistentemente en el nivel de soporte de $43,500, lo que indica posible continuación alcista",
-    impact: "medium",
-    category: "technical",
-    timestamp: "2023-12-22T11:30:00Z"
-  },
-  {
-    title: "Ethereum completando patrón de copa y asa",
-    description: "ETH está formando un patrón técnico alcista con objetivo potencial de $3,800 en el medio plazo",
-    impact: "high",
-    category: "technical",
-    timestamp: "2023-12-22T10:15:00Z"
-  },
-  {
-    title: "Aumento de interés abierto en futuros de BTC",
-    description: "El interés abierto en contratos de futuros de Bitcoin ha aumentado un 15% en los últimos 3 días",
+// Function to generate indicators based on strategy and data
+function generateIndicators(strategy: string, data: MarketData, type: "buy" | "sell"): { name: string; value: string; signal: "buy" | "sell" | "neutral" }[] {
+  const priceChange = parseFloat(data.priceChangePercent);
+  const indicators = [];
+  
+  // Strategy-specific indicators
+  if (strategy === "MACD Crossover") {
+    indicators.push({ 
+      name: "MACD", 
+      value: priceChange > 0 ? "Positivo" : "Negativo", 
+      signal: priceChange > 0 ? "buy" : "sell" 
+    });
+  } else if (strategy === "RSI Oversold") {
+    const rsiValue = Math.max(30, Math.min(40, 35 - priceChange)).toFixed(0);
+    indicators.push({ 
+      name: "RSI", 
+      value: rsiValue, 
+      signal: "buy" 
+    });
+  } else if (strategy === "Bollinger Bands") {
+    indicators.push({ 
+      name: "BB", 
+      value: priceChange > 0 ? "Banda superior" : "Banda inferior", 
+      signal: priceChange > 0 ? "sell" : "buy" 
+    });
+  }
+  
+  // Add some common indicators
+  const rsiValue = Math.max(20, Math.min(80, 50 + priceChange * 3)).toFixed(0);
+  indicators.push({ 
+    name: "RSI", 
+    value: rsiValue, 
+    signal: parseInt(rsiValue) > 70 ? "sell" : (parseInt(rsiValue) < 30 ? "buy" : "neutral") 
+  });
+  
+  if (Math.random() > 0.5) {
+    indicators.push({ 
+      name: "MA 200", 
+      value: priceChange > 0 ? "Por encima" : "Por debajo", 
+      signal: priceChange > 0 ? "buy" : "sell" 
+    });
+  } else if (Math.random() > 0.5) {
+    indicators.push({ 
+      name: "Volume", 
+      value: priceChange > 1 ? "Alto" : (priceChange < -1 ? "Bajo" : "Medio"), 
+      signal: Math.random() > 0.6 ? type : "neutral" 
+    });
+  } else {
+    indicators.push({ 
+      name: "Stoch", 
+      value: `${Math.floor(Math.random() * 30 + 10)}/${Math.floor(Math.random() * 20 + 5)}`, 
+      signal: type 
+    });
+  }
+  
+  return indicators;
+}
+
+// Function to generate real-time trading opportunities based on market data
+function generateOpportunities(marketData: MarketData[]): TradingOpportunity[] {
+  if (!marketData || !marketData.length) return [];
+  
+  const opportunities: TradingOpportunity[] = [];
+  let id = 1;
+  
+  marketData.forEach(data => {
+    const pairName = data.symbol.replace("USDT", "/USDT");
+    const dateNow = new Date();
+    const price = parseFloat(data.price);
+    
+    // Generate opportunities based on strategies
+    availableStrategies.forEach(strategyConfig => {
+      const signal = strategyConfig.signalGetter(data);
+      
+      // Only create opportunity if we have a valid signal
+      if (signal) {
+        const type = strategyConfig.type(data);
+        const strength = Math.floor(Math.random() * (strategyConfig.maxStrength - strategyConfig.minStrength) + strategyConfig.minStrength);
+        const timeframe = strategyConfig.timeframes[Math.floor(Math.random() * strategyConfig.timeframes.length)];
+        const potentialReturn = parseFloat(strategyConfig.potentialReturn().toFixed(2));
+        const risk = strategyConfig.risk();
+        
+        // Calculate target price and stop loss based on potential return and type
+        const priceFactor = potentialReturn / 100;
+        const targetPrice = type === "buy" 
+          ? parseFloat((price * (1 + priceFactor)).toFixed(price < 1 ? 4 : 2))
+          : parseFloat((price * (1 - priceFactor)).toFixed(price < 1 ? 4 : 2));
+          
+        const stopLoss = type === "buy"
+          ? parseFloat((price * (1 - (priceFactor / 2))).toFixed(price < 1 ? 4 : 2))
+          : parseFloat((price * (1 + (priceFactor / 2))).toFixed(price < 1 ? 4 : 2));
+          
+        // Generate indicators
+        const indicators = generateIndicators(strategyConfig.name, data, type);
+        
+        // Create opportunity
+        const opportunity: TradingOpportunity = {
+          id: id++,
+          pair: pairName,
+          type,
+          strategy: strategyConfig.name,
+          signal,
+          strength,
+          timeframe,
+          price,
+          targetPrice,
+          stopLoss,
+          potentialReturn,
+          risk,
+          timestamp: dateNow.toISOString(),
+          indicators
+        };
+        
+        opportunities.push(opportunity);
+      }
+    });
+  });
+  
+  return opportunities;
+}
+
+// Generate market insights based on market data
+function generateMarketInsights(marketData: MarketData[]): MarketInsight[] {
+  if (!marketData || !marketData.length) return [];
+  
+  const insights: MarketInsight[] = [];
+  let id = 1;
+  const dateNow = new Date();
+  
+  // Bitcoin insights
+  const btcData = marketData.find(d => d.symbol === "BTCUSDT");
+  if (btcData) {
+    const btcPrice = parseFloat(btcData.price);
+    const btcChange = parseFloat(btcData.priceChangePercent);
+    
+    if (btcChange > 3) {
+      insights.push({
+        id: id++,
+        title: "Bitcoin muestra fuerte impulso alcista",
+        description: `BTC ha subido ${btcChange.toFixed(2)}% en las últimas 24 horas, superando resistencias clave`,
+        impact: "high",
+        category: "technical",
+        timestamp: new Date(dateNow.getTime() - 1000 * 60 * 30).toISOString()
+      });
+    } else if (btcChange < -3) {
+      insights.push({
+        id: id++,
+        title: "Bitcoin encuentra soporte después de caída",
+        description: `BTC ha caído ${Math.abs(btcChange).toFixed(2)}% buscando niveles de soporte para estabilizarse`,
+        impact: "medium",
+        category: "technical",
+        timestamp: new Date(dateNow.getTime() - 1000 * 60 * 45).toISOString()
+      });
+    } else {
+      insights.push({
+        id: id++,
+        title: "Bitcoin consolida en rango lateral",
+        description: `BTC se mantiene estable con variación de ${btcChange.toFixed(2)}% en las últimas 24 horas`,
+        impact: "low",
+        category: "market",
+        timestamp: new Date(dateNow.getTime() - 1000 * 60 * 60).toISOString()
+      });
+    }
+  }
+  
+  // Ethereum insights
+  const ethData = marketData.find(d => d.symbol === "ETHUSDT");
+  if (ethData) {
+    const ethPrice = parseFloat(ethData.price);
+    const ethChange = parseFloat(ethData.priceChangePercent);
+    
+    if (ethChange > 2) {
+      insights.push({
+        id: id++,
+        title: "Ethereum supera a Bitcoin en rendimiento diario",
+        description: `ETH ha subido ${ethChange.toFixed(2)}% superando el rendimiento general del mercado`,
+        impact: "medium",
+        category: "market",
+        timestamp: new Date(dateNow.getTime() - 1000 * 60 * 90).toISOString()
+      });
+    } else if (ethChange < -2) {
+      insights.push({
+        id: id++,
+        title: "Ethereum presenta corrección técnica",
+        description: `ETH ha retrocedido ${Math.abs(ethChange).toFixed(2)}% tras avances recientes`,
+        impact: "low",
+        category: "technical",
+        timestamp: new Date(dateNow.getTime() - 1000 * 60 * 120).toISOString()
+      });
+    }
+  }
+  
+  // Add more general market insights
+  insights.push({
+    id: id++,
+    title: "Volumen de trading en máximos semanales",
+    description: "El volumen global de operaciones en exchanges centralizados ha aumentado un 12% en la última semana",
     impact: "medium",
     category: "market",
-    timestamp: "2023-12-22T09:00:00Z"
-  },
-  {
-    title: "Solana supera a Ethereum en volumen NFT por tercer día",
-    description: "El ecosistema de Solana continúa ganando tracción en el espacio NFT con volúmenes récord",
-    impact: "medium",
-    category: "fundamental",
-    timestamp: "2023-12-21T16:20:00Z"
-  },
-  {
-    title: "Posible divergencia alcista en altcoins de alto rendimiento",
-    description: "Varias altcoins de primera línea muestran divergencias alcistas en múltiples indicadores técnicos",
+    timestamp: new Date(dateNow.getTime() - 1000 * 60 * 180).toISOString()
+  });
+  
+  insights.push({
+    id: id++,
+    title: "Altcoins muestran señales mixtas",
+    description: "Las principales altcoins divergen en rendimiento mientras los inversores buscan claridad en la dirección del mercado",
     impact: "low",
-    category: "technical",
-    timestamp: "2023-12-21T14:45:00Z"
-  }
-];
+    category: "market",
+    timestamp: new Date(dateNow.getTime() - 1000 * 60 * 240).toISOString()
+  });
+  
+  return insights;
+}
 
-// Seasonal patterns data
-const seasonalPatterns = [
-  {
-    asset: "Bitcoin",
-    pattern: "Rally de fin de año",
-    probability: 72,
-    description: "Históricamente, Bitcoin tiende a tener un rendimiento positivo en diciembre y enero",
-    averageReturn: "+15.4%",
-    timeframe: "1-2 meses"
-  },
-  {
-    asset: "Mercado Cripto",
-    pattern: "Efecto enero",
-    probability: 68,
-    description: "Los mercados de criptomonedas suelen tener un rendimiento positivo en enero después de las ventas fiscales de fin de año",
-    averageReturn: "+12.8%",
-    timeframe: "3-4 semanas"
-  },
-  {
-    asset: "Ethereum",
-    pattern: "Pre-actualización",
-    probability: 75,
-    description: "ETH tiende a subir antes de actualizaciones importantes de la red",
-    averageReturn: "+18.7%",
-    timeframe: "2-3 semanas"
-  },
-  {
-    asset: "Altcoins",
-    pattern: "Post-rally de Bitcoin",
-    probability: 65,
-    description: "Las altcoins suelen tener un rendimiento superior después de que Bitcoin complete un rally importante",
-    averageReturn: "+25.2%",
-    timeframe: "2-4 semanas"
+// Generate seasonal patterns
+function generateSeasonalPatterns(marketData: MarketData[]): SeasonalPattern[] {
+  const patterns: SeasonalPattern[] = [
+    {
+      id: 1,
+      asset: "Bitcoin",
+      pattern: "Rally de fin de año",
+      probability: 72,
+      description: "Históricamente, Bitcoin tiende a tener un rendimiento positivo en diciembre y enero",
+      averageReturn: "+15.4%",
+      timeframe: "1-2 meses"
+    },
+    {
+      id: 2,
+      asset: "Mercado Cripto",
+      pattern: "Efecto enero",
+      probability: 68,
+      description: "Los mercados de criptomonedas suelen tener un rendimiento positivo en enero después de las ventas fiscales de fin de año",
+      averageReturn: "+12.8%",
+      timeframe: "3-4 semanas"
+    },
+    {
+      id: 3,
+      asset: "Ethereum",
+      pattern: "Pre-actualización",
+      probability: 75,
+      description: "ETH tiende a subir antes de actualizaciones importantes de la red",
+      averageReturn: "+18.7%",
+      timeframe: "2-3 semanas"
+    },
+    {
+      id: 4,
+      asset: "Altcoins",
+      pattern: "Post-rally de Bitcoin",
+      probability: 65,
+      description: "Las altcoins suelen tener un rendimiento superior después de que Bitcoin complete un rally importante",
+      averageReturn: "+25.2%",
+      timeframe: "2-4 semanas"
+    }
+  ];
+  
+  // Add new pattern based on current market data if available
+  if (marketData && marketData.length > 0) {
+    const currentDate = new Date();
+    const month = currentDate.getMonth();
+    const monthNames = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    
+    patterns.push({
+      id: 5,
+      asset: "Mercado general",
+      pattern: `Estacionalidad de ${monthNames[month]}`,
+      probability: Math.floor(Math.random() * 20) + 60,
+      description: `Análisis histórico muestra que ${monthNames[month]} tiende a ser ${Math.random() > 0.5 ? 'favorable' : 'volátil'} para activos digitales`,
+      averageReturn: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 15 + 5).toFixed(1)}%`,
+      timeframe: "3-4 semanas"
+    });
   }
-];
+  
+  return patterns;
+}
 
 export default function OpportunitiesPage() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const { user } = useAuth();
+  const { pairs = [] } = useAvailablePairs();
   const { marketData = [], isLoading: isLoadingMarketData } = useBinanceData();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterRisk, setFilterRisk] = useState<string>("all");
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [visibleOpportunities, setVisibleOpportunities] = useState<number>(6);
+  
+  // Generate opportunities from market data
+  const tradingOpportunities = useMemo(() => {
+    return generateOpportunities(marketData);
+  }, [marketData]);
+  
+  // Generate insights and patterns from market data
+  const marketInsights = useMemo(() => {
+    return generateMarketInsights(marketData);
+  }, [marketData]);
+  
+  const seasonalPatterns = useMemo(() => {
+    return generateSeasonalPatterns(marketData);
+  }, [marketData]);
   
   // Filter opportunities based on search and filters
-  const filteredOpportunities = tradingOpportunities.filter(
-    (opportunity) => {
-      const matchesSearch = 
-        opportunity.pair.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        opportunity.strategy.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesType = 
-        filterType === "all" || 
-        (filterType === "buy" && opportunity.type === "buy") ||
-        (filterType === "sell" && opportunity.type === "sell");
+  const filteredOpportunities = useMemo(() => {
+    return tradingOpportunities.filter(
+      (opportunity) => {
+        const matchesSearch = 
+          opportunity.pair.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          opportunity.strategy.toLowerCase().includes(searchTerm.toLowerCase());
         
-      const matchesRisk = 
-        filterRisk === "all" || 
-        (filterRisk === "low" && opportunity.risk === "low") ||
-        (filterRisk === "medium" && opportunity.risk === "medium") ||
-        (filterRisk === "high" && opportunity.risk === "high");
-      
-      return matchesSearch && matchesType && matchesRisk;
-    }
-  );
+        const matchesType = 
+          filterType === "all" || 
+          (filterType === "buy" && opportunity.type === "buy") ||
+          (filterType === "sell" && opportunity.type === "sell");
+          
+        const matchesRisk = 
+          filterRisk === "all" || 
+          (filterRisk === "low" && opportunity.risk === "low") ||
+          (filterRisk === "medium" && opportunity.risk === "medium") ||
+          (filterRisk === "high" && opportunity.risk === "high");
+        
+        return matchesSearch && matchesType && matchesRisk;
+      }
+    );
+  }, [tradingOpportunities, searchTerm, filterType, filterRisk]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -371,6 +580,16 @@ export default function OpportunitiesPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     setTimeout(() => setIsRefreshing(false), 1000);
+  };
+  
+  // Load more opportunities
+  const loadMoreOpportunities = () => {
+    setIsLoadingMore(true);
+    // Simulate loading delay
+    setTimeout(() => {
+      setVisibleOpportunities(prev => prev + 6);
+      setIsLoadingMore(false);
+    }, 800);
   };
 
   if (!user) {
