@@ -125,7 +125,7 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
                   No hay notificaciones
                 </div>
               ) : (
-                notifications.map((notification) => (
+                notifications.map((notification: AppNotification) => (
                   <DropdownMenuItem 
                     key={notification.id} 
                     className={`flex flex-col items-start transition-colors ${notification.isRead ? 'bg-transparent' : 'bg-primary/5'}`}

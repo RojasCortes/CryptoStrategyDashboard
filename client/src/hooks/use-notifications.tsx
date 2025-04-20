@@ -61,7 +61,7 @@ export function useNotifications() {
     notifications,
     isLoading,
     refetch,
-    unreadCount: notifications.filter(n => !n.isRead).length,
+    unreadCount: notifications.filter((n: AppNotification) => !n.isRead).length,
     markAsRead: markAsReadMutation.mutate,
     markAllAsRead: markAllAsReadMutation.mutate,
   };
