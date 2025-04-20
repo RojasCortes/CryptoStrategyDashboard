@@ -19,15 +19,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Tabs,
   TabsContent,
   TabsList,
@@ -35,35 +26,22 @@ import {
 } from "@/components/ui/tabs";
 import {
   HelpCircle,
-  BookOpen,
-  Sparkle,
   Lightbulb,
   Zap,
   Settings,
   Search,
-  FileText,
-  Video,
-  GraduationCap,
   ChevronRight,
   ExternalLink,
-  Mail,
-  MessageSquare,
-  Phone,
-  PieChart,
   Wallet,
   LineChart,
-  Bookmark,
   Check,
   AlertCircle,
   Info,
-  Twitter,
   TrendingUp,
-  AreaChart,
   Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 
 export default function HelpPage() {
@@ -176,98 +154,6 @@ export default function HelpPage() {
     }
   ];
 
-  // Video tutorials
-  const videoTutorials = [
-    {
-      title: "Introducción a la plataforma",
-      duration: "5:32",
-      level: "Principiante",
-      thumbnail: "tutorial-intro.jpg",
-      url: "#"
-    },
-    {
-      title: "Configurar tu primera estrategia",
-      duration: "8:45",
-      level: "Principiante",
-      thumbnail: "tutorial-strategy.jpg",
-      url: "#"
-    },
-    {
-      title: "Análisis de indicadores técnicos",
-      duration: "12:18",
-      level: "Intermedio",
-      thumbnail: "tutorial-indicators.jpg",
-      url: "#"
-    },
-    {
-      title: "Gestión avanzada de riesgos",
-      duration: "15:07",
-      level: "Avanzado",
-      thumbnail: "tutorial-risk.jpg",
-      url: "#"
-    },
-    {
-      title: "Optimización de estrategias",
-      duration: "10:23",
-      level: "Avanzado",
-      thumbnail: "tutorial-optimization.jpg",
-      url: "#"
-    },
-    {
-      title: "Interpretación de análisis de mercado",
-      duration: "7:52",
-      level: "Intermedio",
-      thumbnail: "tutorial-market.jpg",
-      url: "#"
-    }
-  ];
-
-  // Resources
-  const resources = [
-    {
-      title: "Guía para principiantes",
-      description: "Todo lo que necesitas saber para empezar a operar con criptomonedas",
-      icon: <BookOpen className="h-5 w-5" />,
-      type: "Guía",
-      url: "#"
-    },
-    {
-      title: "Glosario de trading",
-      description: "Términos y conceptos clave del trading de criptomonedas",
-      icon: <FileText className="h-5 w-5" />,
-      type: "Glosario",
-      url: "#"
-    },
-    {
-      title: "Curso de análisis técnico",
-      description: "Aprende a interpretar gráficos y patrones de precio",
-      icon: <GraduationCap className="h-5 w-5" />,
-      type: "Curso",
-      url: "#"
-    },
-    {
-      title: "Estrategias para mercados bajistas",
-      description: "Cómo proteger tu capital y encontrar oportunidades en mercados en caída",
-      icon: <Lightbulb className="h-5 w-5" />,
-      type: "Estrategia",
-      url: "#"
-    },
-    {
-      title: "Gestión de riesgo y capital",
-      description: "Principios fundamentales para preservar tu capital a largo plazo",
-      icon: <Wallet className="h-5 w-5" />,
-      type: "Guía",
-      url: "#"
-    },
-    {
-      title: "Configuración de indicadores",
-      description: "Guía detallada para configurar los indicadores técnicos más populares",
-      icon: <Settings className="h-5 w-5" />,
-      type: "Tutorial",
-      url: "#"
-    }
-  ];
-
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -338,11 +224,9 @@ export default function HelpPage() {
             
             {/* Tabs */}
             <Tabs defaultValue="faq" className="mb-6">
-              <TabsList className="grid grid-cols-4 md:w-[500px]">
+              <TabsList className="grid grid-cols-2 md:w-[300px]">
                 <TabsTrigger value="faq">FAQ</TabsTrigger>
                 <TabsTrigger value="getting-started">Primeros pasos</TabsTrigger>
-                <TabsTrigger value="tutorials">Tutoriales</TabsTrigger>
-                <TabsTrigger value="resources">Recursos</TabsTrigger>
               </TabsList>
               
               {/* FAQs Tab */}
@@ -492,167 +376,6 @@ export default function HelpPage() {
                           Registra tus operaciones, razones y resultados para identificar patrones y mejorar con el tiempo.
                         </p>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              {/* Video Tutorials Tab */}
-              <TabsContent value="tutorials" className="pt-4">
-                <Card className="bg-white">
-                  <CardHeader>
-                    <CardTitle>Tutoriales en Video</CardTitle>
-                    <CardDescription>
-                      Aprende visualmente cómo usar cada función de la plataforma
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {videoTutorials.map((video, index) => (
-                        <div key={index} className="border rounded-lg overflow-hidden">
-                          <div className="aspect-video bg-muted relative">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Video className="h-12 w-12 text-muted-foreground" />
-                            </div>
-                            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                              {video.duration}
-                            </div>
-                          </div>
-                          <div className="p-4">
-                            <h3 className="font-medium">{video.title}</h3>
-                            <div className="flex justify-between mt-2">
-                              <Badge variant={
-                                video.level === "Principiante" ? "outline" :
-                                video.level === "Intermedio" ? "secondary" :
-                                "default"
-                              }>
-                                {video.level}
-                              </Badge>
-                              <Button variant="ghost" size="sm" className="text-primary">
-                                Ver <ChevronRight className="ml-1 h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="justify-center">
-                    <Button variant="outline">
-                      Ver todos los tutoriales <ExternalLink className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
-              
-              {/* Resources Tab */}
-              <TabsContent value="resources" className="pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <Card className="bg-white">
-                    <CardHeader>
-                      <CardTitle>Documentación y Guías</CardTitle>
-                      <CardDescription>
-                        Recursos útiles para aprender sobre trading y criptomonedas
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {resources.map((resource, index) => (
-                          <div key={index} className="flex gap-4 border-b pb-4 last:border-none last:pb-0">
-                            <div className="w-10 h-10 rounded-md bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                              {resource.icon}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-medium">{resource.title}</h3>
-                                <Badge variant="outline">{resource.type}</Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground mt-1">{resource.description}</p>
-                              <Button variant="ghost" size="sm" className="text-primary p-0 h-auto mt-1">
-                                Leer más <ChevronRight className="ml-1 h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-white">
-                    <CardHeader>
-                      <CardTitle>Contacto y Soporte</CardTitle>
-                      <CardDescription>
-                        ¿Necesitas ayuda adicional? Contáctanos
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-6">
-                        <div className="border rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <MessageSquare className="h-5 w-5 text-primary" />
-                            <h3 className="font-medium">Chat en vivo</h3>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Nuestro equipo de soporte está disponible 24/7 para ayudarte con cualquier consulta.
-                          </p>
-                          <Button>
-                            Iniciar chat
-                          </Button>
-                        </div>
-                        
-                        <div className="border rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Mail className="h-5 w-5 text-primary" />
-                            <h3 className="font-medium">Email de soporte</h3>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Envíanos un correo electrónico y te responderemos en menos de 24 horas.
-                          </p>
-                          <Button variant="outline">
-                            soporte@tradingai.com
-                          </Button>
-                        </div>
-                        
-                        <div className="border rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Twitter className="h-5 w-5 text-primary" />
-                            <h3 className="font-medium">Comunidad</h3>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Únete a nuestra comunidad de traders y comparte estrategias y consejos.
-                          </p>
-                          <div className="flex gap-2">
-                            <Button variant="outline">
-                              Discord
-                            </Button>
-                            <Button variant="outline">
-                              Twitter
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                <Card className="bg-white">
-                  <CardHeader>
-                    <CardTitle>Solicitar una Función</CardTitle>
-                    <CardDescription>
-                      ¿Tienes ideas para mejorar la plataforma? Compártelas con nosotros
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">Estamos mejorando constantemente</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Tus comentarios son invaluables para hacer que TradingAI sea la mejor plataforma de trading de criptomonedas.
-                        </p>
-                      </div>
-                      <Button>
-                        Enviar sugerencia
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
