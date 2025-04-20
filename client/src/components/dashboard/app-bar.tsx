@@ -29,6 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ThemeSelector } from "@/components/ui/theme-selector";
 
 interface AppBarProps {
   toggleSidebar: () => void;
@@ -90,6 +91,11 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
 
       {/* Right section with user menu and notifications */}
       <div className="flex items-center gap-2">
+        {/* Theme and Language selector */}
+        <div className="hidden md:block">
+          <ThemeSelector />
+        </div>
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
@@ -126,14 +132,6 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
           </DropdownMenuContent>
         </DropdownMenu>
         
-        <Button variant="ghost" size="icon" className="hidden md:flex">
-          <Globe className="h-5 w-5" />
-        </Button>
-        
-        <Button variant="ghost" size="icon" className="hidden md:flex">
-          <SunMoon className="h-5 w-5" />
-        </Button>
-        
         <Separator orientation="vertical" className="h-6 hidden md:block" />
         
         <DropdownMenu>
@@ -142,11 +140,7 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
               <Avatar className="h-8 w-8">
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium line-clamp-1">{user?.username}</p>
-                <p className="text-xs text-muted-foreground truncate max-w-[100px]">{user?.email}</p>
-              </div>
-              <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[200px]">
