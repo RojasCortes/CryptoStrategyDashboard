@@ -559,6 +559,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint para probar el envío de email
+  app.post("/api/email/test", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const { email } = req.body;
+      const targetEmail = email || req.user.email;
+      
+      // Comprobar si tenemos clave API de SendGrid
+      if (!process.env.SENDGRID_API_KEY && !sendGridService.isInitialized()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "No se ha configurado la API key de SendGrid. Por favor, contacta al administrador."
+        });
+      }
+      
+      // Enviar email de prueba
+      const success = await sendGridService.sendTestEmail(targetEmail);
+      
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: `Email de prueba enviado con éxito a ${targetEmail}` 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Error al enviar el email de prueba. Verifica la configuración del servidor de correo."
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+  
   // Delete all read notifications
   app.delete("/api/notifications/read", (req, res) => {
     if (!req.isAuthenticated()) {

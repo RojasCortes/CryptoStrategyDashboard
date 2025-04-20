@@ -83,6 +83,7 @@ export default function SettingsPage(): JSX.Element {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const { user, updateApiKeysMutation } = useAuth();
   const { toast } = useToast();
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -208,6 +209,38 @@ export default function SettingsPage(): JSX.Element {
   const onNotificationSubmit = (values: NotificationFormValues) => {
     updateNotificationsMutation.mutate(values);
   };
+  
+  // Función para enviar email de prueba
+  const sendTestEmail = async () => {
+    if (!user?.email) return;
+    
+    setSendingTestEmail(true);
+    try {
+      const res = await apiRequest("POST", "/api/email/test", { email: user.email });
+      const data = await res.json();
+      
+      if (data.success) {
+        toast({
+          title: "Email de prueba enviado",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "Error al enviar email",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error al enviar email",
+        description: "No se pudo enviar el email de prueba. Por favor, contacta al administrador.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingTestEmail(false);
+    }
+  };
 
   if (!user) {
     // Protected route should handle this, but just in case
@@ -297,12 +330,23 @@ export default function SettingsPage(): JSX.Element {
                           )}
                         />
                         
-                        <Button 
-                          type="submit" 
-                          disabled={updateProfileMutation.isPending}
-                        >
-                          {updateProfileMutation.isPending ? "Updating..." : "Update Profile"}
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <Button 
+                            type="submit" 
+                            disabled={updateProfileMutation.isPending}
+                          >
+                            {updateProfileMutation.isPending ? "Updating..." : "Update Profile"}
+                          </Button>
+                          
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={sendTestEmail}
+                            disabled={sendingTestEmail}
+                          >
+                            {sendingTestEmail ? "Enviando..." : "Enviar Email de Prueba"}
+                          </Button>
+                        </div>
                       </form>
                     </Form>
                   </CardContent>
