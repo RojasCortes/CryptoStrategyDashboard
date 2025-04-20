@@ -4,7 +4,6 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { createBinanceService } from "./binance";
 import { emailService } from "./email";
-import { sendGridService } from "./sendgrid";
 import { insertStrategySchema, insertTradeSchema } from "@shared/schema";
 import { z } from "zod";
 import { comparePasswords, hashPassword } from "./auth";

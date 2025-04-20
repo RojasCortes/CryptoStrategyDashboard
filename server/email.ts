@@ -13,6 +13,7 @@ export interface EmailConfig {
 export interface EmailService {
   sendStrategyNotification(to: string, subject: string, content: string): Promise<boolean>;
   sendTradeNotification(to: string, tradeDetails: any): Promise<boolean>;
+  sendTestEmail(to: string): Promise<boolean>;
 }
 
 export class NodemailerService implements EmailService {
@@ -95,6 +96,46 @@ export class NodemailerService implements EmailService {
       return true;
     } catch (error) {
       console.error('Failed to send trade notification email:', error);
+      return false;
+    }
+  }
+  
+  async sendTestEmail(to: string): Promise<boolean> {
+    const subject = 'Prueba de Notificación - Binance Trading Dashboard';
+    
+    const content = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+        <h2 style="color: #1976D2;">Correo de Prueba</h2>
+        <p>Este es un correo de prueba de tu Binance Trading Dashboard.</p>
+        <p>Si has recibido este correo, significa que las notificaciones por email están configuradas correctamente.</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #f9f9f9; border-radius: 5px;">
+          <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Fecha y Hora</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">${new Date().toLocaleString()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Destinatario</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">${to}</td>
+          </tr>
+        </table>
+        <p style="margin-top: 20px; color: #666;">
+          Este es un mensaje automático de tu Binance Trading Dashboard. No responder a este correo.
+        </p>
+      </div>
+    `;
+    
+    try {
+      const info = await this.transporter.sendMail({
+        from: '"Binance Trading Dashboard" <no-reply@binance-dashboard.com>',
+        to,
+        subject,
+        html: content,
+      });
+      
+      console.log('Test email sent to:', to);
+      return true;
+    } catch (error) {
+      console.error('Failed to send test email:', error);
       return false;
     }
   }
