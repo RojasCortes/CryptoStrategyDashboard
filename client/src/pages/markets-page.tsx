@@ -864,12 +864,12 @@ export default function MarketsPage() {
                             <ZAxis type="number" dataKey="z" range={[50, 400]} />
                             <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} content={
                               ({ active, payload }) => {
-                                if (active && payload && payload.length) {
+                                if (active && payload && payload.length && payload[0]?.payload?.name) {
                                   return (
                                     <div className="bg-white p-3 border rounded-lg shadow-sm">
                                       <p className="font-medium">{payload[0].payload.name}</p>
-                                      <p>Correlación con BTC: {payload[0].value.toFixed(2)}</p>
-                                      <p>Rendimiento 30d: {payload[0].payload.y.toFixed(2)}%</p>
+                                      <p>Correlación con BTC: {payload[0].value ? Number(payload[0].value).toFixed(2) : "N/A"}</p>
+                                      <p>Rendimiento 30d: {payload[0].payload?.y ? Number(payload[0].payload.y).toFixed(2) : "0.00"}%</p>
                                     </div>
                                   );
                                 }
