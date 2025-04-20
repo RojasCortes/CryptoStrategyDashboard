@@ -48,6 +48,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { CryptoIcon } from "@/components/crypto-icon";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
@@ -472,8 +473,8 @@ export default function PortfolioPage(): JSX.Element {
                       <TableRow key={asset.symbol}>
                         <TableCell className="font-medium">
                           <div className="flex items-center">
-                            <div className="mr-2 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              {asset.symbol.charAt(0)}
+                            <div className="mr-2 w-8 h-8 flex items-center justify-center">
+                              <CryptoIcon symbol={asset.symbol} size={28} />
                             </div>
                             <div>
                               <div>{asset.name}</div>
