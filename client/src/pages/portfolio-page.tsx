@@ -165,8 +165,8 @@ export default function PortfolioPage(): JSX.Element {
     await refetch();
     setTimeout(() => setIsRefreshing(false), 1000);
     toast({
-      title: "Portfolio data refreshed",
-      description: "Your portfolio data has been updated.",
+      title: "Datos de portafolio actualizados",
+      description: "La información de tu portafolio ha sido actualizada.",
     });
   };
 
@@ -227,7 +227,7 @@ export default function PortfolioPage(): JSX.Element {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>Please log in to access your portfolio.</p>
+        <p>Por favor, inicia sesión para acceder a tu portafolio.</p>
       </div>
     );
   }
@@ -245,12 +245,12 @@ export default function PortfolioPage(): JSX.Element {
             {!hasApiKeys && (
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>API Keys Not Configured</AlertTitle>
+                <AlertTitle>Claves API no configuradas</AlertTitle>
                 <AlertDescription>
-                  You haven't set up your Binance API keys yet. Go to the settings page to configure your API keys.
+                  No has configurado tus claves API de Binance. Ve a la página de configuración para configurar tus claves API.
                 </AlertDescription>
                 <Button variant="outline" className="mt-2" onClick={() => window.location.href = "/settings"}>
-                  Go to Settings
+                  Ir a Configuración
                 </Button>
               </Alert>
             )}

@@ -161,20 +161,20 @@ export function StrategyList({ onStrategySelect }: StrategyListProps) {
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Profit/Loss</p>
+                    <p className="text-xs text-muted-foreground mb-1">Beneficio/Pérdida</p>
                     <p className="font-mono font-medium text-green-600">+2.34%</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Win Rate</p>
+                    <p className="text-xs text-muted-foreground mb-1">Tasa de Éxito</p>
                     <p className="font-mono font-medium">68.5%</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Trades</p>
+                    <p className="text-xs text-muted-foreground mb-1">Operaciones</p>
                     <p className="font-mono font-medium">24</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">
-                      {strategy.isActive ? "Running Since" : "Last Run"}
+                      {strategy.isActive ? "Activa desde" : "Última ejecución"}
                     </p>
                     <p className="font-mono font-medium">
                       {formatTimestamp(strategy.createdAt.toString())}
@@ -190,7 +190,7 @@ export function StrategyList({ onStrategySelect }: StrategyListProps) {
                     onClick={() => handleSelectStrategy(strategy)}
                   >
                     <EditIcon className="h-4 w-4 mr-1" />
-                    Edit
+                    Editar
                   </Button>
                   
                   <Button
@@ -204,12 +204,12 @@ export function StrategyList({ onStrategySelect }: StrategyListProps) {
                     {strategy.isActive ? (
                       <>
                         <Pause className="h-4 w-4 mr-1" />
-                        Stop
+                        Detener
                       </>
                     ) : (
                       <>
                         <PlayIcon className="h-4 w-4 mr-1" />
-                        Start
+                        Iniciar
                       </>
                     )}
                   </Button>
@@ -220,8 +220,8 @@ export function StrategyList({ onStrategySelect }: StrategyListProps) {
         ) : (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground mb-4">No strategies found</p>
-              <Button onClick={handleNewStrategy}>Create your first strategy</Button>
+              <p className="text-muted-foreground mb-4">No se encontraron estrategias</p>
+              <Button onClick={handleNewStrategy}>Crea tu primera estrategia</Button>
             </CardContent>
           </Card>
         )}
