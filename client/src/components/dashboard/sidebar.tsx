@@ -26,6 +26,7 @@ import {
   PieChart,
   Globe,
   CalendarRange,
+  CandlestickChart,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -179,6 +180,12 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
             label="Rendimiento"
             href="/performance"
             active={location === "/performance"}
+          />
+          <SidebarItem
+            icon={<CandlestickChart className="h-5 w-5" />}
+            label="Gráficos"
+            href="/charts"
+            active={location === "/charts"}
           />
         </div>
         
