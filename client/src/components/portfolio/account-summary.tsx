@@ -28,12 +28,34 @@ export function AccountSummary() {
     const errorMsg = error instanceof Error ? error.message : String(error);
     
     if (errorMsg.includes("Invalid API-key") || errorMsg.includes("API key inválida") || errorMsg.includes("permissions for action")) {
-      return t("Las claves API proporcionadas no son válidas o no tienen los permisos necesarios para acceder a esta información.");
+      return t("Las claves API proporcionadas no son válidas o no tienen los permisos necesarios. Para resolver este problema:");
     } else if (errorMsg.includes("IP")) {
-      return t("La dirección IP de esta aplicación no está autorizada en tu cuenta de Binance.");
+      return t("La IP de esta aplicación (34.19.61.28) no está autorizada en tu cuenta de Binance. Asegúrate de seleccionar 'Restringir acceso a IPs de confianza' y añadir esta IP.");
+    } else if (errorMsg.includes("Signature") || errorMsg.includes("signature")) {
+      return t("La firma de autenticación no es válida. Verifica que la clave secreta API sea correcta.");
     }
     
-    return t("No se pudo conectar a Binance. Verifica tus claves API.");
+    return t("Error de conexión con Binance. Verifica la configuración de tus claves API.");
+  };
+  
+  // Instrucciones para solucionar el problema basado en el tipo de error
+  const getErrorInstructions = () => {
+    if (!error) return null;
+    
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    
+    if (errorMsg.includes("Invalid API-key") || errorMsg.includes("API key inválida") || errorMsg.includes("permissions for action")) {
+      return (
+        <ol className="list-decimal list-inside text-left text-sm mt-2 space-y-1">
+          <li>{t("Asegúrate de habilitar 'Enable Reading'")}</li>
+          <li>{t("Selecciona 'Restringir acceso a IPs de confianza'")}</li>
+          <li>{t("Añade la IP")} <span className="font-mono bg-muted px-1 rounded">34.19.61.28</span></li>
+          <li>{t("Si usas Binance.com, verifica que estés usando las claves correctas")}</li>
+        </ol>
+      );
+    }
+    
+    return null;
   };
 
   return (

@@ -17,10 +17,14 @@ import * as crypto from 'crypto';
 export class BinanceService {
   private apiKey: string;
   private apiSecret: string;
+  private baseUrl: string;
+  private tld: string;
   
-  constructor(apiKey: string, apiSecret: string) {
+  constructor(apiKey: string, apiSecret: string, tld: string = 'com') {
     this.apiKey = apiKey;
     this.apiSecret = apiSecret;
+    this.tld = tld;
+    this.baseUrl = `https://api.binance.${tld}`;
   }
   
   private generateSignature(queryString: string): string {
@@ -362,8 +366,8 @@ export class BinanceService {
       const queryString = `timestamp=${timestamp}`;
       const signature = this.generateSignature(queryString);
       
-      // Crear URL con los parámetros
-      const url = `https://api.binance.us/api/v3/account?${queryString}&signature=${signature}`;
+      // Crear URL con los parámetros usando el dominio correcto
+      const url = `${this.baseUrl}/api/v3/account?${queryString}&signature=${signature}`;
       
       // Opciones de la solicitud
       const options = {
@@ -374,7 +378,7 @@ export class BinanceService {
         },
       };
       
-      console.log("Solicitando información de la cuenta desde Binance US");
+      console.log(`Solicitando información de la cuenta desde Binance ${this.tld.toUpperCase()}`);
       const response = await fetch(url, options);
       
       if (!response.ok) {
@@ -468,13 +472,13 @@ export class BinanceService {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
-        'Referer': 'https://www.binance.com/'
+        'Referer': `https://www.binance.${this.tld}/`
       };
       
-      // First try the standard Binance API endpoint
+      // First try using our configured baseUrl
       try {
-        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-        console.log(`Sending request to ${url}`);
+        const url = `${this.baseUrl}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+        console.log(`Enviando solicitud a ${url}`);
         
         const response = await fetch(url, { headers });
         
@@ -560,6 +564,6 @@ export class BinanceService {
   }
 }
 
-export function createBinanceService(apiKey: string, apiSecret: string): BinanceService {
-  return new BinanceService(apiKey, apiSecret);
+export function createBinanceService(apiKey: string, apiSecret: string, tld: string = 'us'): BinanceService {
+  return new BinanceService(apiKey, apiSecret, tld);
 }

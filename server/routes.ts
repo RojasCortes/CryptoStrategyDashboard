@@ -125,10 +125,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Obteniendo información de cuenta para el usuario");
-      const binanceService = createBinanceService(user.apiKey, user.apiSecret);
       
-      const accountInfo = await binanceService.getAccountInfo();
-      res.json(accountInfo);
+      // Lista de TLDs a probar, empezando por 'us' (Binance.us)
+      const tldsToTry = ['us', 'com'];
+      let accountInfo = null;
+      let lastError = null;
+      
+      // Intentar con diferentes TLDs hasta que uno funcione
+      for (const tld of tldsToTry) {
+        try {
+          console.log(`Intentando con Binance.${tld}`);
+          const binanceService = createBinanceService(user.apiKey, user.apiSecret, tld);
+          accountInfo = await binanceService.getAccountInfo();
+          
+          if (accountInfo) {
+            console.log(`Conexión exitosa usando Binance.${tld}`);
+            break; // Si tenemos éxito, terminamos el bucle
+          }
+        } catch (e) {
+          lastError = e;
+          console.error(`Error con Binance.${tld}:`, e);
+        }
+      }
+      
+      if (accountInfo) {
+        res.json(accountInfo);
+      } else {
+        throw lastError || new Error("No se pudo conectar a ningún servidor de Binance");
+      }
     } catch (error) {
       console.error("Error obteniendo información de la cuenta:", error);
       
@@ -137,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (error.message.includes("Invalid API-key") || error.message.includes("API-key format invalid")) {
           return res.status(401).json({ 
             error: "API key inválida", 
-            message: "La clave API proporcionada no es válida o ha expirado. Por favor actualiza tus claves API en la sección de Ajustes."
+            message: "La clave API proporcionada no es válida o ha expirado. Por favor actualiza tus claves API en la sección de Ajustes. Asegúrate de habilitar 'Restringir acceso a IPs de confianza' y añadir la IP 34.19.61.28"
           });
         }
         
@@ -151,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (error.message.includes("permission") || error.message.includes("Permission")) {
           return res.status(403).json({ 
             error: "Permisos insuficientes", 
-            message: "La clave API no tiene los permisos necesarios. Asegúrate de habilitar permisos de lectura al crear tus claves API."
+            message: "La clave API no tiene los permisos necesarios. Asegúrate de habilitar permisos de lectura ('Enable Reading') al crear tus claves API."
           });
         }
       }
