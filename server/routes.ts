@@ -130,6 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tldsToTry = ['us', 'com'];
       let accountInfo = null;
       let lastError = null;
+      let usError = null;
       
       // Intentar con diferentes TLDs hasta que uno funcione
       for (const tld of tldsToTry) {
@@ -144,14 +145,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (e) {
           lastError = e;
+          
+          // Guardar el error específico de Binance.us para usarlo después
+          if (tld === "us") {
+            usError = e;
+          }
+          
           console.error(`Error con Binance.${tld}:`, e);
         }
       }
       
       if (accountInfo) {
         res.json(accountInfo);
+      } else if (lastError) {
+        // Si el error es de restricción geográfica desde Binance.com
+        if (lastError instanceof Error && lastError.message && lastError.message.includes("Service unavailable from a restricted location")) {
+          // Si también tenemos un error específico de Binance.us, lo mostramos con prioridad
+          if (usError && usError instanceof Error) {
+            if (usError.message.includes("Invalid API-key") || usError.message.includes("permissions for action")) {
+              return res.status(401).json({ 
+                error: "API key inválida o IP no autorizada", 
+                message: "Tu clave API de Binance.us no tiene permisos suficientes o la IP 34.19.61.28 no está autorizada. Binance.com no está disponible desde los servidores de Replit por restricciones geográficas."
+              });
+            }
+          }
+          
+          // Error general de restricción geográfica si no hay un error específico de API key
+          return res.status(451).json({ 
+            error: "Restricción geográfica", 
+            message: "Binance.com no está disponible desde los servidores de Replit por restricciones geográficas. Por favor usa las claves API de Binance.us."
+          });
+        } else {
+          throw lastError;
+        }
       } else {
-        throw lastError || new Error("No se pudo conectar a ningún servidor de Binance");
+        throw new Error("No se pudo conectar a ningún servidor de Binance");
       }
     } catch (error) {
       console.error("Error obteniendo información de la cuenta:", error);

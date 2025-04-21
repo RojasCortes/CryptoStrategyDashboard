@@ -27,7 +27,9 @@ export function AccountSummary() {
     
     const errorMsg = error instanceof Error ? error.message : String(error);
     
-    if (errorMsg.includes("Invalid API-key") || errorMsg.includes("API key inválida") || errorMsg.includes("permissions for action")) {
+    if (errorMsg.includes("Service unavailable from a restricted location") || errorMsg.includes("restricted location")) {
+      return t("Binance.com tiene restricciones geográficas que impiden conectar desde los servidores de Replit. Por favor usa solo claves API de Binance.us.");
+    } else if (errorMsg.includes("Invalid API-key") || errorMsg.includes("API key inválida") || errorMsg.includes("permissions for action")) {
       return t("Las claves API proporcionadas no son válidas o no tienen los permisos necesarios. Para resolver este problema:");
     } else if (errorMsg.includes("IP")) {
       return t("La IP de esta aplicación (34.19.61.28) no está autorizada en tu cuenta de Binance. Asegúrate de seleccionar 'Restringir acceso a IPs de confianza' y añadir esta IP.");
@@ -44,13 +46,21 @@ export function AccountSummary() {
     
     const errorMsg = error instanceof Error ? error.message : String(error);
     
-    if (errorMsg.includes("Invalid API-key") || errorMsg.includes("API key inválida") || errorMsg.includes("permissions for action")) {
+    if (errorMsg.includes("Service unavailable from a restricted location") || errorMsg.includes("restricted location")) {
+      return (
+        <ol className="list-decimal list-inside text-left text-sm mt-2 space-y-1">
+          <li>{t("Usa claves API de Binance.us en lugar de Binance.com")}</li>
+          <li>{t("Los servidores de Replit no pueden conectar con Binance.com debido a restricciones geográficas")}</li>
+          <li>{t("Asegúrate de crear las claves en")} <a href="https://www.binance.us" target="_blank" rel="noopener noreferrer" className="underline">Binance.us</a></li>
+        </ol>
+      );
+    } else if (errorMsg.includes("Invalid API-key") || errorMsg.includes("API key inválida") || errorMsg.includes("permissions for action")) {
       return (
         <ol className="list-decimal list-inside text-left text-sm mt-2 space-y-1">
           <li>{t("Asegúrate de habilitar 'Enable Reading'")}</li>
           <li>{t("Selecciona 'Restringir acceso a IPs de confianza'")}</li>
           <li>{t("Añade la IP")} <span className="font-mono bg-muted px-1 rounded">34.19.61.28</span></li>
-          <li>{t("Si usas Binance.com, verifica que estés usando las claves correctas")}</li>
+          <li>{t("Usa claves API de Binance.us, no de Binance.com")}</li>
         </ol>
       );
     }
