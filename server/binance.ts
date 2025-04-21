@@ -22,11 +22,6 @@ export class BinanceService {
   }
 
   async testConnection(): Promise<boolean> {
-    // Para desarrollo, devolvemos true directamente
-    // En producción, utilizaríamos el código comentado abajo
-    return true;
-    
-    /*
     try {
       const url = "https://api.binance.com/api/v3/ping";
       const response = await fetch(url);
@@ -35,34 +30,10 @@ export class BinanceService {
       console.error("Error en prueba de conexión a Binance:", error);
       return false;
     }
-    */
   }
 
   async getMarketData(symbols: string[] = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]): Promise<MarketData[]> {
     try {
-      // Para evitar muchos errores en consola durante el desarrollo, usaremos datos mock directamente
-      // En un entorno de producción, esto se conectaría realmente a la API de Binance
-      return symbols.map((symbol) => {
-        // Generar un precio base consistente para cada símbolo
-        const symbolHash = symbol.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-        const basePrice = (symbolHash % 50000) + 1000;
-        
-        // Pequeña variación para que se vea distinto en cada refresh
-        const priceVariation = Math.sin(Date.now() / 10000) * 1000;
-        const price = basePrice + priceVariation;
-        
-        return {
-          symbol,
-          price: price.toFixed(2),
-          priceChangePercent: (Math.sin(Date.now() / 20000) * 8).toFixed(2),
-          volume: ((Math.random() * 10 + 1) * 1000000).toFixed(2),
-          high: (price * 1.05).toFixed(2),
-          low: (price * 0.95).toFixed(2),
-        };
-      });
-      
-      // Este código se utilizaría en producción con API keys reales
-      /*
       const url = "https://api.binance.com/api/v3/ticker/24hr";
       const response = await fetch(url);
       if (!response.ok) {
@@ -84,9 +55,8 @@ export class BinanceService {
         high: item.highPrice,
         low: item.lowPrice,
       }));
-      */
     } catch (error) {
-      console.error("Error generando datos de mercado:", error);
+      console.error("Error obteniendo datos de mercado:", error);
       
       // Datos de respaldo en caso de error
       return symbols.map((symbol) => ({
@@ -101,26 +71,6 @@ export class BinanceService {
   }
 
   async getAvailablePairs(): Promise<CryptoPair[]> {
-    // Para desarrollo, usar directamente mock data para evitar errores constantes en consola
-    return [
-      ...AVAILABLE_PAIRS,
-      { symbol: "MATICUSDT", baseAsset: "MATIC", quoteAsset: "USDT" },
-      { symbol: "AVAXUSDT", baseAsset: "AVAX", quoteAsset: "USDT" },
-      { symbol: "UNIUSDT", baseAsset: "UNI", quoteAsset: "USDT" },
-      { symbol: "LINKUSDT", baseAsset: "LINK", quoteAsset: "USDT" },
-      { symbol: "LTCUSDT", baseAsset: "LTC", quoteAsset: "USDT" },
-      { symbol: "ATOMUSDT", baseAsset: "ATOM", quoteAsset: "USDT" },
-      { symbol: "TRXUSDT", baseAsset: "TRX", quoteAsset: "USDT" },
-      { symbol: "ETCUSDT", baseAsset: "ETC", quoteAsset: "USDT" },
-      { symbol: "ALGOUSDT", baseAsset: "ALGO", quoteAsset: "USDT" },
-      { symbol: "NEARUSDT", baseAsset: "NEAR", quoteAsset: "USDT" },
-      { symbol: "FILUSDT", baseAsset: "FIL", quoteAsset: "USDT" },
-      { symbol: "FTMUSDT", baseAsset: "FTM", quoteAsset: "USDT" },
-      { symbol: "RUNEUSDT", baseAsset: "RUNE", quoteAsset: "USDT" },
-    ];
-    
-    // Este código se utilizaría en producción con API keys reales
-    /*
     try {
       const url = "https://api.binance.com/api/v3/exchangeInfo";
       const response = await fetch(url);
@@ -139,11 +89,10 @@ export class BinanceService {
           quoteAsset: s.quoteAsset,
         }));
     } catch (error) {
-      console.error("Error fetching available pairs:", error);
-      // Return mock data for development
+      console.error("Error obteniendo pares disponibles:", error);
+      // Return mock data for development in case of error
       return AVAILABLE_PAIRS;
     }
-    */
   }
 
   // This would normally trigger a trade on Binance
@@ -168,68 +117,25 @@ export class BinanceService {
   
   async getHistoricalData(symbol: string, interval: string = '1d', limit: number = 90): Promise<CandleData[]> {
     try {
-      // Para desarrollo, generamos datos simulados
-      const candleData: CandleData[] = [];
-      const currentDate = new Date();
+      // Validate symbol
+      symbol = symbol.toUpperCase();
       
-      // Determinar factor de precio basado en símbolo
-      let basePrice = 0;
-      if (symbol.includes('BTC')) {
-        basePrice = 45000;
-      } else if (symbol.includes('ETH')) {
-        basePrice = 3000;
-      } else if (symbol.includes('BNB')) {
-        basePrice = 500;
-      } else if (symbol.includes('SOL')) {
-        basePrice = 150;
-      } else {
-        basePrice = 50;
+      // Set default symbol if none provided
+      if (!symbol) {
+        symbol = 'BTCUSDT';
       }
       
-      let price = basePrice;
-      let time = new Date(currentDate);
-      
-      // Ajustar intervalo
-      let intervalHours = 24; // Por defecto 1 día
-      if (interval === '1h') intervalHours = 1;
-      if (interval === '4h') intervalHours = 4;
-      if (interval === '1w') intervalHours = 168; // 7 días * 24 horas
-      
-      time.setHours(time.getHours() - (limit * intervalHours));
-      
-      for (let i = 0; i < limit; i++) {
-        // Simular movimiento de precio con tendencia
-        const trend = Math.sin(i / 10) * 0.03; // tendencia sinusoidal
-        const volatility = 0.02; // 2% de volatilidad
-        const change = trend + (Math.random() - 0.5) * volatility;
-        
-        const open = price;
-        const close = open * (1 + change);
-        const high = Math.max(open, close) * (1 + Math.random() * 0.01);
-        const low = Math.min(open, close) * (1 - Math.random() * 0.01);
-        const volume = Math.floor(Math.random() * 10000 + 1000) * (Math.random() > 0.8 ? 3 : 1);
-        
-        // Timestamp en formato Unix (segundos)
-        const timestamp = Math.floor(time.getTime() / 1000);
-        
-        candleData.push({
-          time: timestamp,
-          open: open,
-          high: high,
-          low: low,
-          close: close,
-          volume: volume
-        });
-        
-        // Actualizar para la siguiente vela
-        price = close;
-        time = new Date(time.getTime() + (intervalHours * 60 * 60 * 1000));
+      // Validate interval
+      const validIntervals = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M'];
+      if (!validIntervals.includes(interval)) {
+        interval = '1d';
       }
       
-      return candleData;
+      // Validate limit
+      if (limit > 1000) limit = 1000;
+      if (limit < 1) limit = 90;
       
-      /* 
-      // En producción, utilizaríamos la API real de Binance
+      // Use real Binance API
       const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
       const response = await fetch(url);
       
@@ -248,11 +154,35 @@ export class BinanceService {
         close: parseFloat(item[4]),
         volume: parseFloat(item[5])
       }));
-      */
     } catch (error) {
       console.error(`Error obteniendo datos históricos para ${symbol}:`, error);
-      // En caso de error, devolvemos un conjunto de datos vacío
-      return [];
+      
+      // En caso de error, generamos datos de ejemplo básicos
+      const mockData: CandleData[] = [];
+      const basePrice = symbol.includes('BTC') ? 65000 : 
+                       symbol.includes('ETH') ? 3500 : 
+                       symbol.includes('BNB') ? 600 : 
+                       symbol.includes('SOL') ? 180 : 50;
+                       
+      const now = Math.floor(Date.now() / 1000);
+      const intervalSeconds = interval === '1h' ? 3600 : 
+                             interval === '4h' ? 14400 : 
+                             interval === '1w' ? 604800 : 86400;
+                             
+      for (let i = 0; i < limit; i++) {
+        const time = now - ((limit - i) * intervalSeconds);
+        const multiplier = 1 + (Math.sin(i / 10) * 0.05);
+        mockData.push({
+          time,
+          open: basePrice * multiplier,
+          high: basePrice * multiplier * 1.02,
+          low: basePrice * multiplier * 0.98,
+          close: basePrice * multiplier * (1 + (Math.random() * 0.02 - 0.01)),
+          volume: basePrice * 10 * (Math.random() * 5 + 1)
+        });
+      }
+      
+      return mockData;
     }
   }
 }
