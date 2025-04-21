@@ -134,45 +134,80 @@ export default function ChartPage() {
     }
     
     // Simple candlestick chart rendering
+    // Get min and max prices for scaling
+    const prices = candleData.map(c => c.high).concat(candleData.map(c => c.low));
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
+    const priceRange = maxPrice - minPrice;
+    
+    // Function to scale a price value to the chart height
+    const scalePrice = (price: number) => {
+      return 90 - ((price - minPrice) / priceRange) * 80;
+    };
+    
     return (
-      <div className="relative h-[400px] w-full bg-card rounded-lg overflow-hidden p-4">
-        <div className="absolute top-2 left-2 text-sm font-medium">
+      <div className="relative h-[400px] w-full bg-card rounded-lg overflow-hidden p-8">
+        <div className="absolute top-2 left-4 text-sm font-medium">
           {formatPairName(selectedPair)} - {selectedInterval === "1h" ? "1 Hora" : selectedInterval === "4h" ? "4 Horas" : selectedInterval === "1d" ? "1 Día" : "1 Semana"}
         </div>
         
-        <div className="absolute top-2 right-2 text-sm font-medium">
+        <div className="absolute top-2 right-4 text-sm font-medium">
           Último: {candleData[candleData.length - 1].close.toFixed(2)}
         </div>
         
-        <div className="flex h-full items-end">
-          {candleData.slice(-30).map((candle, idx) => {
-            const isUp = candle.close >= candle.open;
-            const height = `${Math.max(1, (candle.close - candle.open) / candle.open * 100 * 5)}%`;
-            const top = `${Math.max(1, (candle.high - Math.max(candle.open, candle.close)) / candle.open * 100 * 5)}%`;
-            const bottom = `${Math.max(1, (Math.min(candle.open, candle.close) - candle.low) / candle.open * 100 * 5)}%`;
-            
+        <div className="h-full w-full">
+          {/* Draw price grid lines */}
+          {[0, 25, 50, 75, 100].map((percent) => {
+            const price = minPrice + (priceRange * (percent / 100));
             return (
-              <div key={idx} className="flex-1 flex flex-col items-center justify-end relative mx-0.5">
-                {/* Wick top */}
-                <div 
-                  className={`w-[1px] absolute -top-[${top}] h-[${top}] ${isUp ? "bg-green-500" : "bg-red-500"}`} 
-                  style={{ height: top }}
-                />
-                
-                {/* Body */}
-                <div 
-                  className={`w-full ${isUp ? "bg-green-500" : "bg-red-500"}`} 
-                  style={{ height }}
-                />
-                
-                {/* Wick bottom */}
-                <div 
-                  className={`w-[1px] absolute -bottom-[${bottom}] h-[${bottom}] ${isUp ? "bg-green-500" : "bg-red-500"}`} 
-                  style={{ height: bottom }}
-                />
+              <div 
+                key={percent} 
+                className="absolute w-full left-0 border-t border-gray-100 text-xs text-gray-400"
+                style={{ top: `${percent}%` }}
+              >
+                {price.toFixed(2)}
               </div>
             );
           })}
+          
+          {/* Draw candles */}
+          <div className="h-full flex items-end justify-between">
+            {candleData.slice(-30).map((candle, idx) => {
+              const isUp = candle.close >= candle.open;
+              
+              // Scale the values to fit in the chart
+              const openY = scalePrice(candle.open);
+              const closeY = scalePrice(candle.close);
+              const highY = scalePrice(candle.high);
+              const lowY = scalePrice(candle.low);
+              
+              // Calculate body position and size
+              const bodyTop = Math.min(openY, closeY);
+              const bodyHeight = Math.max(1, Math.abs(closeY - openY));
+              
+              return (
+                <div key={idx} className="relative h-full flex-1 mx-[1px]">
+                  {/* Candle wick */}
+                  <div 
+                    className={`absolute w-[1px] mx-auto left-0 right-0 ${isUp ? "bg-green-500" : "bg-red-500"}`}
+                    style={{ 
+                      top: `${highY}%`,
+                      height: `${lowY - highY}%`
+                    }}
+                  />
+                  
+                  {/* Candle body */}
+                  <div 
+                    className={`absolute w-3/4 left-[12.5%] ${isUp ? "bg-green-500" : "bg-red-500"}`}
+                    style={{ 
+                      top: `${bodyTop}%`,
+                      height: `${bodyHeight}%`,
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
