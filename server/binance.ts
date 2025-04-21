@@ -308,22 +308,132 @@ export class BinanceService {
     }
   }
 
-  // This would normally trigger a trade on Binance
-  // It's simplified for demo purposes
+  // Ejecuta una orden de compra/venta usando la API de Binance
   async executeTrade(symbol: string, side: 'BUY' | 'SELL', quantity: number): Promise<any> {
     try {
-      // In a real implementation, this would connect to Binance API
-      // For demo, we'll just simulate a successful response
-      return {
+      // URL principal de la API
+      const url = "https://api.binance.us/api/v3/order/test"; // Usando /test para pruebas sin ejecutar realmente
+      
+      // Parámetros de la orden
+      const timestamp = Date.now();
+      const queryParams = new URLSearchParams({
         symbol,
         side,
-        quantity,
-        price: side === 'BUY' ? (Math.random() * 100).toFixed(2) : (Math.random() * 100).toFixed(2),
-        status: 'FILLED',
-        timestamp: new Date().toISOString(),
+        type: 'MARKET',
+        quantity: quantity.toString(),
+        timestamp: timestamp.toString(),
+      });
+      
+      // Crear firma
+      const signature = this.generateSignature(queryParams.toString());
+      queryParams.append('signature', signature);
+      
+      // Opciones de la petición
+      const requestOptions = {
+        method: 'POST',
+        headers: {
+          'X-MBX-APIKEY': this.apiKey,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       };
+      
+      // Ejecutar la solicitud
+      const response = await fetch(`${url}?${queryParams.toString()}`, requestOptions);
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Error en la API de Binance: ${response.status} ${errorData}`);
+      }
+      
+      const data = await response.json();
+      return data;
     } catch (error) {
-      console.error(`Error executing trade for ${symbol}:`, error);
+      console.error(`Error ejecutando operación para ${symbol}:`, error);
+      throw error;
+    }
+  }
+  
+  // Obtener información de la cuenta y balance de criptomonedas
+  async getAccountInfo(): Promise<any> {
+    try {
+      // Construir la solicitud firmada
+      const timestamp = Date.now();
+      const queryString = `timestamp=${timestamp}`;
+      const signature = this.generateSignature(queryString);
+      
+      // Crear URL con los parámetros
+      const url = `https://api.binance.us/api/v3/account?${queryString}&signature=${signature}`;
+      
+      // Opciones de la solicitud
+      const options = {
+        method: 'GET',
+        headers: {
+          'X-MBX-APIKEY': this.apiKey,
+          'Content-Type': 'application/json',
+        },
+      };
+      
+      console.log("Solicitando información de la cuenta desde Binance US");
+      const response = await fetch(url, options);
+      
+      if (!response.ok) {
+        throw new Error(`Error API: ${response.status} ${await response.text()}`);
+      }
+      
+      const accountData = await response.json();
+      
+      // Filtrar solo los balances con valor (mayores a 0)
+      if (accountData.balances) {
+        accountData.balances = accountData.balances.filter((balance: any) => 
+          parseFloat(balance.free) > 0 || parseFloat(balance.locked) > 0
+        );
+        
+        // Obtener precios actuales para calcular valores en USD
+        const allPricesUrl = "https://api.binance.us/api/v3/ticker/price";
+        const pricesResponse = await fetch(allPricesUrl);
+        
+        if (pricesResponse.ok) {
+          const allPrices = await pricesResponse.json();
+          const priceMap = new Map();
+          
+          // Crear un mapa de precios para búsqueda rápida
+          allPrices.forEach((item: any) => {
+            priceMap.set(item.symbol, parseFloat(item.price));
+          });
+          
+          // Añadir valor estimado en USD a cada balance
+          accountData.balances = accountData.balances.map((balance: any) => {
+            const asset = balance.asset;
+            const total = parseFloat(balance.free) + parseFloat(balance.locked);
+            
+            // Buscar precio en USD (si existe ASSET/USDT)
+            let usdValue = 0;
+            const symbolUsdt = `${asset}USDT`;
+            
+            if (priceMap.has(symbolUsdt)) {
+              usdValue = total * priceMap.get(symbolUsdt);
+            } else if (asset === 'USDT' || asset === 'BUSD' || asset === 'USDC') {
+              // Stablecoins
+              usdValue = total;
+            }
+            
+            return {
+              ...balance,
+              total,
+              usdValue: usdValue.toFixed(2)
+            };
+          });
+          
+          // Ordenar por valor USD descendente
+          accountData.balances.sort((a: any, b: any) => 
+            parseFloat(b.usdValue) - parseFloat(a.usdValue)
+          );
+        }
+      }
+      
+      return accountData;
+    } catch (error) {
+      console.error("Error obteniendo información de la cuenta:", error);
       throw error;
     }
   }
@@ -439,60 +549,12 @@ export class BinanceService {
         console.error("Error accessing alternate endpoint:", error);
       }
       
-      // If all attempts fail, generate synthetic data as a last resort
-      console.log("All API attempts failed, generating synthetic historical data");
+      // Si todos los intentos fallan, notificar al usuario
+      console.log("All API attempts failed, unable to fetch historical data");
+      throw new Error(`No se pudieron obtener datos históricos para ${symbol} con intervalo ${interval}. Por favor intente de nuevo más tarde.`);
     } catch (error) {
       console.error(`Error obteniendo datos históricos para ${symbol}:`, error);
-      
-      // En caso de error de API, generamos datos sintéticos realistas
-      const mockData: CandleData[] = [];
-      
-      // Base price close to current real values (as of April 2023)
-      const basePrice = symbol.includes('BTC') ? 30000 : 
-                       symbol.includes('ETH') ? 2000 : 
-                       symbol.includes('BNB') ? 350 : 
-                       symbol.includes('SOL') ? 110 : 
-                       symbol.includes('ADA') ? 0.40 :
-                       symbol.includes('XRP') ? 0.50 :
-                       symbol.includes('DOGE') ? 0.08 : 1.0;
-                       
-      // Setup timeframe
-      const now = Math.floor(Date.now() / 1000);
-      const intervalSeconds = interval === '1h' ? 3600 : 
-                             interval === '4h' ? 14400 : 
-                             interval === '1w' ? 604800 : 86400;
-      
-      // Create a realistic price trend with some volatility
-      let currentPrice = basePrice;
-      const trend = Math.random() > 0.5 ? 1 : -1; // Uptrend or downtrend
-      
-      for (let i = 0; i < limit; i++) {
-        const time = now - ((limit - i) * intervalSeconds);
-        
-        // Add some randomness but follow the trend
-        const dailyChange = (Math.random() * 0.03 + 0.005) * trend; // 0.5% to 3.5% daily change
-        const volatility = Math.random() * 0.02; // 0% to 2% volatility
-        
-        // Adjust price with some randomness and volatility
-        currentPrice = currentPrice * (1 + dailyChange + (Math.random() * volatility - volatility/2));
-        
-        // Generate candle with realistic open, high, low, close
-        const open = currentPrice * (1 + (Math.random() * 0.01 - 0.005));
-        const close = currentPrice;
-        const high = Math.max(open, close) * (1 + Math.random() * 0.02);
-        const low = Math.min(open, close) * (1 - Math.random() * 0.02);
-        
-        mockData.push({
-          time,
-          open,
-          high,
-          low,
-          close,
-          volume: currentPrice * (Math.random() * 1000 + 100)
-        });
-      }
-      
-      return mockData;
+      throw error;
     }
   }
 }

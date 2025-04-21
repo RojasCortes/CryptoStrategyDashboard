@@ -92,8 +92,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const user = req.user;
-      const apiKey = user.apiKey || "Z82teGp76y5pIPVVaex0OHHGErgIzbOx34TyPNak45v73ZFvH7JJpE4785zIQpo7";
-      const apiSecret = user.apiSecret || "fkcdEWc4sBT7DPgDtRszrY3s2TlouaG3e5cHT4P6ooXDXKhjTVcqzERnusbah7cH";
+      const apiKey = user.apiKey || "";
+      const apiSecret = user.apiSecret || "";
       
       console.log("Fetching available trading pairs");
       const binanceService = createBinanceService(apiKey, apiSecret);
@@ -104,6 +104,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching trading pairs:", error);
       next(error);
+    }
+  });
+  
+  // Nuevo endpoint: obtener información de la cuenta y balances
+  app.get("/api/account/balance", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const user = req.user;
+      
+      // Verificar que existen claves API
+      if (!user.apiKey || !user.apiSecret) {
+        return res.status(400).json({ 
+          error: "No API keys configured",
+          message: "Para acceder a la información de tu cuenta, primero debes configurar las claves API en la sección de Ajustes" 
+        });
+      }
+      
+      console.log("Obteniendo información de cuenta para el usuario");
+      const binanceService = createBinanceService(user.apiKey, user.apiSecret);
+      
+      const accountInfo = await binanceService.getAccountInfo();
+      res.json(accountInfo);
+    } catch (error) {
+      console.error("Error obteniendo información de la cuenta:", error);
+      
+      // Manejo de errores específicos de la API
+      if (error instanceof Error) {
+        if (error.message.includes("Invalid API-key") || error.message.includes("API-key format invalid")) {
+          return res.status(401).json({ 
+            error: "API key inválida", 
+            message: "La clave API proporcionada no es válida o ha expirado. Por favor actualiza tus claves API en la sección de Ajustes."
+          });
+        }
+        
+        if (error.message.includes("Signature") || error.message.includes("signature")) {
+          return res.status(401).json({ 
+            error: "Error de firma", 
+            message: "Error de autenticación con Binance. Por favor verifica que la clave API y la clave secreta sean correctas."
+          });
+        }
+        
+        if (error.message.includes("permission") || error.message.includes("Permission")) {
+          return res.status(403).json({ 
+            error: "Permisos insuficientes", 
+            message: "La clave API no tiene los permisos necesarios. Asegúrate de habilitar permisos de lectura al crear tus claves API."
+          });
+        }
+      }
+      
+      res.status(500).json({ 
+        error: "Error del servidor", 
+        message: "Ocurrió un error al obtener la información de tu cuenta. Por favor intenta de nuevo más tarde."
+      });
     }
   });
   
@@ -120,10 +176,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Symbol parameter is required" });
       }
       
-      // Use the user's API keys from the profile page, or the ones you provided
+      // Use the user's API keys from the profile page
       const user = req.user;
-      const apiKey = user.apiKey || "Z82teGp76y5pIPVVaex0OHHGErgIzbOx34TyPNak45v73ZFvH7JJpE4785zIQpo7";
-      const apiSecret = user.apiSecret || "fkcdEWc4sBT7DPgDtRszrY3s2TlouaG3e5cHT4P6ooXDXKhjTVcqzERnusbah7cH";
+      const apiKey = user.apiKey || "";
+      const apiSecret = user.apiSecret || "";
       
       console.log(`Fetching historical data for ${symbol} with interval ${interval || '1d'}`);
       
