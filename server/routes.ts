@@ -92,14 +92,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const user = req.user;
-      const apiKey = user.apiKey || process.env.BINANCE_API_KEY || "";
-      const apiSecret = user.apiSecret || process.env.BINANCE_API_SECRET || "";
+      const apiKey = user.apiKey || "Z82teGp76y5pIPVVaex0OHHGErgIzbOx34TyPNak45v73ZFvH7JJpE4785zIQpo7";
+      const apiSecret = user.apiSecret || "fkcdEWc4sBT7DPgDtRszrY3s2TlouaG3e5cHT4P6ooXDXKhjTVcqzERnusbah7cH";
       
+      console.log("Fetching available trading pairs");
       const binanceService = createBinanceService(apiKey, apiSecret);
       const pairs = await binanceService.getAvailablePairs();
       
+      console.log(`Retrieved ${pairs.length} trading pairs`);
       res.json(pairs);
     } catch (error) {
+      console.error("Error fetching trading pairs:", error);
       next(error);
     }
   });
@@ -117,9 +120,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Symbol parameter is required" });
       }
       
+      // Use the user's API keys from the profile page, or the ones you provided
       const user = req.user;
-      const apiKey = user.apiKey || process.env.BINANCE_API_KEY || "";
-      const apiSecret = user.apiSecret || process.env.BINANCE_API_SECRET || "";
+      const apiKey = user.apiKey || "Z82teGp76y5pIPVVaex0OHHGErgIzbOx34TyPNak45v73ZFvH7JJpE4785zIQpo7";
+      const apiSecret = user.apiSecret || "fkcdEWc4sBT7DPgDtRszrY3s2TlouaG3e5cHT4P6ooXDXKhjTVcqzERnusbah7cH";
+      
+      console.log(`Fetching historical data for ${symbol} with interval ${interval || '1d'}`);
       
       const binanceService = createBinanceService(apiKey, apiSecret);
       const candles = await binanceService.getHistoricalData(
@@ -128,8 +134,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         limit ? parseInt(limit as string) : 90
       );
       
+      console.log(`Successfully retrieved ${candles.length} candles for ${symbol}`);
       res.json(candles);
     } catch (error) {
+      console.error("Error fetching candle data:", error);
       next(error);
     }
   });
