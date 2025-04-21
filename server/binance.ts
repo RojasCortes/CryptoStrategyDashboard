@@ -12,6 +12,8 @@ const AVAILABLE_PAIRS: CryptoPair[] = [
   { symbol: "DOTUSDT", baseAsset: "DOT", quoteAsset: "USDT" },
 ];
 
+import * as crypto from 'crypto';
+
 export class BinanceService {
   private apiKey: string;
   private apiSecret: string;
@@ -22,7 +24,6 @@ export class BinanceService {
   }
   
   private generateSignature(queryString: string): string {
-    const crypto = require('crypto');
     return crypto
       .createHmac('sha256', this.apiSecret)
       .update(queryString)

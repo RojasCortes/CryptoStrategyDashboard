@@ -62,10 +62,12 @@ export function AccountSummary() {
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {accountInfo.canTrade ? (
+                  {accountInfo.canTrade === true ? (
                     <span className="text-green-500">{t("Trading Habilitado")}</span>
-                  ) : (
+                  ) : accountInfo.canTrade === false ? (
                     <span className="text-destructive">{t("Trading Deshabilitado")}</span>
+                  ) : (
+                    <span className="text-muted">{t("Estado desconocido")}</span>
                   )}
                 </div>
               </div>

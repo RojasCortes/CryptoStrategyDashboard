@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 
 export interface AccountBalance {
@@ -25,28 +25,29 @@ export interface AccountInfo {
 }
 
 export function useAccountBalance() {
-  const {
-    data: accountInfo,
-    isLoading,
-    error,
-    refetch
-  } = useQuery<AccountInfo>({
+  const query: UseQueryResult<AccountInfo, Error> = useQuery({
     queryKey: ["/api/account/balance"],
-    onError: (error: Error) => {
-      toast({
-        title: "Error al obtener balance",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-    retry: false
+    retry: false,
+    gcTime: 0, // No cache retention
+    staleTime: 1000 * 60 * 5 // 5 minutes
   });
 
+  const { data: accountInfo, isLoading, error, refetch } = query;
+
+  // Manejar errores
+  if (error) {
+    toast({
+      title: "Error al obtener balance",
+      description: error.message,
+      variant: "destructive",
+    });
+  }
+
   // Calcular valor total de portfolio en USD
-  const totalBalanceUSD = accountInfo?.balances.reduce(
-    (total, balance) => total + parseFloat(balance.usdValue || "0"),
+  const totalBalanceUSD = accountInfo?.balances?.reduce(
+    (total: number, balance: AccountBalance) => total + parseFloat(balance.usdValue || "0"),
     0
-  );
+  ) || 0;
 
   return {
     accountInfo: accountInfo ? {
