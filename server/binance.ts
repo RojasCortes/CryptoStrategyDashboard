@@ -34,27 +34,55 @@ export class BinanceService {
 
   async getMarketData(symbols: string[] = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]): Promise<MarketData[]> {
     try {
-      const url = "https://api.binance.com/api/v3/ticker/24hr";
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch market data: ${response.statusText}`);
+      // Use individual symbol price tickers instead of 24hr ticker (which has rate limits)
+      const result: MarketData[] = [];
+      
+      // Process each symbol individually to avoid rate limits
+      for (const symbol of symbols) {
+        try {
+          // Get price data
+          const priceUrl = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
+          const priceResponse = await fetch(priceUrl);
+          
+          if (!priceResponse.ok) {
+            console.error(`Error fetching price for ${symbol}: ${priceResponse.statusText}`);
+            continue;
+          }
+          
+          const priceData = await priceResponse.json();
+          
+          // Get 24hr stats (percent change, etc.)
+          const statsUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`;
+          const statsResponse = await fetch(statsUrl);
+          
+          if (!statsResponse.ok) {
+            console.error(`Error fetching stats for ${symbol}: ${statsResponse.statusText}`);
+            continue;
+          }
+          
+          const statsData = await statsResponse.json();
+          
+          result.push({
+            symbol: symbol,
+            price: priceData.price,
+            priceChangePercent: statsData.priceChangePercent,
+            volume: statsData.volume,
+            high: statsData.highPrice,
+            low: statsData.lowPrice,
+          });
+          
+          // Add small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (symbolError) {
+          console.error(`Error processing symbol ${symbol}:`, symbolError);
+        }
       }
       
-      const allData = await response.json();
+      if (result.length > 0) {
+        return result;
+      }
       
-      // Filter for our requested symbols
-      const filteredData = allData.filter((item: any) => 
-        symbols.includes(item.symbol)
-      );
-      
-      return filteredData.map((item: any) => ({
-        symbol: item.symbol,
-        price: item.lastPrice,
-        priceChangePercent: item.priceChangePercent,
-        volume: item.volume,
-        high: item.highPrice,
-        low: item.lowPrice,
-      }));
+      throw new Error("No market data could be retrieved");
     } catch (error) {
       console.error("Error obteniendo datos de mercado:", error);
       
@@ -72,22 +100,33 @@ export class BinanceService {
 
   async getAvailablePairs(): Promise<CryptoPair[]> {
     try {
-      const url = "https://api.binance.com/api/v3/exchangeInfo";
+      // Use a more specific endpoint to get exchange info about USDT pairs
+      const url = "https://api.binance.com/api/v3/exchangeInfo?symbol=BTCUSDT";
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch exchange info: ${response.statusText}`);
+        // If specific query fails, use predefined list for popular pairs
+        console.log("Using predefined list for popular cryptocurrency pairs");
+        return AVAILABLE_PAIRS;
       }
       
-      const data = await response.json();
+      // Instead of getting all pairs, which can be rate-limited,
+      // let's use the most popular pairs that we know will work
+      const popularPairs = [
+        { symbol: "BTCUSDT", baseAsset: "BTC", quoteAsset: "USDT" },
+        { symbol: "ETHUSDT", baseAsset: "ETH", quoteAsset: "USDT" },
+        { symbol: "BNBUSDT", baseAsset: "BNB", quoteAsset: "USDT" },
+        { symbol: "SOLUSDT", baseAsset: "SOL", quoteAsset: "USDT" },
+        { symbol: "ADAUSDT", baseAsset: "ADA", quoteAsset: "USDT" },
+        { symbol: "XRPUSDT", baseAsset: "XRP", quoteAsset: "USDT" },
+        { symbol: "DOGEUSDT", baseAsset: "DOGE", quoteAsset: "USDT" },
+        { symbol: "DOTUSDT", baseAsset: "DOT", quoteAsset: "USDT" },
+        { symbol: "MATICUSDT", baseAsset: "MATIC", quoteAsset: "USDT" },
+        { symbol: "AVAXUSDT", baseAsset: "AVAX", quoteAsset: "USDT" },
+        { symbol: "LINKUSDT", baseAsset: "LINK", quoteAsset: "USDT" },
+      ];
       
-      return data.symbols
-        .filter((s: any) => s.status === "TRADING" && s.quoteAsset === "USDT")
-        .map((s: any) => ({
-          symbol: s.symbol,
-          baseAsset: s.baseAsset,
-          quoteAsset: s.quoteAsset,
-        }));
+      return popularPairs;
     } catch (error) {
       console.error("Error obteniendo pares disponibles:", error);
       // Return mock data for development in case of error
