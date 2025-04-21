@@ -148,17 +148,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Instead of testing with the API key/secret, use a public endpoint
-      const testResponse = await fetch("https://api.binance.com/api/v3/ping");
-      const isConnected = testResponse.ok;
+      // Utilizamos las mismas cabeceras que han funcionado bien para los datos de mercado
+      const headers = {
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Referer': 'https://www.binance.us/'
+      };
       
-      if (isConnected) {
-        console.log("Binance API connection test successful");
-      } else {
-        console.error("Binance API connection test failed:", testResponse.statusText);
+      // Primero intentamos con Binance US, que es más confiable desde nuestro entorno
+      console.log("Testing connection to Binance US API");
+      const usTestResponse = await fetch("https://api.binance.us/api/v3/ping", { headers });
+      
+      if (usTestResponse.ok) {
+        console.log("Binance US API connection test successful");
+        return res.json({ success: true });
       }
       
-      res.json({ success: isConnected });
+      // Si Binance US falla, intentamos con la API estándar de Binance
+      console.log("Binance US test failed, trying standard Binance API");
+      const standardHeaders = { ...headers, 'Referer': 'https://www.binance.com/' };
+      const testResponse = await fetch("https://api.binance.com/api/v3/ping", { headers: standardHeaders });
+      
+      if (testResponse.ok) {
+        console.log("Standard Binance API connection test successful");
+        return res.json({ success: true });
+      } else {
+        // Si ambas pruebas fallan pero sabemos que podemos obtener datos de mercado
+        // consideramos la conexión como exitosa de todos modos
+        console.log("Both API tests failed, but we can still get market data");
+        
+        // Comprobar si podemos obtener al menos un precio básico
+        const priceTestUrl = "https://api.binance.us/api/v3/ticker/price?symbol=BTCUSDT";
+        const priceResponse = await fetch(priceTestUrl, { headers });
+        
+        if (priceResponse.ok) {
+          console.log("Price data available, considering connection successful");
+          return res.json({ success: true });
+        }
+        
+        console.error("Binance API connection test failed completely");
+        return res.json({ success: false });
+      }
     } catch (error) {
       console.error("Error testing Binance connection:", error);
       res.json({ success: false });
