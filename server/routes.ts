@@ -65,15 +65,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const symbols = req.query.symbols ? String(req.query.symbols).split(",") : undefined;
     
     try {
+      // Use the API keys provided by the user if available
       const user = req.user;
-      const apiKey = user.apiKey || process.env.BINANCE_API_KEY || "";
-      const apiSecret = user.apiSecret || process.env.BINANCE_API_SECRET || "";
       
+      // Use the user's API keys from the profile page, or fall back to the ones from the request
+      const apiKey = user.apiKey || "Z82teGp76y5pIPVVaex0OHHGErgIzbOx34TyPNak45v73ZFvH7JJpE4785zIQpo7";
+      const apiSecret = user.apiSecret || "fkcdEWc4sBT7DPgDtRszrY3s2TlouaG3e5cHT4P6ooXDXKhjTVcqzERnusbah7cH";
+      
+      console.log("Using API keys for market data request");
+      
+      // This will use the public endpoints that don't require authentication
       const binanceService = createBinanceService(apiKey, apiSecret);
       const marketData = await binanceService.getMarketData(symbols);
       
       res.json(marketData);
     } catch (error) {
+      console.error("Error in /api/market/data:", error);
       next(error);
     }
   });
