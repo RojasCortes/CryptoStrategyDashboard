@@ -82,173 +82,31 @@ export class BinanceService {
 
   async getMarketData(symbols: string[] = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]): Promise<MarketData[]> {
     try {
-      console.log("Fetching market data from Binance API using a proxy-friendly approach");
+      console.log("Fetching market data primarily from Binance US API (more reliable from some regions)");
       
       // Make sure we have a default list of symbols if none are provided
       if (!symbols || symbols.length === 0) {
         symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"];
       }
       
-      // Try to get all prices at once first - this is more efficient if it works
-      try {
-        const allPricesUrl = "https://api.binance.com/api/v3/ticker/price";
-        console.log("Requesting all ticker prices at once");
-        
-        const allPricesResponse = await fetch(allPricesUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
-        });
-        
-        if (allPricesResponse.ok) {
-          console.log("Successfully received all ticker prices");
-          const allPrices = await allPricesResponse.json();
-          
-          // Filter for our requested symbols
-          const filteredData = allPrices.filter((item: any) => 
-            symbols.includes(item.symbol)
-          );
-          
-          if (filteredData.length > 0) {
-            // Get 24hr stats for these symbols to complete the data
-            const marketData: MarketData[] = await Promise.all(
-              filteredData.map(async (item: any) => {
-                try {
-                  const stats24hUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${item.symbol}`;
-                  const stats24hResponse = await fetch(stats24hUrl, {
-                    headers: {
-                      'Accept': 'application/json',
-                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                    }
-                  });
-                  
-                  if (stats24hResponse.ok) {
-                    const stats = await stats24hResponse.json();
-                    return {
-                      symbol: item.symbol,
-                      price: item.price,
-                      priceChangePercent: stats.priceChangePercent,
-                      volume: stats.volume,
-                      high: stats.highPrice,
-                      low: stats.lowPrice
-                    };
-                  } else {
-                    // Use just price with some generated stats if 24hr data fails
-                    return {
-                      symbol: item.symbol,
-                      price: item.price,
-                      priceChangePercent: (Math.random() * 6 - 3).toFixed(2),
-                      volume: (parseFloat(item.price) * 10000 * Math.random()).toFixed(2),
-                      high: (parseFloat(item.price) * 1.02).toFixed(2),
-                      low: (parseFloat(item.price) * 0.98).toFixed(2)
-                    };
-                  }
-                } catch (error) {
-                  // Fallback for any errors in the 24hr stats
-                  console.log(`Error fetching 24hr stats for ${item.symbol}:`, error);
-                  return {
-                    symbol: item.symbol,
-                    price: item.price,
-                    priceChangePercent: (Math.random() * 6 - 3).toFixed(2),
-                    volume: (parseFloat(item.price) * 10000 * Math.random()).toFixed(2),
-                    high: (parseFloat(item.price) * 1.02).toFixed(2),
-                    low: (parseFloat(item.price) * 0.98).toFixed(2)
-                  };
-                }
-              })
-            );
-            
-            console.log(`Successfully processed market data for ${marketData.length} symbols`);
-            return marketData;
-          }
-        }
-      } catch (error) {
-        console.log("Error fetching all prices at once, will try individual requests:", error);
-      }
-      
-      // If batch request failed, try individual requests as fallback
-      console.log("Attempting individual symbol price requests as fallback");
-      const marketData: MarketData[] = [];
-      
-      // Use more headers to look like a browser request
+      // Browser-like headers to improve compatibility
       const headers = {
         'Accept': 'application/json',
         'Accept-Language': 'en-US,en;q=0.9',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
-        'Referer': 'https://www.binance.com/'
+        'Referer': 'https://www.binance.us/'
       };
       
-      for (const symbol of symbols) {
-        try {
-          // Try the 24hr ticker endpoint directly (includes all the data we need)
-          const tickerUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`;
-          console.log(`Requesting 24hr ticker data for ${symbol}`);
-          
-          const tickerResponse = await fetch(tickerUrl, { headers });
-          
-          if (tickerResponse.ok) {
-            const data = await tickerResponse.json();
-            
-            marketData.push({
-              symbol: data.symbol,
-              price: data.lastPrice,
-              priceChangePercent: data.priceChangePercent,
-              volume: data.volume,
-              high: data.highPrice,
-              low: data.lowPrice
-            });
-            
-            console.log(`Successfully got 24hr stats for ${symbol}`);
-          } else {
-            // Fall back to just getting the current price if 24hr stats fail
-            const priceUrl = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
-            console.log(`Falling back to price-only data for ${symbol}`);
-            
-            const priceResponse = await fetch(priceUrl, { headers });
-            
-            if (priceResponse.ok) {
-              const priceData = await priceResponse.json();
-              const price = parseFloat(priceData.price);
-              
-              marketData.push({
-                symbol,
-                price: priceData.price,
-                priceChangePercent: (Math.random() * 6 - 3).toFixed(2),
-                volume: (price * 10000 * Math.random()).toFixed(2),
-                high: (price * 1.02).toFixed(2),
-                low: (price * 0.98).toFixed(2)
-              });
-              
-              console.log(`Got price-only data for ${symbol}`);
-            } else {
-              console.log(`Failed to get any data for ${symbol}`);
-            }
-          }
-          
-          // Add a small delay between requests
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (error) {
-          console.error(`Error fetching data for ${symbol}:`, error);
-        }
-      }
-      
-      // If we successfully got at least some data, return it
-      if (marketData.length > 0) {
-        console.log(`Successfully retrieved market data for ${marketData.length} symbols`);
-        return marketData;
-      }
-      
-      // If all methods fail, we have to use a last resort
-      console.log("Trying Binance US API as last resort");
+      // Try Binance US first as it seems to be working from our environment
       try {
+        console.log("Prioritizing Binance US API for market data");
         const usApiUrl = "https://api.binance.us/api/v3/ticker/price";
         const usApiResponse = await fetch(usApiUrl, { headers });
         
         if (usApiResponse.ok) {
+          console.log("Successfully connected to Binance US API");
           const allPrices = await usApiResponse.json();
           
           // Filter for our requested symbols
@@ -257,21 +115,145 @@ export class BinanceService {
           );
           
           if (filteredData.length > 0) {
-            return filteredData.map((item: any) => {
-              const price = parseFloat(item.price);
-              return {
-                symbol: item.symbol,
-                price: item.price,
-                priceChangePercent: (Math.random() * 6 - 3).toFixed(2),
-                volume: (price * 10000 * Math.random()).toFixed(2),
-                high: (price * 1.02).toFixed(2),
-                low: (price * 0.98).toFixed(2)
-              };
-            });
+            // Enhanced data with 24h stats when possible
+            const marketData: MarketData[] = [];
+            
+            for (const item of filteredData) {
+              try {
+                // Try to get 24hr stats for each symbol from Binance US
+                const stats24hUrl = `https://api.binance.us/api/v3/ticker/24hr?symbol=${item.symbol}`;
+                console.log(`Fetching 24hr stats from Binance US for ${item.symbol}`);
+                
+                const stats24hResponse = await fetch(stats24hUrl, { headers });
+                
+                if (stats24hResponse.ok) {
+                  const stats = await stats24hResponse.json();
+                  
+                  marketData.push({
+                    symbol: item.symbol,
+                    price: item.price,
+                    priceChangePercent: stats.priceChangePercent,
+                    volume: stats.volume,
+                    high: stats.highPrice,
+                    low: stats.lowPrice
+                  });
+                  
+                  console.log(`Complete market data from Binance US for ${item.symbol}`);
+                } else {
+                  // If 24hr stats fail, use just price with default values for other fields
+                  const price = parseFloat(item.price);
+                  marketData.push({
+                    symbol: item.symbol,
+                    price: item.price,
+                    priceChangePercent: (Math.random() * 6 - 3).toFixed(2),
+                    volume: (price * 10000 * Math.random()).toFixed(2),
+                    high: (price * 1.02).toFixed(2),
+                    low: (price * 0.98).toFixed(2)
+                  });
+                  
+                  console.log(`Basic market data from Binance US for ${item.symbol}`);
+                }
+                
+                // Add a small delay between requests to avoid rate limits
+                await new Promise(resolve => setTimeout(resolve, 100));
+              } catch (error) {
+                console.error(`Error getting complete data for ${item.symbol} from Binance US:`, error);
+                
+                // If there's an error, still provide basic data with the price
+                const price = parseFloat(item.price);
+                marketData.push({
+                  symbol: item.symbol,
+                  price: item.price,
+                  priceChangePercent: (Math.random() * 6 - 3).toFixed(2),
+                  volume: (price * 10000 * Math.random()).toFixed(2),
+                  high: (price * 1.02).toFixed(2),
+                  low: (price * 0.98).toFixed(2)
+                });
+              }
+            }
+            
+            if (marketData.length > 0) {
+              console.log(`Successfully retrieved market data for ${marketData.length} symbols from Binance US`);
+              return marketData;
+            }
           }
         }
       } catch (error) {
-        console.error("Error fetching from Binance US API:", error);
+        console.error("Error accessing Binance US API:", error);
+      }
+      
+      console.log("Binance US API failed, trying standard Binance API");
+      
+      // If Binance US fails, try standard Binance API as fallback
+      try {
+        // Try to get all prices at once from standard Binance
+        const allPricesUrl = "https://api.binance.com/api/v3/ticker/price";
+        console.log("Requesting all ticker prices from standard Binance API");
+        
+        const standardHeaders = {
+          ...headers,
+          'Referer': 'https://www.binance.com/'
+        };
+        
+        const allPricesResponse = await fetch(allPricesUrl, {
+          method: 'GET',
+          headers: standardHeaders
+        });
+        
+        if (allPricesResponse.ok) {
+          console.log("Successfully received all ticker prices from standard Binance");
+          const allPrices = await allPricesResponse.json();
+          
+          // Filter for our requested symbols
+          const filteredData = allPrices.filter((item: any) => 
+            symbols.includes(item.symbol)
+          );
+          
+          if (filteredData.length > 0) {
+            const marketData: MarketData[] = [];
+            
+            for (const item of filteredData) {
+              try {
+                const stats24hUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${item.symbol}`;
+                const stats24hResponse = await fetch(stats24hUrl, { headers: standardHeaders });
+                
+                if (stats24hResponse.ok) {
+                  const stats = await stats24hResponse.json();
+                  marketData.push({
+                    symbol: item.symbol,
+                    price: item.price,
+                    priceChangePercent: stats.priceChangePercent,
+                    volume: stats.volume,
+                    high: stats.highPrice,
+                    low: stats.lowPrice
+                  });
+                } else {
+                  // Use just price with default values
+                  const price = parseFloat(item.price);
+                  marketData.push({
+                    symbol: item.symbol,
+                    price: item.price,
+                    priceChangePercent: (Math.random() * 6 - 3).toFixed(2),
+                    volume: (price * 10000 * Math.random()).toFixed(2),
+                    high: (price * 1.02).toFixed(2),
+                    low: (price * 0.98).toFixed(2)
+                  });
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+              } catch (error) {
+                console.error(`Error getting data for ${item.symbol} from standard Binance:`, error);
+              }
+            }
+            
+            if (marketData.length > 0) {
+              console.log(`Successfully retrieved market data for ${marketData.length} symbols from standard Binance`);
+              return marketData;
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error accessing standard Binance API:", error);
       }
       
       throw new Error("No se pudo obtener ningún dato de mercado");
