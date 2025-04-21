@@ -90,6 +90,7 @@ export function AccountSummary() {
               <AlertTitle>{t("Problema con las claves API")}</AlertTitle>
               <AlertDescription>
                 {getErrorMessage()}
+                {getErrorInstructions()}
               </AlertDescription>
             </Alert>
             
@@ -166,15 +167,27 @@ export function AccountSummary() {
               <span className="font-mono ml-1 px-1 bg-muted rounded">34.19.61.28</span>
               {t("esté autorizada en tu cuenta de Binance.")}
             </p>
-            <a 
-              href="https://www.binance.com/en/my/settings/api-management" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center text-primary hover:underline mt-2"
-            >
-              {t("Administrar claves API en Binance")}
-              <ExternalLink className="h-3 w-3 ml-1" />
-            </a>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center mt-2">
+              <a 
+                href="https://www.binance.com/en/my/settings/api-management" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-primary hover:underline"
+              >
+                {t("Administrar claves API en Binance.com")}
+                <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+              <div className="hidden sm:block mx-2">|</div>
+              <a 
+                href="https://www.binance.us/en/usercenter/settings/api-management" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-primary hover:underline"
+              >
+                {t("Administrar claves API en Binance.us")}
+                <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+            </div>
           </div>
         </CardFooter>
       )}
