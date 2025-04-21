@@ -1,19 +1,39 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { AccountBalance, useAccountBalance } from "@/hooks/use-account";
 import { CryptoIcon } from "@/components/crypto-icon";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle, KeyRound, ExternalLink, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { useLanguage } from "@/hooks/use-language";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useState } from "react";
 
 export function AccountSummary() {
   const { t } = useLanguage();
   const { accountInfo, balances, isLoading, error, refetch } = useAccountBalance();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = () => {
-    refetch();
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
+  // Extraer el mensaje de error para mostrarlo de forma más amigable
+  const getErrorMessage = () => {
+    if (!error) return "";
+    
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    
+    if (errorMsg.includes("Invalid API-key") || errorMsg.includes("API key inválida") || errorMsg.includes("permissions for action")) {
+      return t("Las claves API proporcionadas no son válidas o no tienen los permisos necesarios para acceder a esta información.");
+    } else if (errorMsg.includes("IP")) {
+      return t("La dirección IP de esta aplicación no está autorizada en tu cuenta de Binance.");
+    }
+    
+    return t("No se pudo conectar a Binance. Verifica tus claves API.");
   };
 
   return (
@@ -27,9 +47,9 @@ export function AccountSummary() {
           variant="outline" 
           size="icon" 
           onClick={handleRefresh} 
-          disabled={isLoading}
+          disabled={isLoading || isRefreshing}
         >
-          {isLoading ? (
+          {isLoading || isRefreshing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <RefreshCw className="h-4 w-4" />
@@ -40,16 +60,35 @@ export function AccountSummary() {
         {isLoading ? (
           <AccountLoadingSkeleton />
         ) : error ? (
-          <div className="text-center py-8">
-            <div className="text-destructive font-medium mb-2">{t("Error al cargar datos")}</div>
-            <p className="text-sm text-muted-foreground">
-              {error instanceof Error 
-                ? error.message 
-                : t("No se pudo conectar a Binance. Verifica tus claves API.")}
-            </p>
-            <Button variant="outline" className="mt-4" onClick={handleRefresh}>
-              {t("Reintentar")}
-            </Button>
+          <div className="text-center py-6">
+            <AlertCircle className="h-10 w-10 text-destructive mx-auto mb-2" />
+            <div className="text-destructive font-medium mb-2">{t("Error de conexión con Binance")}</div>
+            
+            <Alert variant="destructive" className="mb-4 text-left">
+              <AlertTitle>{t("Problema con las claves API")}</AlertTitle>
+              <AlertDescription>
+                {getErrorMessage()}
+              </AlertDescription>
+            </Alert>
+            
+            <div className="flex flex-col sm:flex-row gap-2 mt-4">
+              <Button 
+                variant="outline"
+                onClick={handleRefresh}
+                className="w-full"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {t("Reintentar")}
+              </Button>
+              <Button 
+                variant="default"
+                onClick={() => window.location.href = "/settings"}
+                className="w-full"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                {t("Configurar API")}
+              </Button>
+            </div>
           </div>
         ) : (
           <>
@@ -97,6 +136,26 @@ export function AccountSummary() {
           </>
         )}
       </CardContent>
+      {error && (
+        <CardFooter className="px-6 py-4 border-t text-xs text-muted-foreground">
+          <div className="w-full text-center">
+            <p>
+              {t("Asegúrate de que tus claves API tengan los permisos correctos y que la IP")}
+              <span className="font-mono ml-1 px-1 bg-muted rounded">34.19.61.28</span>
+              {t("esté autorizada en tu cuenta de Binance.")}
+            </p>
+            <a 
+              href="https://www.binance.com/en/my/settings/api-management" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-primary hover:underline mt-2"
+            >
+              {t("Administrar claves API en Binance")}
+              <ExternalLink className="h-3 w-3 ml-1" />
+            </a>
+          </div>
+        </CardFooter>
+      )}
     </Card>
   );
 }
