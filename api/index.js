@@ -12,7 +12,16 @@ const app = express();
 
 // Database setup
 const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
-const pool = new Pool({ connectionString: databaseUrl });
+
+if (!databaseUrl) {
+  console.error('No database URL found. Check SUPABASE_DATABASE_URL or DATABASE_URL environment variables.');
+  throw new Error('Database URL is required');
+}
+
+const pool = new Pool({ 
+  connectionString: databaseUrl,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 // Middleware
 app.use(express.json());
@@ -50,22 +59,37 @@ async function comparePasswords(supplied, stored) {
 
 // Database functions
 async function getUserByUsername(username) {
-  const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-  return result.rows[0];
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error getting user by username:', error);
+    throw error;
+  }
 }
 
 async function getUserById(id) {
-  const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
-  return result.rows[0];
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error getting user by id:', error);
+    throw error;
+  }
 }
 
 async function createUser(userData) {
-  const { username, email, password } = userData;
-  const result = await pool.query(
-    'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *',
-    [username, email, password]
-  );
-  return result.rows[0];
+  try {
+    const { username, email, password } = userData;
+    const result = await pool.query(
+      'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *',
+      [username, email, password]
+    );
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
 }
 
 // Passport configuration
@@ -129,13 +153,40 @@ app.post('/api/logout', (req, res, next) => {
 });
 
 app.get('/api/user', (req, res) => {
-  if (!req.isAuthenticated()) return res.sendStatus(401);
-  res.json(req.user);
+  try {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    res.json(req.user);
+  } catch (error) {
+    console.error('Error in /api/user:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Database test
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT table_name FROM information_schema.tables WHERE table_schema = $1', ['public']);
+    res.json({
+      success: true,
+      tables: result.rows.map(row => row.table_name),
+      timestamp: new Date().toISOString(),
+      databaseConnected: true
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      databaseConnected: false
+    });
+  }
 });
 
 // Error handler
