@@ -61,7 +61,7 @@ export function SimpleMarketData({ symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', '
     const interval = setInterval(fetchMarketData, 120000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [symbols]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-ES', {

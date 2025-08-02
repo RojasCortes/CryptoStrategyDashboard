@@ -90,12 +90,14 @@ export default function ImprovedHomePage() {
     queryKey: ["/api/strategies"],
     retry: 1,
     enabled: !!user,
+    staleTime: 30000,
   });
 
   const { data: trades = [], isLoading: isTradesLoading } = useQuery({
     queryKey: ["/api/trades"],
     retry: 1,
     enabled: !!user,
+    staleTime: 30000,
   });
 
   // Loading state
@@ -105,6 +107,18 @@ export default function ImprovedHomePage() {
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
           <p className="text-gray-600">Cargando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case when user is not available yet
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
+          <p className="text-gray-600">Verificando autenticación...</p>
         </div>
       </div>
     );
@@ -144,7 +158,7 @@ export default function ImprovedHomePage() {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0`}>
+      } lg:translate-x-0 lg:static lg:inset-0 lg:shadow-none lg:border-r lg:border-gray-200`}>
         
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-6 bg-blue-600">
@@ -161,30 +175,30 @@ export default function ImprovedHomePage() {
         
         {/* Navigation */}
         <nav className="mt-8 px-4 space-y-2">
-          <a href="/" className="flex items-center px-4 py-3 text-blue-700 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+          <div className="flex items-center px-4 py-3 text-blue-700 bg-blue-50 rounded-lg border-l-4 border-blue-500 cursor-pointer">
             <Home className="mr-3 h-5 w-5" />
             Dashboard
-          </a>
-          <a href="/portfolio" className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors">
+          </div>
+          <div className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors cursor-pointer">
             <Wallet className="mr-3 h-5 w-5" />
             Portfolio
-          </a>
-          <a href="/strategies" className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors">
+          </div>
+          <div className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors cursor-pointer">
             <Target className="mr-3 h-5 w-5" />
             Estrategias
-          </a>
-          <a href="/markets" className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors">
+          </div>
+          <div className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors cursor-pointer">
             <Globe className="mr-3 h-5 w-5" />
             Mercados
-          </a>
-          <a href="/performance" className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors">
+          </div>
+          <div className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors cursor-pointer">
             <BarChart3 className="mr-3 h-5 w-5" />
             Rendimiento
-          </a>
-          <a href="/settings" className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors">
+          </div>
+          <div className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors cursor-pointer">
             <Settings className="mr-3 h-5 w-5" />
             Configuración
-          </a>
+          </div>
         </nav>
       </div>
 
@@ -326,10 +340,8 @@ export default function ImprovedHomePage() {
                     <Activity className="h-5 w-5 text-orange-500" />
                     Operaciones Recientes
                   </CardTitle>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href="/portfolio">
-                      Ver todos <ChevronRight className="ml-1 h-4 w-4" />
-                    </a>
+                  <Button variant="outline" size="sm" onClick={() => console.log('Ver todas las operaciones')}>
+                    Ver todos <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
@@ -382,10 +394,8 @@ export default function ImprovedHomePage() {
                     <Shield className="h-5 w-5 text-purple-500" />
                     Top Estrategias
                   </CardTitle>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href="/strategies">
-                      Ver todas <ChevronRight className="ml-1 h-4 w-4" />
-                    </a>
+                  <Button variant="outline" size="sm" onClick={() => console.log('Ver todas las estrategias')}>
+                    Ver todas <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
@@ -442,29 +452,21 @@ export default function ImprovedHomePage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Button className="h-20 flex flex-col space-y-2" asChild>
-                  <a href="/strategies">
-                    <Target className="h-6 w-6" />
-                    <span>Nueva Estrategia</span>
-                  </a>
+                <Button className="h-20 flex flex-col space-y-2" onClick={() => console.log('Nueva estrategia')}>
+                  <Target className="h-6 w-6" />
+                  <span>Nueva Estrategia</span>
                 </Button>
-                <Button variant="outline" className="h-20 flex flex-col space-y-2" asChild>
-                  <a href="/portfolio">
-                    <Wallet className="h-6 w-6" />
-                    <span>Ver Portfolio</span>
-                  </a>
+                <Button variant="outline" className="h-20 flex flex-col space-y-2" onClick={() => console.log('Ver portfolio')}>
+                  <Wallet className="h-6 w-6" />
+                  <span>Ver Portfolio</span>
                 </Button>
-                <Button variant="outline" className="h-20 flex flex-col space-y-2" asChild>
-                  <a href="/markets">
-                    <BarChart3 className="h-6 w-6" />
-                    <span>Analizar Mercado</span>
-                  </a>
+                <Button variant="outline" className="h-20 flex flex-col space-y-2" onClick={() => console.log('Analizar mercado')}>
+                  <BarChart3 className="h-6 w-6" />
+                  <span>Analizar Mercado</span>
                 </Button>
-                <Button variant="outline" className="h-20 flex flex-col space-y-2" asChild>
-                  <a href="/settings">
-                    <Settings className="h-6 w-6" />
-                    <span>Configurar API</span>
-                  </a>
+                <Button variant="outline" className="h-20 flex flex-col space-y-2" onClick={() => console.log('Configurar API')}>
+                  <Settings className="h-6 w-6" />
+                  <span>Configurar API</span>
                 </Button>
               </div>
             </CardContent>
