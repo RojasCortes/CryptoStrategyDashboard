@@ -5,6 +5,7 @@ import { useBinanceData } from "@/hooks/use-binance";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { AppBar } from "@/components/dashboard/app-bar";
 import { MarketDataWebSocket } from "@/components/market-data-websocket";
+import { RealDataCharts } from "@/components/real-data-charts";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
@@ -375,142 +376,9 @@ export default function HomePage() {
               />
             </div>
             
-            {/* Charts section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              {/* Portfolio value chart */}
-              <Card className="bg-white lg:col-span-2">
-                <CardHeader className="pb-3 flex justify-between items-center">
-                  <div>
-                    <CardTitle>Valor de la cartera</CardTitle>
-                    <CardDescription>
-                      Evolución del valor de tu cartera en el tiempo
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">1D</Button>
-                    <Button variant="outline" size="sm">1W</Button>
-                    <Button variant="default" size="sm">1M</Button>
-                    <Button variant="outline" size="sm">1Y</Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={portfolioData}
-                        margin={{
-                          top: 10,
-                          right: 30,
-                          left: 0,
-                          bottom: 0,
-                        }}
-                      >
-                        <defs>
-                          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                        <XAxis 
-                          dataKey="date" 
-                          axisLine={false}
-                          tickLine={false}
-                          style={{
-                            fontSize: '0.75rem',
-                            fill: '#64748b',
-                          }}
-                        />
-                        <YAxis 
-                          axisLine={false}
-                          tickLine={false}
-                          style={{
-                            fontSize: '0.75rem',
-                            fill: '#64748b',
-                          }}
-                          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                        />
-                        <Tooltip 
-                          formatter={(value) => [`$${value.toLocaleString()}`, 'Valor']}
-                          contentStyle={{
-                            backgroundColor: 'white',
-                            borderColor: '#e2e8f0',
-                            borderRadius: '0.5rem',
-                            fontSize: '0.75rem',
-                          }}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="#3b82f6" 
-                          fillOpacity={1}
-                          fill="url(#colorValue)" 
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              {/* Revenue per day chart */}
-              <Card className="bg-white">
-                <CardHeader className="pb-3">
-                  <CardTitle>Ingresos por día</CardTitle>
-                  <CardDescription>
-                    Beneficios generados diariamente
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={revenueData.slice(-7)} // Last 7 days
-                        margin={{
-                          top: 10,
-                          right: 10,
-                          left: 0,
-                          bottom: 0,
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                        <XAxis 
-                          dataKey="date" 
-                          axisLine={false}
-                          tickLine={false}
-                          style={{
-                            fontSize: '0.75rem',
-                            fill: '#64748b',
-                          }}
-                        />
-                        <YAxis 
-                          axisLine={false}
-                          tickLine={false}
-                          style={{
-                            fontSize: '0.75rem',
-                            fill: '#64748b',
-                          }}
-                          tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
-                        />
-                        <Tooltip 
-                          formatter={(value) => [`$${value.toLocaleString()}`, 'Ingresos']}
-                          contentStyle={{
-                            backgroundColor: 'white',
-                            borderColor: '#e2e8f0',
-                            borderRadius: '0.5rem',
-                            fontSize: '0.75rem',
-                          }}
-                        />
-                        <Bar 
-                          dataKey="revenue" 
-                          fill="#34d399" 
-                          radius={[4, 4, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Real Data Charts Section */}
+            <RealDataCharts className="mb-6" />
+
             
             {/* Tables section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

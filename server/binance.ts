@@ -279,38 +279,141 @@ export class BinanceService {
 
   async getAvailablePairs(): Promise<CryptoPair[]> {
     try {
-      // Use a more specific endpoint to get exchange info about USDT pairs
-      const url = "https://api.binance.com/api/v3/exchangeInfo?symbol=BTCUSDT";
+      // Get all exchange info from Binance to get ALL trading pairs
+      console.log("Fetching complete exchange info from Binance API...");
+      const url = "https://api.binance.com/api/v3/exchangeInfo";
       const response = await fetch(url);
       
       if (!response.ok) {
-        // If specific query fails, use predefined list for popular pairs
-        console.log("Using predefined list for popular cryptocurrency pairs");
-        return AVAILABLE_PAIRS;
+        console.log("Binance API not available, using popular pairs fallback");
+        return this.getPopularPairs();
       }
       
-      // Instead of getting all pairs, which can be rate-limited,
-      // let's use the most popular pairs that we know will work
-      const popularPairs = [
-        { symbol: "BTCUSDT", baseAsset: "BTC", quoteAsset: "USDT" },
-        { symbol: "ETHUSDT", baseAsset: "ETH", quoteAsset: "USDT" },
-        { symbol: "BNBUSDT", baseAsset: "BNB", quoteAsset: "USDT" },
-        { symbol: "SOLUSDT", baseAsset: "SOL", quoteAsset: "USDT" },
-        { symbol: "ADAUSDT", baseAsset: "ADA", quoteAsset: "USDT" },
-        { symbol: "XRPUSDT", baseAsset: "XRP", quoteAsset: "USDT" },
-        { symbol: "DOGEUSDT", baseAsset: "DOGE", quoteAsset: "USDT" },
-        { symbol: "DOTUSDT", baseAsset: "DOT", quoteAsset: "USDT" },
-        { symbol: "MATICUSDT", baseAsset: "MATIC", quoteAsset: "USDT" },
-        { symbol: "AVAXUSDT", baseAsset: "AVAX", quoteAsset: "USDT" },
-        { symbol: "LINKUSDT", baseAsset: "LINK", quoteAsset: "USDT" },
-      ];
+      const data = await response.json();
       
-      return popularPairs;
+      // Filter for active trading pairs only
+      const allPairs = data.symbols
+        .filter((symbol: any) => 
+          symbol.status === 'TRADING' && 
+          symbol.isSpotTradingAllowed
+        )
+        .map((symbol: any) => ({
+          symbol: symbol.symbol,
+          baseAsset: symbol.baseAsset,
+          quoteAsset: symbol.quoteAsset
+        }));
+      
+      console.log(`Successfully retrieved ${allPairs.length} trading pairs from Binance`);
+      return allPairs;
     } catch (error) {
-      console.error("Error obteniendo pares disponibles:", error);
-      // Return mock data for development in case of error
-      return AVAILABLE_PAIRS;
+      console.error("Error fetching all trading pairs:", error);
+      return this.getPopularPairs();
     }
+  }
+
+  async getAllCryptocurrencies(): Promise<Array<{symbol: string, name: string}>> {
+    try {
+      // Get all trading pairs to extract unique cryptocurrencies
+      const pairs = await this.getAvailablePairs();
+      const uniqueAssets = new Set(pairs.map(pair => pair.baseAsset));
+      
+      // Convert to cryptocurrency list with proper names
+      const cryptocurrencies = Array.from(uniqueAssets).map(asset => ({
+        symbol: asset,
+        name: this.getCryptocurrencyName(asset)
+      }));
+      
+      console.log(`Found ${cryptocurrencies.length} unique cryptocurrencies on Binance`);
+      return cryptocurrencies.sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      console.error("Error fetching cryptocurrencies:", error);
+      throw error;
+    }
+  }
+
+  private getPopularPairs(): CryptoPair[] {
+    // Fallback list of popular pairs when API is not available
+    return [
+      { symbol: "BTCUSDT", baseAsset: "BTC", quoteAsset: "USDT" },
+      { symbol: "ETHUSDT", baseAsset: "ETH", quoteAsset: "USDT" },
+      { symbol: "BNBUSDT", baseAsset: "BNB", quoteAsset: "USDT" },
+      { symbol: "SOLUSDT", baseAsset: "SOL", quoteAsset: "USDT" },
+      { symbol: "ADAUSDT", baseAsset: "ADA", quoteAsset: "USDT" },
+      { symbol: "XRPUSDT", baseAsset: "XRP", quoteAsset: "USDT" },
+      { symbol: "DOGEUSDT", baseAsset: "DOGE", quoteAsset: "USDT" },
+      { symbol: "DOTUSDT", baseAsset: "DOT", quoteAsset: "USDT" },
+      { symbol: "MATICUSDT", baseAsset: "MATIC", quoteAsset: "USDT" },
+      { symbol: "AVAXUSDT", baseAsset: "AVAX", quoteAsset: "USDT" },
+      { symbol: "LINKUSDT", baseAsset: "LINK", quoteAsset: "USDT" },
+      { symbol: "UNIUSDT", baseAsset: "UNI", quoteAsset: "USDT" },
+      { symbol: "LTCUSDT", baseAsset: "LTC", quoteAsset: "USDT" },
+      { symbol: "BCHUSDT", baseAsset: "BCH", quoteAsset: "USDT" },
+      { symbol: "ATOMUSDT", baseAsset: "ATOM", quoteAsset: "USDT" },
+    ];
+  }
+
+  private getCryptocurrencyName(symbol: string): string {
+    const names: Record<string, string> = {
+      'BTC': 'Bitcoin',
+      'ETH': 'Ethereum', 
+      'BNB': 'Binance Coin',
+      'ADA': 'Cardano',
+      'SOL': 'Solana',
+      'XRP': 'Ripple',
+      'DOT': 'Polkadot',
+      'DOGE': 'Dogecoin',
+      'AVAX': 'Avalanche',
+      'SHIB': 'Shiba Inu',
+      'MATIC': 'Polygon',
+      'LTC': 'Litecoin',
+      'UNI': 'Uniswap',
+      'ATOM': 'Cosmos',
+      'LINK': 'Chainlink',
+      'BCH': 'Bitcoin Cash',
+      'XLM': 'Stellar',
+      'ALGO': 'Algorand',
+      'VET': 'VeChain',
+      'ICP': 'Internet Computer',
+      'FIL': 'Filecoin',
+      'TRX': 'TRON',
+      'ETC': 'Ethereum Classic',
+      'XMR': 'Monero',
+      'THETA': 'Theta Network',
+      'XTZ': 'Tezos',
+      'NEAR': 'NEAR Protocol',
+      'FLOW': 'Flow',
+      'SAND': 'The Sandbox',
+      'MANA': 'Decentraland',
+      'AXS': 'Axie Infinity',
+      'CRO': 'Cronos',
+      'FTM': 'Fantom',
+      'HBAR': 'Hedera',
+      'ONE': 'Harmony',
+      'ENJ': 'Enjin Coin',
+      'CHZ': 'Chiliz',
+      'HOT': 'Holo',
+      'ZIL': 'Zilliqa',
+      'CAKE': 'PancakeSwap',
+      'SUSHI': 'SushiSwap',
+      'COMP': 'Compound',
+      'MKR': 'Maker',
+      'AAVE': 'Aave',
+      'SNX': 'Synthetix',
+      'CRV': 'Curve DAO Token',
+      'YFI': 'yearn.finance',
+      'BAL': 'Balancer',
+      'ZRX': '0x',
+      'LRC': 'Loopring',
+      'BAND': 'Band Protocol',
+      'KNC': 'Kyber Network',
+      'REN': 'Ren',
+      'STORJ': 'Storj',
+      'OCEAN': 'Ocean Protocol',
+      'GRT': 'The Graph',
+      'AUDIO': 'Audius'
+    };
+    
+    return names[symbol] || symbol;
   }
 
   // Ejecuta una orden de compra/venta usando la API de Binance

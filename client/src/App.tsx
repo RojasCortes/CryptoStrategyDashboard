@@ -20,6 +20,7 @@ import PerformancePage from "@/pages/performance-page";
 import OpportunitiesPage from "@/pages/opportunities-page";
 import ChartPage from "@/pages/chart-page";
 import HelpPage from "@/pages/help-page";
+import CryptocurrenciesPage from "@/pages/cryptocurrencies-page";
 
 function Router() {
   return (
@@ -28,6 +29,7 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/portfolio" component={PortfolioPage} />
       <ProtectedRoute path="/strategies" component={StrategiesPage} />
+      <ProtectedRoute path="/cryptocurrencies" component={CryptocurrenciesPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/notifications" component={NotificationsPage} />
       <ProtectedRoute path="/markets" component={MarketsPage} />

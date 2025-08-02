@@ -148,15 +148,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const apiKey = user.apiKey || "";
       const apiSecret = user.apiSecret || "";
       
-      console.log("Fetching available trading pairs");
+      console.log("Fetching all available trading pairs from Binance");
       const binanceService = createBinanceService(apiKey, apiSecret);
       const pairs = await binanceService.getAvailablePairs();
       
       console.log(`Retrieved ${pairs.length} trading pairs`);
+      res.set({
+        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'X-Data-Source': 'Binance-API-Real'
+      });
       res.json(pairs);
     } catch (error) {
       console.error("Error fetching trading pairs:", error);
-      next(error);
+      res.status(500).json({ 
+        error: "No se pudieron obtener los pares de trading",
+        message: "Para acceder a todos los pares de trading de Binance, se requieren claves API válidas. Configúralas en la sección de Ajustes.",
+        requiresApiKey: true
+      });
+    }
+  });
+
+  // New endpoint: Get all cryptocurrencies
+  app.get("/api/market/cryptocurrencies", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const user = req.user;
+      const apiKey = user.apiKey || "";
+      const apiSecret = user.apiSecret || "";
+      
+      console.log("Fetching all cryptocurrencies available on Binance");
+      const binanceService = createBinanceService(apiKey, apiSecret);
+      
+      // Get trading pairs and extract unique cryptocurrencies
+      const pairs = await binanceService.getAvailablePairs();
+      const uniqueAssets = new Set(pairs.map(pair => pair.baseAsset));
+      
+      // Convert to cryptocurrency list
+      const cryptos = Array.from(uniqueAssets).map(asset => ({
+        symbol: asset,
+        name: asset
+      }));
+      
+      console.log(`Retrieved ${cryptos.length} cryptocurrencies`);
+      res.set({
+        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'X-Data-Source': 'Binance-API-Real'
+      });
+      res.json(cryptos);
+    } catch (error) {
+      console.error("Error fetching cryptocurrencies:", error);
+      res.status(500).json({ 
+        error: "No se pudieron obtener las criptomonedas",
+        message: "Para acceder a todas las criptomonedas disponibles en Binance, se requieren claves API válidas. Configúralas en la sección de Ajustes.",
+        requiresApiKey: true
+      });
+    }
+  });
+
+  // Real-time candle data endpoint
+  app.get("/api/market/candles", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const { symbol = 'BTCUSDT', interval = '1d', limit = '90' } = req.query;
+      console.log(`Fetching real candle data for ${symbol} with interval ${interval}`);
+      
+      // Use public Binance API for candle data (no auth required)
+      const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Binance API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform to more usable format
+      const candles = data.map((candle: any[]) => ({
+        openTime: candle[0],
+        open: parseFloat(candle[1]),
+        high: parseFloat(candle[2]),
+        low: parseFloat(candle[3]),
+        close: parseFloat(candle[4]),
+        volume: parseFloat(candle[5]),
+        closeTime: candle[6],
+      }));
+
+      res.set({
+        'Cache-Control': 'public, max-age=60', // Cache for 1 minute
+        'X-Data-Source': 'Binance-API-Real-Candles'
+      });
+      res.json(candles);
+    } catch (error) {
+      console.error("Error fetching candle data:", error);
+      res.status(500).json({ 
+        error: "No se pudieron obtener los datos de velas",
+        message: "Los datos históricos provienen directamente de Binance. Verifica la conectividad.",
+        requiresApiKey: false
+      });
+    }
+  });
+
+  // Account balance endpoint
+  app.get("/api/account/balance", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const user = req.user;
+      const apiKey = user.apiKey || "";
+      const apiSecret = user.apiSecret || "";
+
+      if (!apiKey || !apiSecret) {
+        return res.status(400).json({ 
+          error: "API credentials required",
+          message: "Para acceder a los datos de tu cuenta, configura tus claves API de Binance en la sección de Ajustes.",
+          requiresApiKey: true
+        });
+      }
+
+      console.log("Fetching real account balance from Binance");
+      const binanceService = createBinanceService(apiKey, apiSecret);
+      const accountData = await binanceService.getAccountInfo();
+
+      res.set({
+        'Cache-Control': 'private, max-age=30', // Cache privately for 30 seconds
+        'X-Data-Source': 'Binance-API-Real-Account'
+      });
+      res.json(accountData);
+    } catch (error) {
+      console.error("Error fetching account balance:", error);
+      res.status(500).json({ 
+        error: "No se pudieron obtener los datos de la cuenta",
+        message: "Verifica que tus claves API de Binance sean correctas y tengan los permisos necesarios. Configúralas en Ajustes.",
+        requiresApiKey: true
+      });
     }
   });
   

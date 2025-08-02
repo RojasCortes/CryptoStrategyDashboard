@@ -27,6 +27,7 @@ import {
   Globe,
   CalendarRange,
   CandlestickChart,
+  Coins,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -168,6 +169,13 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
             label="Mercados"
             href="/markets"
             active={location === "/markets"}
+          />
+          
+          <SidebarItem
+            icon={<Coins className="h-5 w-5" />}
+            label="Criptomonedas"
+            href="/cryptocurrencies"
+            active={location === "/cryptocurrencies"}
           />
           <SidebarItem
             icon={<Layers className="h-5 w-5" />}
