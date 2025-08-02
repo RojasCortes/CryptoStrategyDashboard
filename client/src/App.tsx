@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
+import DebugDashboard from "@/pages/debug-dashboard";
 import DashboardPage from "@/pages/dashboard-page";
 import AuthPage from "@/pages/auth-page";
 import SettingsPage from "@/pages/settings-page";
@@ -25,6 +26,7 @@ import CryptocurrenciesPage from "@/pages/cryptocurrencies-page";
 function Router() {
   return (
     <Switch>
+      <ProtectedRoute path="/debug" component={DebugDashboard} />
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/portfolio" component={PortfolioPage} />
