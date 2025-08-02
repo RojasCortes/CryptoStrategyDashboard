@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useWebSocket } from '@/hooks/use-websocket';
+import { useMarketStream } from '@/hooks/use-market-stream';
 import { TrendingUp, TrendingDown, Wifi, WifiOff, Activity } from 'lucide-react';
 
 interface MarketDataProps {
@@ -10,21 +10,19 @@ interface MarketDataProps {
 }
 
 export function MarketDataWebSocket({ symbols = ['btcusdt', 'ethusdt', 'bnbusdt', 'solusdt'], className }: MarketDataProps) {
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  
   const { 
     isConnected, 
     marketData, 
     connectionAttempts,
+    lastUpdate,
     getSymbolData 
-  } = useWebSocket({
+  } = useMarketStream({
     symbols,
     onMarketData: (data) => {
-      setLastUpdate(new Date());
       console.log('Real-time market data received:', data);
     },
     onError: (error) => {
-      console.error('WebSocket error:', error);
+      console.error('Market stream error:', error);
     }
   });
 
@@ -62,7 +60,7 @@ export function MarketDataWebSocket({ symbols = ['btcusdt', 'ethusdt', 'bnbusdt'
               <Wifi className="h-4 w-4 text-green-500" />
               <Badge variant="outline" className="text-green-600 border-green-200">
                 <Activity className="h-3 w-3 mr-1" />
-                WebSocket Conectado
+                SSE Conectado
               </Badge>
             </>
           ) : (
@@ -83,8 +81,8 @@ export function MarketDataWebSocket({ symbols = ['btcusdt', 'ethusdt', 'bnbusdt'
       {/* Market Data Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {symbols.map((symbol) => {
-          const data = getSymbolData(symbol);
-          const isPositive = data ? data.priceChange >= 0 : false;
+          const data = marketData.find(item => item.symbol.toLowerCase() === symbol.toLowerCase());
+          const isPositive = data ? data.change24h >= 0 : false;
           
           return (
             <Card key={symbol} className="relative overflow-hidden">
@@ -102,7 +100,7 @@ export function MarketDataWebSocket({ symbols = ['btcusdt', 'ethusdt', 'bnbusdt'
                         ) : (
                           <TrendingDown className="h-3 w-3" />
                         )}
-                        {formatPercentage(data.priceChange)}
+                        {formatPercentage(data.change24h)}
                       </div>
                     ) : (
                       <div className="animate-pulse">Cargando...</div>
@@ -123,14 +121,12 @@ export function MarketDataWebSocket({ symbols = ['btcusdt', 'ethusdt', 'bnbusdt'
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="grid grid-cols-1 gap-2 text-xs">
                       <div>
-                        <div className="text-muted-foreground">Máximo 24h</div>
-                        <div className="font-medium">{formatPrice(data.high)}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">Mínimo 24h</div>
-                        <div className="font-medium">{formatPrice(data.low)}</div>
+                        <div className="text-muted-foreground">Cambio 24h</div>
+                        <div className={`font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatPercentage(data.change24h)}
+                        </div>
                       </div>
                     </div>
                     
