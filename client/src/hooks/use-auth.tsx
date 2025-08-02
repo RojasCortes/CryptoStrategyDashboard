@@ -42,7 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: (response: any) => {
+      // Store sessionId in localStorage
+      if (response.sessionId) {
+        localStorage.setItem('sessionId', response.sessionId);
+      }
+      const user = { id: response.id, username: response.username, email: response.email };
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Sesión iniciada",
@@ -69,7 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: (response: any) => {
+      // Store sessionId in localStorage
+      if (response.sessionId) {
+        localStorage.setItem('sessionId', response.sessionId);
+      }
+      const user = { id: response.id, username: response.username, email: response.email };
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "¡Registro exitoso!",
@@ -91,6 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      // Remove sessionId from localStorage
+      localStorage.removeItem('sessionId');
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Sesión cerrada",
