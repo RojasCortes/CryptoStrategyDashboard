@@ -6,7 +6,7 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 
 // Support both Neon (development) and Supabase (production) database URLs
-const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
+const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(

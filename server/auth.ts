@@ -122,10 +122,15 @@ export function setupAuth(app: Express) {
       // Remove password from response
       const { password: _, ...userWithoutPassword } = user;
 
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json(userWithoutPassword);
+      // Use promise-based login for better Vercel compatibility
+      await new Promise<void>((resolve, reject) => {
+        req.login(user, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
       });
+      
+      res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("Error en registro:", error);
       
@@ -176,7 +181,8 @@ export function setupAuth(app: Express) {
         
         req.login(user, (err) => {
           if (err) {
-            return next(err);
+            console.error("Login error:", err);
+            return res.status(500).json({ message: "Error interno del servidor" });
           }
           
           // Remove password from response

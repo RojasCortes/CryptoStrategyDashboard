@@ -3,10 +3,10 @@
   "name": "binance-trading-dashboard",
   "builds": [
     {
-      "src": "server/index.ts",
+      "src": "api/index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["server/**", "shared/**"]
+        "maxLambdaSize": "50mb"
       }
     },
     {
@@ -20,11 +20,11 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server/index.ts"
+      "dest": "/api/index.js"
     },
     {
       "src": "/ws",
-      "dest": "/server/index.ts"
+      "dest": "/api/index.js"
     },
     {
       "src": "/(.*)",
