@@ -42,14 +42,18 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, loginMutation, registerMutation, isLoading } = useAuth();
+  
+  // Redirect if already logged in - but only after hooks have run
+  if (!isLoading && user) {
+    return <Redirect to="/" />;
+  }
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginUserSchema),
     defaultValues: {
       username: "",
       password: "",
-      rememberMe: false,
     },
   });
 
@@ -81,9 +85,7 @@ export default function AuthPage() {
     });
   };
 
-  if (user) {
-    return <Redirect to="/" />;
-  }
+
   
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -118,7 +120,7 @@ export default function AuthPage() {
               <Tabs 
                 defaultValue="login" 
                 value={activeTab} 
-                onValueChange={setActiveTab}
+                onValueChange={(value) => setActiveTab(value as "login" | "register")}
                 className="w-full"
               >
                 <TabsList className="grid grid-cols-2 w-full mb-8 h-12 bg-muted/50">
@@ -184,28 +186,7 @@ export default function AuthPage() {
                         )}
                       />
                     
-                      <div className="flex justify-between items-center pt-2">
-                        <FormField
-                          control={loginForm.control}
-                          name="rememberMe"
-                          render={({ field }) => (
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id="rememberMe"
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="border-muted"
-                              />
-                              <label
-                                htmlFor="rememberMe"
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                Recordarme
-                              </label>
-                            </div>
-                          )}
-                        />
-                        
+                      <div className="flex justify-end items-center pt-2">
                         <Button variant="link" className="p-0 h-auto text-sm text-primary hover:text-primary/80">
                           ¿Olvidaste tu contraseña?
                         </Button>

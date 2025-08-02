@@ -43,12 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (response: any) => {
+      console.log('Login success response:', response);
       // Store sessionId in localStorage
       if (response.sessionId) {
         localStorage.setItem('sessionId', response.sessionId);
       }
       const user = { id: response.id, username: response.username, email: response.email };
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Force a refetch of user data to ensure consistency 
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "Sesión iniciada",
         description: `¡Bienvenido de nuevo, ${user.username}!`,
@@ -75,12 +80,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (response: any) => {
+      console.log('Register success response:', response);
       // Store sessionId in localStorage
       if (response.sessionId) {
         localStorage.setItem('sessionId', response.sessionId);
       }
       const user = { id: response.id, username: response.username, email: response.email };
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Force a refetch of user data to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "¡Registro exitoso!",
         description: `¡Bienvenido, ${user.username}!`,

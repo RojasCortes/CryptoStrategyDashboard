@@ -2,8 +2,13 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let text;
+    try {
+      text = await res.text();
+    } catch {
+      text = res.statusText;
+    }
+    throw new Error(`${res.status}: ${text || 'Unknown error'}`);
   }
 }
 
@@ -27,6 +32,11 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  // Don't throw for login/register requests, let them handle their own errors
+  if (method === 'POST' && (url.includes('/login') || url.includes('/register'))) {
+    return res;
+  }
+  
   await throwIfResNotOk(res);
   return res;
 }
