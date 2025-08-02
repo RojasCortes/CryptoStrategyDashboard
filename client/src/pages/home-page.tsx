@@ -4,6 +4,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useBinanceData } from "@/hooks/use-binance";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { AppBar } from "@/components/dashboard/app-bar";
+import { MarketDataWebSocket } from "@/components/market-data-websocket";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
@@ -358,6 +359,20 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+            
+            {/* Real-time Market Data WebSocket Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Datos de Mercado en Tiempo Real</h2>
+                <Badge variant="outline" className="text-green-600 border-green-200">
+                  WebSocket Activo
+                </Badge>
+              </div>
+              <MarketDataWebSocket 
+                symbols={['btcusdt', 'ethusdt', 'bnbusdt', 'solusdt']}
+                className="mb-6"
+              />
             </div>
             
             {/* Charts section */}

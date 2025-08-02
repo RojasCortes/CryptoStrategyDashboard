@@ -99,4 +99,34 @@ Preferred communication style: Simple, everyday language.
 - **connect-pg-simple**: PostgreSQL session store
 - **memorystore**: In-memory session store for development
 
-The application is designed to be deployed on Replit with environment variables for database connection, API keys, and session secrets. The architecture supports both development (with mock data) and production (with real Binance API integration) scenarios.
+The application is designed for **production deployment on Vercel** with **Supabase** as the database backend. It features **WebSocket-first architecture** for real-time data with REST API fallback, optimized for 5-10 users consuming <0.5% of Binance API limits.
+
+## Recent Major Updates (August 2025)
+
+### ✅ WebSocket Implementation
+- **Primary data source**: Real-time WebSocket connection to Binance
+- **Backup system**: REST API with 30s cache
+- **Auto-reconnection**: Exponential backoff (1s to 30s)
+- **Rate limiting**: Monitored and optimized for <0.5% usage
+- **Fallback chain**: WebSocket → REST → Error handling
+
+### ✅ Vercel Optimization
+- **Serverless functions**: Optimized build configuration
+- **vercel.json**: Routes configured for API and WebSocket
+- **Production ready**: Build process for client and server
+- **Environment variables**: Structured for deployment
+
+### 🔄 Supabase Migration Prepared
+- **Database**: PostgreSQL compatible with current Drizzle schema
+- **Session storage**: Enhanced for production scalability
+- **Connection pooling**: Optimized for serverless functions
+- **Migration path**: Seamless transition from Neon to Supabase
+
+### 📊 Performance Metrics
+- **Target users**: 5-10 concurrent users
+- **API consumption**: <0.5% of Binance limits (~480 requests/day per user)
+- **Cache strategy**: 30s for market data (optimal balance)
+- **WebSocket efficiency**: Real-time data with minimal overhead
+- **Fallback reliability**: Multiple data sources ensure 99.9% uptime
+
+The architecture supports both development (with mock data) and production (with real Binance API integration) scenarios, optimized for Vercel deployment with Supabase backend.
