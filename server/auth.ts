@@ -75,10 +75,10 @@ export function setupAuth(app: Express) {
   app.post("/api/register", async (req, res, next) => {
     try {
       // Importar el schema correcto desde shared/schema
-      const { registerUserSchema } = await import("@shared/schema");
+      const { serverRegisterSchema } = await import("@shared/schema");
       
       // Validar los datos de entrada
-      const parseResult = registerUserSchema.safeParse(req.body);
+      const parseResult = serverRegisterSchema.safeParse(req.body);
       if (!parseResult.success) {
         const errors = parseResult.error.errors.map(err => ({
           field: err.path.join('.'),
@@ -153,24 +153,38 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error, user: Express.User) => {
-      if (err) {
-        return next(err);
+    // Importar y validar los datos de entrada
+    import("@shared/schema").then(({ loginUserSchema }) => {
+      const parseResult = loginUserSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Datos de login inválidos",
+          errors: parseResult.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        });
       }
-      if (!user) {
-        return res.status(401).json({ message: "Invalid username or password" });
-      }
-      
-      req.login(user, (err) => {
+
+      passport.authenticate("local", (err: Error, user: Express.User) => {
         if (err) {
           return next(err);
         }
+        if (!user) {
+          return res.status(401).json({ message: "Nombre de usuario o contraseña incorrectos" });
+        }
         
-        // Remove password from response
-        const { password: _, ...userWithoutPassword } = user;
-        return res.status(200).json(userWithoutPassword);
-      });
-    })(req, res, next);
+        req.login(user, (err) => {
+          if (err) {
+            return next(err);
+          }
+          
+          // Remove password from response
+          const { password: _, ...userWithoutPassword } = user;
+          return res.status(200).json(userWithoutPassword);
+        });
+      })(req, res, next);
+    }).catch(next);
   });
 
   app.post("/api/logout", (req, res, next) => {

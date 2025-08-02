@@ -33,6 +33,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
     .max(255, "El email no puede tener más de 255 caracteres"),
 });
 
+// Schema para el frontend (incluye confirmPassword)
 export const registerUserSchema = insertUserSchema.pick({
   username: true,
   password: true,
@@ -42,6 +43,24 @@ export const registerUserSchema = insertUserSchema.pick({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
+});
+
+// Schema para el servidor (sin confirmPassword)
+export const serverRegisterSchema = z.object({
+  username: z.string()
+    .min(3, "El nombre de usuario debe tener al menos 3 caracteres")
+    .max(30, "El nombre de usuario no puede tener más de 30 caracteres")
+    .regex(/^[a-zA-Z0-9_]+$/, "El nombre de usuario solo puede contener letras, números y guiones bajos"),
+  password: z.string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
+    .max(100, "La contraseña no puede tener más de 100 caracteres")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+      "La contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial (@$!%*?&)"),
+  email: z.string()
+    .email("Formato de email inválido")
+    .max(255, "El email no puede tener más de 255 caracteres"),
+  apiKey: z.string().optional(),
+  apiSecret: z.string().optional(),
 });
 
 export const strategies = pgTable("strategies", {

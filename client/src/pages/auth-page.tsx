@@ -82,6 +82,7 @@ export default function AuthPage() {
   };
   
   const onRegisterSubmit = (values: RegisterFormValues) => {
+    // Solo enviar los campos necesarios al servidor (sin confirmPassword)
     registerMutation.mutate({
       username: values.username,
       email: values.email,
