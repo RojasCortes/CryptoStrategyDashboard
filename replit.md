@@ -153,3 +153,17 @@ The architecture supports both development (with fallback messages) and producti
 - **Data source indicators**: Clear labeling of all data sources as "Real Binance Data"
 
 The application now maintains complete data integrity - displaying only authentic information from Binance or clear indicators when such data requires API configuration.
+
+## Environment Configuration Update (August 2025)
+
+### ✅ Flexible Environment Variables
+- **Database compatibility**: Supports both `DATABASE_URL` and `SUPABASE_DATABASE_URL`
+- **Session management**: Accepts `SESSION_SECRET` or `NEXTAUTH_SECRET` (Vercel compatible)
+- **User-specific API keys**: Each user configures their own Binance credentials in settings
+- **No global API exposure**: Binance keys stored securely per user, not in environment variables
+
+### ✅ Deployment Optimization
+- **Vercel ready**: Environment variables configured for seamless Vercel deployment
+- **Supabase integration**: Optimized connection pooling for serverless functions
+- **Multiple provider support**: Easy migration between database providers
+- **Production security**: Session cookies configured for HTTPS in production

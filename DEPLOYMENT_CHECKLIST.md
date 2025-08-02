@@ -99,17 +99,38 @@ const pool = new Pool({
 ```
 
 ### ✅ Variables de Entorno Requeridas
+
+#### Variables Principales (Vercel):
 ```env
-# Supabase Database
-DATABASE_URL=postgresql://[user]:[password]@[host]:[port]/[database]?pgbouncer=true
+# Base de datos (usar UNA opción)
+SUPABASE_DATABASE_URL=postgresql://postgres.ref:password@host:6543/postgres?pgbouncer=true
+# O alternativamente:
+DATABASE_URL=postgresql://user:password@host:port/database
 
-# Binance API (opcional - para datos reales)
-BINANCE_API_KEY=your_binance_api_key
-BINANCE_SECRET_KEY=your_binance_secret_key
+# Sesión (usar UNA opción)  
+NEXTAUTH_SECRET=your-secret-key-here
+# O alternativamente:
+SESSION_SECRET=your-secret-key-here
 
-# Session Management
-SESSION_SECRET=your_session_secret_key
+# Environment (automático en Vercel)
+NODE_ENV=production
 ```
+
+#### Variables Opcionales:
+```env
+# Email service
+SENDGRID_API_KEY=optional-sendgrid-key
+
+# Testing Binance keys (usuarios configuran las suyas)
+BINANCE_API_KEY=optional-testing-key
+BINANCE_SECRET_KEY=optional-testing-secret
+```
+
+#### ✅ Configuración de API por Usuario
+- **Cada usuario configura** sus propias claves Binance en los Ajustes
+- **Almacenamiento seguro** en base de datos encriptado
+- **Sin exposición** de claves en variables globales
+- **Flexibilidad total** para cada usuario
 
 ## 📱 INTERFAZ USUARIO - ACTUALIZADA
 
