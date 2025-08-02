@@ -12,6 +12,7 @@ import HomePage from "@/pages/home-page";
 import SimpleHome from "@/pages/simple-home";
 import EnhancedHomePage from "@/pages/enhanced-home";
 import ImprovedHomePage from "@/pages/improved-home";
+import ModernHomePage from "@/pages/modern-home";
 import DebugDashboard from "@/pages/debug-dashboard";
 import DashboardPage from "@/pages/dashboard-page";
 import AuthPage from "@/pages/auth-page";
@@ -31,7 +32,7 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/debug" component={DebugDashboard} />
       <ProtectedRoute path="/simple" component={SimpleHome} />
-      <ProtectedRoute path="/" component={ImprovedHomePage} />
+      <ProtectedRoute path="/" component={ModernHomePage} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/portfolio" component={PortfolioPage} />
       <ProtectedRoute path="/strategies" component={StrategiesPage} />
