@@ -21,6 +21,12 @@ export function useMarketStream({ symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'S
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   const startMarketStream = useCallback(() => {
+    // Prevent excessive reconnection attempts
+    if (connectionAttempts >= 3) {
+      console.log('Max connection attempts reached, stopping reconnection');
+      return null;
+    }
+    
     setConnectionAttempts(prev => prev + 1);
     
     function updateDashboard(data: MarketData[]) {
@@ -53,8 +59,15 @@ export function useMarketStream({ symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'S
           console.error('SSE error:', error);
           setIsConnected(false);
           eventSource.close();
-          // Auto retry after 5 seconds
-          setTimeout(startFallbackPolling, 5000);
+          
+          // Only retry if we haven't exceeded max attempts
+          if (connectionAttempts < 3) {
+            setTimeout(() => {
+              if (connectionAttempts < 3) {
+                startFallbackPolling();
+              }
+            }, 5000);
+          }
         };
         
         return eventSource;
@@ -81,8 +94,8 @@ export function useMarketStream({ symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'S
       // Fetch immediately
       fetchData();
       
-      // Set up interval
-      const interval = setInterval(fetchData, 30000);
+      // Set up interval with longer delay to reduce load
+      const interval = setInterval(fetchData, 60000); // Changed to 60 seconds
       return interval;
     };
 

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { MarketDataWebSocket } from "@/components/market-data-websocket";
+import { SimpleMarketData } from "@/components/simple-market-data";
 import { RealDataCharts } from "@/components/real-data-charts";
 import { 
   Menu, 
@@ -290,13 +290,13 @@ export default function ImprovedHomePage() {
                 </CardTitle>
                 <Badge variant="outline" className="text-green-600 border-green-200">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                  WebSocket Activo
+                  Datos Reales
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <MarketDataWebSocket 
-                symbols={['btcusdt', 'ethusdt', 'bnbusdt', 'solusdt']}
+              <SimpleMarketData 
+                symbols={['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT']}
                 className="mb-4"
               />
             </CardContent>

@@ -103,18 +103,18 @@ The application is designed for **production deployment on Vercel** with **Supab
 
 ## Recent Major Updates (August 2025)
 
-### ✅ WebSocket Implementation
-- **Primary data source**: Real-time WebSocket connection to Binance
-- **Backup system**: REST API with 30s cache
-- **Auto-reconnection**: Exponential backoff (1s to 30s)
-- **Rate limiting**: Monitored and optimized for <0.5% usage
-- **Fallback chain**: WebSocket → REST → Error handling
+### ✅ Server-Sent Events (SSE) Implementation for Vercel
+- **Primary data source**: SSE connection with automatic fallback to polling
+- **Vercel compatible**: No persistent WebSocket dependency 
+- **Performance optimized**: Limited reconnection attempts (max 3)
+- **Rate limiting**: 60-120s intervals to prevent browser slowdown
+- **Fallback chain**: SSE → Polling → Manual refresh
 
 ### ✅ Vercel Optimization
-- **Serverless functions**: Optimized build configuration
-- **vercel.json**: Routes configured for API and WebSocket
-- **Production ready**: Build process for client and server
-- **Environment variables**: Structured for deployment
+- **Serverless functions**: API endpoints for SSE and polling
+- **Performance improvements**: Reduced connection attempts and intervals
+- **Simple components**: Lightweight market data without excessive reconnections
+- **Browser optimization**: Fixed performance issues and memory leaks
 
 ### 🔄 Supabase Migration Prepared
 - **Database**: PostgreSQL compatible with current Drizzle schema
