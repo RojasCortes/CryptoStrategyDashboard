@@ -455,7 +455,7 @@ export default function HomePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recentTrades && recentTrades.length > 0 ? recentTrades.map((trade) => (
+                      {recentTrades.map((trade) => (
                         <TableRow key={trade.id}>
                           <TableCell className="font-medium">
                             {trade.strategy}
@@ -478,13 +478,7 @@ export default function HomePage() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      )) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground">
-                            No hay operaciones recientes
-                          </TableCell>
-                        </TableRow>
-                      )}
+                      ))
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -504,7 +498,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {topStrategies && topStrategies.length > 0 ? topStrategies.map((strategy) => (
+                    {topStrategies.map((strategy) => (
                       <div key={strategy.id} className="border rounded-lg p-3">
                         <div className="flex justify-between items-center mb-2">
                           <div className="font-medium">{strategy.name}</div>
@@ -525,11 +519,7 @@ export default function HomePage() {
                           <div className="font-medium">{strategy.trades}</div>
                         </div>
                       </div>
-                    )) : (
-                      <div className="text-center text-muted-foreground py-4">
-                        No hay estrategias disponibles
-                      </div>
-                    )}
+                    ))
                   </div>
                 </CardContent>
               </Card>
