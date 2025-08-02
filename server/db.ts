@@ -17,8 +17,8 @@ if (!databaseUrl) {
 export const pool = new Pool({ 
   connectionString: databaseUrl,
   // Optimized for Vercel serverless functions
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  max: 1,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
 });
 export const db = drizzle({ client: pool, schema });
