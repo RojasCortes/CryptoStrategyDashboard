@@ -3,7 +3,7 @@
   "name": "binance-trading-dashboard",
   "builds": [
     {
-      "src": "api/*.js",
+      "src": "api/*.mjs",
       "use": "@vercel/node"
     },
     {
@@ -17,19 +17,11 @@
   "routes": [
     {
       "src": "/api/health",
-      "dest": "/api/health.js"
+      "dest": "/api/health.mjs"
     },
     {
-      "src": "/api/user",
-      "dest": "/api/user.js"
-    },
-    {
-      "src": "/api/simple-test",
-      "dest": "/api/simple-test.js"
-    },
-    {
-      "src": "/api/db-connect",
-      "dest": "/api/db-connect.js"
+      "src": "/api/db-test",
+      "dest": "/api/db-test.mjs"
     },
     {
       "handle": "filesystem"
