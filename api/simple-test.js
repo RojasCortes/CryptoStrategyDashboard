@@ -1,5 +1,5 @@
-// Ultra simple test function to verify Vercel setup
-module.exports = async (req, res) => {
+// Vercel serverless function format
+export default function handler(req, res) {
   try {
     res.setHeader('Content-Type', 'application/json');
     
@@ -24,4 +24,4 @@ module.exports = async (req, res) => {
       stack: error.stack
     });
   }
-};
+}

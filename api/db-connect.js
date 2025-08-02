@@ -1,6 +1,6 @@
-const { Pool } = require('@neondatabase/serverless');
+import { Pool } from '@neondatabase/serverless';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     res.setHeader('Content-Type', 'application/json');
     
@@ -40,4 +40,4 @@ module.exports = async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
-};
+}
