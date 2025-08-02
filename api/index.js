@@ -36,6 +36,10 @@ function getUserFromSession(sessionId) {
 export default async function handler(req, res) {
   const { url, method, body, headers } = req;
   
+  // Parse URL to handle query parameters
+  const urlObj = new URL(url, `http://${req.headers.host}`);
+  const pathname = urlObj.pathname;
+  
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -46,7 +50,7 @@ export default async function handler(req, res) {
   }
   
   // Health check
-  if (url === '/api/health' || url === '/api/health/') {
+  if (pathname === '/api/health' || pathname === '/api/health/') {
     return res.status(200).json({ 
       status: 'ok',
       message: 'API is working!',
@@ -56,7 +60,7 @@ export default async function handler(req, res) {
   }
   
   // Register endpoint
-  if ((url === '/api/register' || url === '/api/register/') && method === 'POST') {
+  if ((pathname === '/api/register' || pathname === '/api/register/') && method === 'POST') {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
@@ -104,7 +108,7 @@ export default async function handler(req, res) {
   }
   
   // Login endpoint
-  if ((url === '/api/login' || url === '/api/login/') && method === 'POST') {
+  if ((pathname === '/api/login' || pathname === '/api/login/') && method === 'POST') {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
@@ -144,7 +148,7 @@ export default async function handler(req, res) {
   }
   
   // Logout endpoint
-  if ((url === '/api/logout' || url === '/api/logout/') && method === 'POST') {
+  if ((pathname === '/api/logout' || pathname === '/api/logout/') && method === 'POST') {
     const sessionId = headers.authorization?.replace('Bearer ', '');
     if (sessionId) {
       sessions.delete(sessionId);
@@ -153,7 +157,7 @@ export default async function handler(req, res) {
   }
   
   // User endpoint
-  if (url === '/api/user' || url === '/api/user/') {
+  if (pathname === '/api/user' || pathname === '/api/user/') {
     const sessionId = headers.authorization?.replace('Bearer ', '');
     const userId = sessionId ? getUserFromSession(sessionId) : null;
     
@@ -182,8 +186,9 @@ export default async function handler(req, res) {
     }
   }
   
-  // Market data endpoint
-  if (url === '/api/market-data' || url === '/api/market-data/') {
+  // Market data endpoints - handle multiple variations
+  if (pathname === '/api/market-data' || pathname === '/api/market-data/' || 
+      pathname === '/api/market/data' || pathname === '/api/market/data/') {
     // Mock market data since we don't have API keys in serverless function
     const mockData = {
       symbols: [
@@ -197,7 +202,7 @@ export default async function handler(req, res) {
   }
   
   // Strategies endpoint
-  if (url === '/api/strategies' || url === '/api/strategies/') {
+  if (pathname === '/api/strategies' || pathname === '/api/strategies/') {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
@@ -241,7 +246,7 @@ export default async function handler(req, res) {
   }
   
   // Trades endpoint
-  if (url === '/api/trades' || url === '/api/trades/') {
+  if (pathname === '/api/trades' || pathname === '/api/trades/') {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
@@ -268,7 +273,7 @@ export default async function handler(req, res) {
   }
   
   // Binance account info endpoint
-  if (url === '/api/binance/account' || url === '/api/binance/account/') {
+  if (pathname === '/api/binance/account' || pathname === '/api/binance/account/') {
     const sessionId = headers.authorization?.replace('Bearer ', '');
     const userId = sessionId ? getUserFromSession(sessionId) : null;
     
@@ -290,7 +295,7 @@ export default async function handler(req, res) {
   }
   
   // Binance price endpoint
-  if (url === '/api/binance/price' || url === '/api/binance/price/') {
+  if (pathname === '/api/binance/price' || pathname === '/api/binance/price/') {
     // Return mock price data
     return res.status(200).json([
       { symbol: 'BTCUSDT', price: '43250.00' },
@@ -302,7 +307,7 @@ export default async function handler(req, res) {
   }
   
   // Update API keys endpoint
-  if ((url === '/api/user/api-keys' || url === '/api/user/api-keys/') && method === 'PUT') {
+  if ((pathname === '/api/user/api-keys' || pathname === '/api/user/api-keys/') && method === 'PUT') {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
@@ -336,7 +341,7 @@ export default async function handler(req, res) {
   }
   
   // Cryptocurrency list endpoint
-  if (url === '/api/cryptocurrencies' || url === '/api/cryptocurrencies/') {
+  if (pathname === '/api/cryptocurrencies' || pathname === '/api/cryptocurrencies/') {
     // Return a subset of popular cryptocurrencies
     const cryptos = [
       { symbol: 'BTC', name: 'Bitcoin', price: '43250.00', change: '+2.45%' },
@@ -352,7 +357,8 @@ export default async function handler(req, res) {
   }
   
   // Trading pairs endpoint
-  if (url === '/api/trading-pairs' || url === '/api/trading-pairs/') {
+  if (pathname === '/api/trading-pairs' || pathname === '/api/trading-pairs/' ||
+      pathname === '/api/market/pairs' || pathname === '/api/market/pairs/') {
     const pairs = [
       'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'DOTUSDT',
       'SOLUSDT', 'MATICUSDT', 'AVAXUSDT', 'LINKUSDT', 'UNIUSDT'
@@ -360,9 +366,39 @@ export default async function handler(req, res) {
     return res.status(200).json(pairs);
   }
   
+  // Additional endpoints that might be needed
+  if (pathname === '/api/notifications' || pathname === '/api/notifications/') {
+    return res.status(200).json([]);
+  }
+  
+  if (pathname.startsWith('/api/trades') && pathname.includes('limit')) {
+    const sessionId = headers.authorization?.replace('Bearer ', '');
+    const userId = sessionId ? getUserFromSession(sessionId) : null;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    return res.status(200).json([]);
+  }
+  
+  // Handle market data with symbols parameter
+  if (pathname === '/api/market/data' && urlObj.searchParams.get('symbols')) {
+    const symbols = urlObj.searchParams.get('symbols').split(',');
+    const mockData = symbols.map(symbol => ({
+      symbol: symbol,
+      price: (Math.random() * 50000 + 1000).toFixed(2),
+      change: (Math.random() * 10 - 5).toFixed(2) + '%',
+      volume: Math.floor(Math.random() * 10000000).toString()
+    }));
+    
+    return res.status(200).json({ symbols: mockData, timestamp: new Date().toISOString() });
+  }
+  
   // Default 404 for unknown API routes
   return res.status(404).json({ 
     error: 'API route not found',
-    path: url
+    path: pathname,
+    fullUrl: url
   });
 }
