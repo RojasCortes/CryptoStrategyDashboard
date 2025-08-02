@@ -74,16 +74,40 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const parseResult = loginUserSchema.safeParse(req.body);
+      // Importar el schema correcto desde shared/schema
+      const { registerUserSchema } = await import("@shared/schema");
+      
+      // Validar los datos de entrada
+      const parseResult = registerUserSchema.safeParse(req.body);
       if (!parseResult.success) {
-        return res.status(400).json({ message: "Invalid registration data" });
+        const errors = parseResult.error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }));
+        return res.status(400).json({ 
+          message: "Datos de registro inválidos", 
+          errors: errors
+        });
       }
 
-      const { username, password, email } = req.body;
+      const { username, password, email } = parseResult.data;
 
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
+      // Verificar si el usuario ya existe por username
+      const existingUserByUsername = await storage.getUserByUsername(username);
+      if (existingUserByUsername) {
+        return res.status(400).json({ 
+          message: "El nombre de usuario ya está en uso",
+          errors: [{ field: 'username', message: 'Este nombre de usuario ya está registrado' }]
+        });
+      }
+
+      // Verificar si el email ya existe
+      const existingUserByEmail = await storage.getUserByEmail(email);
+      if (existingUserByEmail) {
+        return res.status(400).json({ 
+          message: "El email ya está en uso",
+          errors: [{ field: 'email', message: 'Este email ya está registrado' }]
+        });
       }
 
       const hashedPassword = await hashPassword(password);
@@ -103,6 +127,27 @@ export function setupAuth(app: Express) {
         res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
+      console.error("Error en registro:", error);
+      
+      // Manejo específico de errores de base de datos
+      if (error && typeof error === 'object' && 'message' in error) {
+        const errorMessage = (error as Error).message;
+        
+        if (errorMessage.includes('duplicate key value violates unique constraint "users_username_unique"')) {
+          return res.status(400).json({ 
+            message: "El nombre de usuario ya está en uso",
+            errors: [{ field: 'username', message: 'Este nombre de usuario ya está registrado' }]
+          });
+        }
+        
+        if (errorMessage.includes('duplicate key value violates unique constraint "users_email_unique"')) {
+          return res.status(400).json({ 
+            message: "El email ya está en uso",
+            errors: [{ field: 'email', message: 'Este email ya está registrado' }]
+          });
+        }
+      }
+      
       next(error);
     }
   });
