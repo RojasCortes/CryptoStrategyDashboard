@@ -43,7 +43,9 @@ import {
   PieChart,
   DollarSign,
   Globe,
-  Calendar
+  Calendar,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -157,8 +159,24 @@ export default function HomePage() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const { user } = useAuth();
-  const { marketData = [], isLoading: isLoadingMarketData } = useBinanceData();
+  const { marketData = [], isLoading: isLoadingMarketData, error: marketError } = useBinanceData();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  
+  const { data: strategies = [], isLoading: isStrategiesLoading, error: strategiesError } = useQuery<Strategy[]>({
+    queryKey: ["/api/strategies"],
+    retry: 1,
+    staleTime: 30000,
+    enabled: !!user,
+  });
+
+  const { data: trades = [], isLoading: isTradesLoading, error: tradesError } = useQuery({
+    queryKey: ["/api/trades"],
+    retry: 1,
+    staleTime: 30000,
+    enabled: !!user,
+  });
+
+  console.log('HomePage render:', { user, marketData, strategies, trades });
   
   // Get current time for greeting
   const currentHour = new Date().getHours();
@@ -181,17 +199,7 @@ export default function HomePage() {
   // Capitalize first letter
   const dateString = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
-  // Fetch strategies data
-  const { data: strategies = [], isLoading: isLoadingStrategies } = useQuery<Strategy[]>({
-    queryKey: ["/api/strategies"],
-    enabled: !!user,
-  });
 
-  // Fetch trades
-  const { data: trades = [], isLoading: isLoadingTrades } = useQuery<any[]>({
-    queryKey: ["/api/trades"],
-    enabled: !!user,
-  });
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -202,10 +210,49 @@ export default function HomePage() {
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
+  // Debug render state
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Por favor inicia sesión para acceder al dashboard.</p>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center space-y-4">
+          <p>Usuario no encontrado. Redirigiendo a login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state if data is still loading
+  if (isStrategiesLoading || isTradesLoading || isLoadingMarketData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Cargando dashboard...</p>
+          <div className="text-xs text-muted-foreground/70">
+            {isStrategiesLoading && <div>• Cargando estrategias...</div>}
+            {isTradesLoading && <div>• Cargando operaciones...</div>}
+            {isLoadingMarketData && <div>• Cargando datos de mercado...</div>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if there are critical errors
+  if (strategiesError || tradesError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+          <h2 className="text-xl font-semibold">Error al cargar el dashboard</h2>
+          <div className="text-sm text-muted-foreground space-y-2">
+            {strategiesError && <div>Error de estrategias: {strategiesError.message}</div>}
+            {tradesError && <div>Error de operaciones: {tradesError.message}</div>}
+          </div>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Recargar página
+          </Button>
+        </div>
       </div>
     );
   }
