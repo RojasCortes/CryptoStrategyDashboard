@@ -58,6 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Sesión iniciada",
         description: `¡Bienvenido de nuevo, ${user.username}!`,
       });
+
+      // Force navigation after successful login
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     },
     onError: (error: Error) => {
       toast({
@@ -96,6 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: `¡Bienvenido, ${user.username}!`,
         variant: "default",
       });
+
+      // Force navigation after successful registration
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     },
     onError: (error: Error) => {
       toast({

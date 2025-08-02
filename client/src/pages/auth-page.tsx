@@ -15,7 +15,7 @@ import {
   BarChart3,
   Mail
 } from "lucide-react";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import {
   Form,
   FormControl,
@@ -43,9 +43,11 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { user, loginMutation, registerMutation, isLoading } = useAuth();
+  const [, navigate] = useLocation();
   
   // Redirect if already logged in - but only after hooks have run
   if (!isLoading && user) {
+    console.log('User found, redirecting to dashboard');
     return <Redirect to="/" />;
   }
 
