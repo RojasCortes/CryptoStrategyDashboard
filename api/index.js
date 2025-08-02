@@ -10,18 +10,30 @@ const scryptAsync = promisify(scrypt);
 
 const app = express();
 
-// Database setup
-const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  console.error('No database URL found. Check SUPABASE_DATABASE_URL or DATABASE_URL environment variables.');
-  throw new Error('Database URL is required');
+// Database setup using Supabase connection string
+let databaseUrl;
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  // Construct database URL from Supabase project URL
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const projectRef = supabaseUrl.split('//')[1].split('.')[0];
+  databaseUrl = `postgresql://postgres:[YOUR-PASSWORD]@db.${projectRef}.supabase.co:5432/postgres`;
+} else {
+  databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
 }
 
-const pool = new Pool({ 
-  connectionString: databaseUrl,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+if (!databaseUrl) {
+  console.error('No database URL configured');
+}
+
+let pool;
+try {
+  pool = new Pool({ 
+    connectionString: databaseUrl,
+    ssl: { rejectUnauthorized: false }
+  });
+} catch (error) {
+  console.error('Pool creation error:', error);
+}
 
 // Middleware
 app.use(express.json());
