@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
 import SimpleHome from "@/pages/simple-home";
+import EnhancedHomePage from "@/pages/enhanced-home";
 import DebugDashboard from "@/pages/debug-dashboard";
 import DashboardPage from "@/pages/dashboard-page";
 import AuthPage from "@/pages/auth-page";
@@ -29,7 +30,7 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/debug" component={DebugDashboard} />
       <ProtectedRoute path="/simple" component={SimpleHome} />
-      <ProtectedRoute path="/" component={SimpleHome} />
+      <ProtectedRoute path="/" component={EnhancedHomePage} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/portfolio" component={PortfolioPage} />
       <ProtectedRoute path="/strategies" component={StrategiesPage} />
