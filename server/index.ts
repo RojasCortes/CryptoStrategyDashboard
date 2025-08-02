@@ -1,10 +1,13 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, { type Express, type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Store app reference for export
+let appInstance: any;
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -56,13 +59,21 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // For Vercel, use the assigned port or default to 5000 for local development
-  const port = process.env.PORT || 5000;
-  server.listen({
-    port: Number(port),
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  // Store app instance for export
+  appInstance = app;
+
+  // For local development, start the server
+  if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+    const port = process.env.PORT || 5000;
+    server.listen({
+      port: Number(port),
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${port}`);
+    });
+  }
 })();
+
+// Export for Vercel serverless functions
+export default app;
