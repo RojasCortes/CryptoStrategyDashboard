@@ -95,7 +95,7 @@ export default function CleanDashboard() {
                 <TrendingUp className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-lg text-gradient">TradingAI</h1>
+                <h1 className="font-bold text-lg text-gradient">CryptoDashboard <span className="text-primary/80 text-xs">SK</span></h1>
                 <p className="text-xs text-muted-foreground">Dashboard</p>
               </div>
             </div>

@@ -127,7 +127,7 @@ export default function FirebaseAuthPage() {
                 </div>
               </div>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-gradient">TradingAI</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-gradient">CryptoDashboard <span className="text-primary/80 text-lg">SK</span></h1>
             <p className="text-muted-foreground mt-3 text-lg">
               Gestiona tus estrategias de criptomonedas
             </p>
@@ -409,7 +409,7 @@ export default function FirebaseAuthPage() {
         
         <div className="relative max-w-lg mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">TradingAI</h2>
+            <h2 className="text-4xl font-bold mb-4">CryptoDashboard <span className="text-white/80 text-2xl">SK</span></h2>
             <p className="text-xl opacity-90 leading-relaxed">
               La plataforma más completa para operar con Binance
             </p>
