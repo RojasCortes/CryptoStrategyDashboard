@@ -9,19 +9,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sun, Moon, Palette, Check, Globe } from "lucide-react";
+import { Sun, Moon, Check, Globe } from "lucide-react";
 
 const languages = [
   { code: "es", name: "Español" },
   { code: "en", name: "English" },
 ];
 
-type ThemeType = "light" | "dark" | "system" | "sovereign-king";
+type ThemeType = "light" | "dark";
 
 const themes = [
   { id: "light" as ThemeType, name: "theme.light", icon: <Sun className="h-4 w-4 mr-2" /> },
   { id: "dark" as ThemeType, name: "theme.dark", icon: <Moon className="h-4 w-4 mr-2" /> },
-  { id: "sovereign-king" as ThemeType, name: "theme.sovereignKing", icon: <Palette className="h-4 w-4 mr-2" /> },
 ];
 
 export function ThemeSelector() {
@@ -67,9 +66,7 @@ export function ThemeSelector() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1">
-            {theme === "light" ? <Sun className="h-4 w-4" /> : 
-             theme === "dark" ? <Moon className="h-4 w-4" /> : 
-             <Palette className="h-4 w-4" />}
+            {theme === "light" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             <span className="hidden md:inline">{currentThemeLabel}</span>
           </Button>
         </DropdownMenuTrigger>

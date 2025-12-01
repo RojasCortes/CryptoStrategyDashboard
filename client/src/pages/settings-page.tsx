@@ -34,7 +34,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, KeyRound, User, Bell, Shield } from "lucide-react";
+import { AlertCircle, KeyRound, User, Bell, Shield, Sun, Moon, Palette } from "lucide-react";
+import { useTheme } from "@/components/ui/theme-provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const apiKeysSchema = z.object({
@@ -74,6 +75,7 @@ type NotificationFormValues = z.infer<typeof notificationSchema>;
 export default function SettingsPage(): JSX.Element {
   const { user, updateApiKeysMutation } = useFirebaseAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
   const apiKeysForm = useForm<ApiKeysFormValues>({
@@ -254,6 +256,10 @@ export default function SettingsPage(): JSX.Element {
           <TabsTrigger value="notifications" className="flex items-center space-x-2">
             <Bell className="h-4 w-4" />
             <span>Notifications</span>
+          </TabsTrigger>
+          <TabsTrigger value="appearance" className="flex items-center space-x-2">
+            <Palette className="h-4 w-4" />
+            <span>Appearance</span>
           </TabsTrigger>
         </TabsList>
         
@@ -561,6 +567,69 @@ export default function SettingsPage(): JSX.Element {
                   </Button>
                 </form>
               </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="appearance">
+          <Card>
+            <CardHeader>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>
+                Customize how CryptoDashboard looks on your device.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Theme</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Select the theme for the dashboard interface.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setTheme("light")}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${
+                      theme === "light" 
+                        ? "border-primary bg-primary/10" 
+                        : "border-border hover:border-primary/50"
+                    }`}
+                    data-testid="button-theme-light"
+                  >
+                    <div className="w-16 h-16 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
+                      <Sun className="h-8 w-8 text-yellow-500" />
+                    </div>
+                    <span className="font-medium">Light</span>
+                    <span className="text-xs text-muted-foreground">Bright and clean</span>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setTheme("dark")}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${
+                      theme === "dark" 
+                        ? "border-primary bg-primary/10" 
+                        : "border-border hover:border-primary/50"
+                    }`}
+                    data-testid="button-theme-dark"
+                  >
+                    <div className="w-16 h-16 rounded-lg bg-gray-900 border border-gray-700 flex items-center justify-center">
+                      <Moon className="h-8 w-8 text-primary" />
+                    </div>
+                    <span className="font-medium">Dark</span>
+                    <span className="text-xs text-muted-foreground">Easy on the eyes</span>
+                  </button>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Current Theme</h3>
+                <p className="text-sm text-muted-foreground">
+                  You are currently using the <span className="font-semibold text-primary">{theme === "light" ? "Light" : "Dark"}</span> theme.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
