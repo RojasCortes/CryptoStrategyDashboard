@@ -5,8 +5,11 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password").default("").notNull(),
   email: text("email").notNull().unique(),
+  firebaseUid: text("firebase_uid").unique(),
+  displayName: text("display_name"),
+  photoURL: text("photo_url"),
   apiKey: text("api_key"),
   apiSecret: text("api_secret"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -16,6 +19,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   email: true,
+  firebaseUid: true,
+  displayName: true,
+  photoURL: true,
   apiKey: true,
   apiSecret: true,
 }).extend({
@@ -23,14 +29,13 @@ export const insertUserSchema = createInsertSchema(users).pick({
     .min(3, "El nombre de usuario debe tener al menos 3 caracteres")
     .max(30, "El nombre de usuario no puede tener más de 30 caracteres")
     .regex(/^[a-zA-Z0-9_]+$/, "El nombre de usuario solo puede contener letras, números y guiones bajos"),
-  password: z.string()
-    .min(8, "La contraseña debe tener al menos 8 caracteres")
-    .max(100, "La contraseña no puede tener más de 100 caracteres")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
-      "La contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 carácter especial (@$!%*?&)"),
+  password: z.string().optional().default(""),
   email: z.string()
     .email("Formato de email inválido")
     .max(255, "El email no puede tener más de 255 caracteres"),
+  firebaseUid: z.string().optional(),
+  displayName: z.string().optional(),
+  photoURL: z.string().optional(),
 });
 
 // Schema para el frontend (incluye confirmPassword)

@@ -1,11 +1,13 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, loginUserSchema } from "@shared/schema";
+import { verifyIdToken, initializeFirebaseAdmin, isFirebaseEnabled } from "./firebase-admin";
+import { decrypt } from "./encryption";
 
 declare global {
   namespace Express {
@@ -200,18 +202,17 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.sendStatus(401);
     }
     
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = req.user;
-    res.json(userWithoutPassword);
+    const safeUser = await getSafeUserData(req.user);
+    res.json(safeUser);
   });
 
   // Update user API keys
-  app.post("/api/user/apikeys", (req, res, next) => {
+  app.post("/api/user/apikeys", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -221,12 +222,124 @@ export function setupAuth(app: Express) {
       return res.status(400).json({ message: "API key and secret are required" });
     }
 
-    storage.updateUserApiKeys(req.user.id, apiKey, apiSecret)
-      .then(user => {
-        // Remove password from response
-        const { password: _, ...userWithoutPassword } = user;
-        res.json(userWithoutPassword);
-      })
-      .catch(next);
+    try {
+      const user = await storage.updateUserApiKeys(req.user.id, apiKey, apiSecret);
+      const safeUser = await getSafeUserData(user);
+      res.json(safeUser);
+    } catch (error) {
+      next(error);
+    }
   });
+
+  // Initialize Firebase Admin
+  initializeFirebaseAdmin();
+
+  // Firebase Authentication Session Endpoint
+  app.post("/api/auth/session", async (req, res, next) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ message: "No token provided" });
+      }
+
+      const idToken = authHeader.substring(7);
+      
+      // Verify Firebase token
+      const decodedToken = await verifyIdToken(idToken);
+      if (!decodedToken) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+
+      const { uid, email, name } = decodedToken;
+      const { username, displayName, photoURL } = req.body;
+
+      // Try to find existing user by Firebase UID
+      let user = await storage.getUserByFirebaseUid(uid);
+      
+      if (!user && email) {
+        // Try to find by email (for migration from old accounts)
+        user = await storage.getUserByEmail(email);
+        
+        if (user && !user.firebaseUid) {
+          // Link existing account to Firebase
+          // This requires adding a method to update firebaseUid - for now we'll create new
+        }
+      }
+
+      if (!user) {
+        // Create new user with Firebase UID
+        const newUsername = username || email?.split("@")[0] || `user_${uid.substring(0, 8)}`;
+        
+        // Ensure username is unique
+        let finalUsername = newUsername;
+        let counter = 1;
+        while (await storage.getUserByUsername(finalUsername)) {
+          finalUsername = `${newUsername}_${counter}`;
+          counter++;
+        }
+
+        user = await storage.createUser({
+          username: finalUsername,
+          email: email || `${uid}@firebase.local`,
+          password: "",
+          firebaseUid: uid,
+          displayName: displayName || name || null,
+          photoURL: photoURL || null,
+          apiKey: "",
+          apiSecret: ""
+        });
+      } else if (displayName || photoURL) {
+        // Update display info if provided
+        user = await storage.updateUserFirebaseInfo(user.id, displayName, photoURL);
+      }
+
+      // Create session
+      await new Promise<void>((resolve, reject) => {
+        req.login(user!, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      const safeUser = await getSafeUserData(user);
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Firebase session error:", error);
+      next(error);
+    }
+  });
+
+  // Firebase Logout Endpoint
+  app.post("/api/auth/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
+      req.session.destroy((err) => {
+        if (err) return next(err);
+        res.clearCookie("connect.sid");
+        res.sendStatus(200);
+      });
+    });
+  });
+
+  // Check if Firebase is enabled
+  app.get("/api/auth/firebase-status", (req, res) => {
+    res.json({ 
+      enabled: isFirebaseEnabled(),
+      projectId: process.env.FIREBASE_PROJECT_ID ? true : false
+    });
+  });
+}
+
+// Helper function to return user data with decrypted API keys (masked)
+async function getSafeUserData(user: SelectUser) {
+  const { password: _, apiKey, apiSecret, ...userData } = user;
+  
+  // For security, we don't return the actual API keys
+  // Instead, we indicate if they are configured
+  return {
+    ...userData,
+    hasApiKeys: !!(apiKey && apiSecret && apiKey.length > 0 && apiSecret.length > 0),
+    apiKeyConfigured: apiKey ? true : false,
+    apiSecretConfigured: apiSecret ? true : false
+  };
 }

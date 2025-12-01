@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { IStorage } from "./storage";
+import { encrypt, decrypt } from "./encryption";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -32,12 +33,20 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.firebaseUid, firebaseUid));
+    return user || undefined;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
-    // Make sure apiKey and apiSecret are properly initialized
     const userData = {
       ...insertUser,
-      apiKey: insertUser.apiKey ?? null,
-      apiSecret: insertUser.apiSecret ?? null
+      password: insertUser.password ?? "",
+      firebaseUid: insertUser.firebaseUid ?? null,
+      displayName: insertUser.displayName ?? null,
+      photoURL: insertUser.photoURL ?? null,
+      apiKey: insertUser.apiKey ? await encrypt(insertUser.apiKey) : null,
+      apiSecret: insertUser.apiSecret ? await encrypt(insertUser.apiSecret) : null
     };
     
     const [user] = await db
@@ -49,9 +58,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserApiKeys(userId: number, apiKey: string, apiSecret: string): Promise<User> {
+    const encryptedKey = await encrypt(apiKey);
+    const encryptedSecret = await encrypt(apiSecret);
+    
     const [user] = await db
       .update(users)
-      .set({ apiKey, apiSecret })
+      .set({ apiKey: encryptedKey, apiSecret: encryptedSecret })
       .where(eq(users.id, userId))
       .returning();
       
@@ -80,6 +92,24 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ password: hashedPassword })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    return user;
+  }
+
+  async updateUserFirebaseInfo(userId: number, displayName?: string, photoURL?: string): Promise<User> {
+    const updateData: { displayName?: string; photoURL?: string } = {};
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (photoURL !== undefined) updateData.photoURL = photoURL;
+    
+    const [user] = await db
+      .update(users)
+      .set(updateData)
       .where(eq(users.id, userId))
       .returning();
       

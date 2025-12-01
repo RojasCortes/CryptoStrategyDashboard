@@ -8,10 +8,12 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserApiKeys(userId: number, apiKey: string, apiSecret: string): Promise<User>;
   updateUserProfile(userId: number, username: string, email: string): Promise<User>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<User>;
+  updateUserFirebaseInfo(userId: number, displayName?: string, photoURL?: string): Promise<User>;
   
   getStrategies(userId: number): Promise<Strategy[]>;
   getStrategy(id: number): Promise<Strategy | undefined>;
@@ -65,14 +67,23 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.firebaseUid === firebaseUid,
+    );
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
     const now = new Date();
-    // Ensure apiKey and apiSecret are initialized properly
     const user: User = { 
       ...insertUser, 
       id, 
       createdAt: now,
+      password: insertUser.password ?? "",
+      firebaseUid: insertUser.firebaseUid ?? null,
+      displayName: insertUser.displayName ?? null,
+      photoURL: insertUser.photoURL ?? null,
       apiKey: insertUser.apiKey ?? null,
       apiSecret: insertUser.apiSecret ?? null 
     };
@@ -106,6 +117,20 @@ export class MemStorage implements IStorage {
       throw new Error("User not found");
     }
     const updatedUser = { ...user, password: hashedPassword };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUserFirebaseInfo(userId: number, displayName?: string, photoURL?: string): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const updatedUser = { 
+      ...user, 
+      displayName: displayName ?? user.displayName,
+      photoURL: photoURL ?? user.photoURL 
+    };
     this.users.set(userId, updatedUser);
     return updatedUser;
   }
