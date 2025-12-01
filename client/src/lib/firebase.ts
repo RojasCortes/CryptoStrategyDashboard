@@ -20,8 +20,8 @@ const firebaseConfig = {
 };
 
 export const isFirebaseConfigured = !!(
-  firebaseConfig.apiKey && 
-  firebaseConfig.projectId && 
+  firebaseConfig.apiKey &&
+  firebaseConfig.projectId &&
   firebaseConfig.appId
 );
 
@@ -30,11 +30,21 @@ let authInstance: Auth | null = null;
 let googleProvider: GoogleAuthProvider | null = null;
 let initError: Error | null = null;
 
+// Log configuration status for debugging in production
+if (!isFirebaseConfigured) {
+  console.warn('Firebase is not configured. Missing environment variables:');
+  if (!firebaseConfig.apiKey) console.warn('  - VITE_FIREBASE_API_KEY is missing');
+  if (!firebaseConfig.projectId) console.warn('  - VITE_FIREBASE_PROJECT_ID is missing');
+  if (!firebaseConfig.appId) console.warn('  - VITE_FIREBASE_APP_ID is missing');
+  console.warn('Please configure these in your Vercel environment variables and redeploy.');
+}
+
 if (isFirebaseConfigured) {
   try {
     app = initializeApp(firebaseConfig);
     authInstance = getAuth(app);
     googleProvider = new GoogleAuthProvider();
+    console.log('Firebase initialized successfully for project:', firebaseConfig.projectId);
   } catch (error) {
     console.error("Failed to initialize Firebase:", error);
     initError = error instanceof Error ? error : new Error(String(error));
