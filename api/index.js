@@ -88,42 +88,61 @@ function getUserFromSession(sessionId) {
 
 export default async function handler(req, res) {
   const { url, method, body, headers } = req;
-  
+
   // Parse URL to handle query parameters
   const urlObj = new URL(url, `http://${req.headers.host}`);
   const pathname = urlObj.pathname;
-  
-  // Enable CORS - allow same-origin and Vercel domains
-  const origin = headers.origin;
-  
-  // In Vercel, requests from the same domain don't have origin header
-  // Allow all vercel.app subdomains and localhost for development
-  const isAllowed = !origin || 
-    origin.endsWith('.vercel.app') || 
-    origin.includes('localhost') ||
-    origin.includes('127.0.0.1');
-  
-  if (isAllowed && origin) {
+
+  // Enable CORS - More permissive configuration for Vercel deployment
+  const origin = headers.origin || headers.referer;
+
+  // Allow requests from Vercel domains, localhost, and any origin for serverless
+  if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (!origin) {
+  } else {
     res.setHeader('Access-Control-Allow-Origin', '*');
   }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+
   if (method === 'OPTIONS') {
     return res.status(200).end();
   }
   
   // Health check
   if (pathname === '/api/health' || pathname === '/api/health/') {
-    return res.status(200).json({ 
+    return res.status(200).json({
       status: 'ok',
       message: 'API is working!',
       timestamp: new Date().toISOString(),
-      hasSupabase: !!supabase
+      hasSupabase: !!supabase,
+      environment: {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasSupabaseKey: !!supabaseKey,
+        hasDatabaseUrl: !!databaseUrl,
+        hasFirebaseProjectId: !!firebaseProjectId,
+        hasFirebaseServiceKey: !!serviceAccountKey
+      }
+    });
+  }
+
+  // Debug endpoint - only for troubleshooting
+  if (pathname === '/api/debug/config' || pathname === '/api/debug/config/') {
+    return res.status(200).json({
+      timestamp: new Date().toISOString(),
+      environment: {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasSupabaseKey: !!supabaseKey,
+        hasDatabaseUrl: !!databaseUrl,
+        hasFirebaseProjectId: !!firebaseProjectId,
+        hasFirebaseServiceKey: !!serviceAccountKey,
+        firebaseProjectId: firebaseProjectId || 'not configured',
+        supabaseConfigured: !!supabase,
+      },
+      note: 'This endpoint shows configuration status without exposing sensitive values'
     });
   }
   
