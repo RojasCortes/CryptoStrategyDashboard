@@ -26,25 +26,19 @@ export function SimpleMarketData({ symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', '
     try {
       setIsLoading(true);
       setError('');
-      
-      // Use direct Binance API call
-      const url = `https://api.binance.com/api/v3/ticker/24hr?symbols=${JSON.stringify(symbols)}`;
+
+      // Use Vercel serverless function (which uses CoinGecko)
+      const url = `/api/market-data`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener datos de mercado');
       }
-      
+
       const data = await response.json();
-      
-      const formattedData = data.map((item: any) => ({
-        symbol: item.symbol,
-        price: parseFloat(item.lastPrice),
-        change24h: parseFloat(item.priceChangePercent),
-        volume: parseFloat(item.volume)
-      }));
-      
-      setMarketData(formattedData);
+
+      // Data is already formatted from our API
+      setMarketData(data);
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Error fetching market data:', error);
@@ -118,7 +112,7 @@ export function SimpleMarketData({ symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', '
         <div className="flex items-center space-x-3">
           <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 px-3 py-1">
             <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-            Live desde Binance
+            Datos en Tiempo Real
           </Badge>
           <div className="text-sm text-gray-500">
             Actualizado: {lastUpdate.toLocaleTimeString('es-ES')}
