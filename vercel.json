@@ -3,7 +3,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "functions": {
-    "api/**/*.js": {
+    "api/index.js": {
+      "maxDuration": 30
+    },
+    "api/market-data.js": {
+      "maxDuration": 30
+    },
+    "api/market-stream.js": {
       "maxDuration": 30
     }
   },
