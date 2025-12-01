@@ -227,7 +227,7 @@ export default function ModernHomePage() {
                   <RefreshCw className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Actualizar</span>
                 </Button>
-                <Button className="bg-blue-600 hover:bg-blue-700">
+                <Button>
                   <Plus className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Nueva Estrategia</span>
                 </Button>
@@ -359,7 +359,7 @@ export default function ModernHomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full justify-start h-14 bg-blue-600 hover:bg-blue-700" onClick={() => console.log('Nueva estrategia')}>
+                <Button className="w-full justify-start h-14" onClick={() => console.log('Nueva estrategia')}>
                   <Plus className="mr-3 h-5 w-5" />
                   <div className="text-left">
                     <div className="font-medium">Nueva Estrategia</div>
