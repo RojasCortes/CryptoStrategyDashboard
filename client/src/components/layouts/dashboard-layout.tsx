@@ -101,7 +101,8 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
   };
   
   const userInitials = getInitials(user?.displayName || user?.username || user?.email || "");
-  const topCryptos = marketData.slice(0, 4);
+  // Ensure marketData is always an array before calling slice
+  const topCryptos = Array.isArray(marketData) ? marketData.slice(0, 4) : [];
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
