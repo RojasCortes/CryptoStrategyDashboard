@@ -73,9 +73,9 @@ export default function CleanDashboard() {
   const topCoins = marketData?.slice(0, 6) || [];
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <button
-        className="fixed top-4 left-4 z-50 lg:hidden bg-slate-800 p-2 rounded-lg"
+        className="fixed top-4 left-4 z-50 lg:hidden bg-card p-2 rounded-lg border border-border"
         onClick={() => setSidebarOpen(!sidebarOpen)}
         data-testid="button-toggle-sidebar"
       >
@@ -83,25 +83,25 @@ export default function CleanDashboard() {
       </button>
 
       <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-slate-800/95 backdrop-blur-sm border-r border-slate-700
+        fixed inset-y-0 left-0 z-40 w-64 bg-card border-r border-border
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0
       `}>
         <div className="flex flex-col h-full">
-          <div className="p-6 border-b border-slate-700">
+          <div className="p-6 border-b border-border">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                <Coins className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center shadow-lg glow-primary">
+                <TrendingUp className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-lg">Trading Hub</h1>
-                <p className="text-xs text-slate-400">Dashboard</p>
+                <h1 className="font-bold text-lg text-gradient">TradingAI</h1>
+                <p className="text-xs text-muted-foreground">Dashboard</p>
               </div>
             </div>
           </div>
 
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-thin">
             {navigation.map((item) => (
               <button
                 key={item.name}
@@ -110,8 +110,8 @@ export default function CleanDashboard() {
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors duration-200
                   ${item.href === "/" 
-                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
-                    : "text-slate-300 hover:bg-slate-700/50 hover:text-white"}
+                    ? "bg-primary/15 text-primary border-l-2 border-primary" 
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"}
                 `}
                 data-testid={`nav-${item.name.toLowerCase()}`}
               >
@@ -121,12 +121,12 @@ export default function CleanDashboard() {
             ))}
           </nav>
 
-          <div className="p-4 space-y-1 border-t border-slate-700">
+          <div className="p-4 space-y-1 border-t border-border">
             {bottomNavigation.map((item) => (
               <button
                 key={item.name}
                 onClick={() => handleNavigation(item.href)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                 data-testid={`nav-${item.name.toLowerCase()}`}
               >
                 <item.icon className="h-5 w-5" />
@@ -135,25 +135,25 @@ export default function CleanDashboard() {
             ))}
           </div>
 
-          <div className="p-4 border-t border-slate-700">
+          <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3 mb-3">
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-10 w-10 border-2 border-primary/20">
                 <AvatarImage src={user?.photoURL || undefined} />
-                <AvatarFallback className="bg-amber-500/20 text-amber-400">
+                <AvatarFallback className="bg-primary/10 text-primary">
                   {user?.displayName?.[0] || user?.username?.[0] || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
+                <p className="text-sm font-medium truncate text-foreground">
                   {user?.displayName || user?.username}
                 </p>
-                <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+              className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               onClick={handleLogout}
               data-testid="button-logout"
             >
@@ -165,17 +165,17 @@ export default function CleanDashboard() {
       </aside>
 
       <main className="lg:ml-64 min-h-screen">
-        <header className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700 px-6 py-4">
+        <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-sm border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="lg:pl-0 pl-12">
-              <h2 className="text-xl font-bold">Dashboard</h2>
-              <p className="text-sm text-slate-400">Bienvenido, {user?.displayName || user?.username}</p>
+              <h2 className="text-xl font-bold text-foreground">Dashboard</h2>
+              <p className="text-sm text-muted-foreground">Bienvenido, {user?.displayName || user?.username}</p>
             </div>
             <div className="flex items-center gap-3">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-slate-400 hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
                 onClick={() => refetch()}
                 data-testid="button-refresh"
               >
@@ -184,7 +184,7 @@ export default function CleanDashboard() {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-slate-400 hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
                 onClick={() => handleNavigation("/notifications")}
                 data-testid="button-notifications"
               >
@@ -196,16 +196,16 @@ export default function CleanDashboard() {
 
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400">Balance Total</p>
-                    <p className="text-2xl font-bold text-white mt-1">
+                    <p className="text-sm text-muted-foreground">Balance Total</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
                       {user?.apiKey ? "$0.00" : "--"}
                     </p>
                     {!user?.apiKey && (
-                      <p className="text-xs text-amber-400 mt-1">Configura API Keys</p>
+                      <p className="text-xs text-primary mt-1">Configura API Keys</p>
                     )}
                   </div>
                   <div className="p-3 bg-emerald-500/10 rounded-xl">
@@ -215,13 +215,13 @@ export default function CleanDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400">Estrategias Activas</p>
-                    <p className="text-2xl font-bold text-white mt-1">0</p>
-                    <p className="text-xs text-slate-500 mt-1">De 0 totales</p>
+                    <p className="text-sm text-muted-foreground">Estrategias Activas</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">0</p>
+                    <p className="text-xs text-muted-foreground mt-1">De 0 totales</p>
                   </div>
                   <div className="p-3 bg-blue-500/10 rounded-xl">
                     <Target className="h-6 w-6 text-blue-400" />
@@ -230,13 +230,13 @@ export default function CleanDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400">Trades Hoy</p>
-                    <p className="text-2xl font-bold text-white mt-1">0</p>
-                    <p className="text-xs text-slate-500 mt-1">Sin actividad</p>
+                    <p className="text-sm text-muted-foreground">Trades Hoy</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">0</p>
+                    <p className="text-xs text-muted-foreground mt-1">Sin actividad</p>
                   </div>
                   <div className="p-3 bg-purple-500/10 rounded-xl">
                     <Activity className="h-6 w-6 text-purple-400" />
@@ -245,23 +245,23 @@ export default function CleanDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400">P&L Hoy</p>
-                    <p className="text-2xl font-bold text-white mt-1">$0.00</p>
-                    <p className="text-xs text-slate-500 mt-1">0.00%</p>
+                    <p className="text-sm text-muted-foreground">P&L Hoy</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">$0.00</p>
+                    <p className="text-xs text-muted-foreground mt-1">0.00%</p>
                   </div>
-                  <div className="p-3 bg-amber-500/10 rounded-xl">
-                    <TrendingUp className="h-6 w-6 text-amber-400" />
+                  <div className="p-3 bg-primary/10 rounded-xl">
+                    <TrendingUp className="h-6 w-6 text-primary" />
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-semibold">Mercado en Tiempo Real</CardTitle>
@@ -275,7 +275,7 @@ export default function CleanDashboard() {
               {marketLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Skeleton key={i} className="h-20 bg-slate-700/50" />
+                    <Skeleton key={i} className="h-20 bg-secondary/50" />
                   ))}
                 </div>
               ) : topCoins.length > 0 ? (
@@ -286,7 +286,7 @@ export default function CleanDashboard() {
                     return (
                       <div
                         key={coin.symbol}
-                        className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer"
+                        className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors cursor-pointer"
                         onClick={() => handleNavigation("/markets")}
                         data-testid={`market-card-${coin.symbol}`}
                       >
@@ -305,7 +305,7 @@ export default function CleanDashboard() {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-8 text-slate-400">
+                <div className="text-center py-8 text-muted-foreground">
                   <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>Cargando datos del mercado...</p>
                 </div>
@@ -313,7 +313,7 @@ export default function CleanDashboard() {
               
               <Button
                 variant="ghost"
-                className="w-full mt-4 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                className="w-full mt-4 text-primary hover:text-primary/80 hover:bg-primary/10"
                 onClick={() => handleNavigation("/markets")}
                 data-testid="button-view-all-markets"
               >
@@ -324,19 +324,19 @@ export default function CleanDashboard() {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">Acciones Rápidas</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full justify-between bg-slate-700/30 border-slate-600 hover:bg-slate-700/50 hover:border-amber-500/50"
+                  className="w-full justify-between bg-secondary/30 border-border hover:bg-secondary/50 hover:border-primary/50"
                   onClick={() => handleNavigation("/strategies")}
                   data-testid="button-new-strategy"
                 >
                   <span className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-amber-400" />
+                    <Target className="h-5 w-5 text-primary" />
                     Nueva Estrategia
                   </span>
                   <ChevronRight className="h-4 w-4" />
@@ -344,7 +344,7 @@ export default function CleanDashboard() {
                 
                 <Button
                   variant="outline"
-                  className="w-full justify-between bg-slate-700/30 border-slate-600 hover:bg-slate-700/50 hover:border-amber-500/50"
+                  className="w-full justify-between bg-secondary/30 border-border hover:bg-secondary/50 hover:border-primary/50"
                   onClick={() => handleNavigation("/settings")}
                   data-testid="button-configure-api"
                 >
@@ -357,7 +357,7 @@ export default function CleanDashboard() {
                 
                 <Button
                   variant="outline"
-                  className="w-full justify-between bg-slate-700/30 border-slate-600 hover:bg-slate-700/50 hover:border-amber-500/50"
+                  className="w-full justify-between bg-secondary/30 border-border hover:bg-secondary/50 hover:border-primary/50"
                   onClick={() => handleNavigation("/cryptocurrencies")}
                   data-testid="button-explore-cryptos"
                 >
@@ -370,25 +370,25 @@ export default function CleanDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">Estado del Sistema</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
-                  <span className="text-slate-300">Conexión API</span>
-                  <Badge className={user?.apiKey ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
+                  <span className="text-muted-foreground">Conexión API</span>
+                  <Badge className={user?.apiKey ? "bg-emerald-500/20 text-emerald-400" : "bg-primary/20 text-primary"}>
                     {user?.apiKey ? "Conectado" : "No configurado"}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
-                  <span className="text-slate-300">WebSocket</span>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
+                  <span className="text-muted-foreground">WebSocket</span>
                   <Badge className="bg-emerald-500/20 text-emerald-400">
                     Activo
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
-                  <span className="text-slate-300">Base de Datos</span>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
+                  <span className="text-muted-foreground">Base de Datos</span>
                   <Badge className="bg-emerald-500/20 text-emerald-400">
                     Conectada
                   </Badge>
