@@ -11,6 +11,7 @@ import {
   logOut, 
   getIdToken,
   subscribeToAuthChanges,
+  isFirebaseConfigured,
   type FirebaseUser 
 } from "@/lib/firebase";
 
@@ -19,6 +20,7 @@ type AuthContextType = {
   firebaseUser: FirebaseUser | null;
   isLoading: boolean;
   error: Error | null;
+  isFirebaseConfigured: boolean;
   signInWithGoogleMutation: ReturnType<typeof useMutation<SelectUser, Error, void>>;
   signInWithEmailMutation: ReturnType<typeof useMutation<SelectUser, Error, { email: string; password: string }>>;
   signUpWithEmailMutation: ReturnType<typeof useMutation<SelectUser, Error, { email: string; password: string; username: string }>>;
@@ -266,6 +268,7 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
         firebaseUser,
         isLoading,
         error,
+        isFirebaseConfigured,
         signInWithGoogleMutation,
         signInWithEmailMutation,
         signUpWithEmailMutation,

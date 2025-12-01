@@ -61,6 +61,7 @@ export default function FirebaseAuthPage() {
   const { 
     user, 
     isLoading,
+    isFirebaseConfigured,
     signInWithGoogleMutation,
     signInWithEmailMutation,
     signUpWithEmailMutation
@@ -93,6 +94,38 @@ export default function FirebaseAuthPage() {
   
   if (!isLoading && user) {
     return <Redirect to="/" />;
+  }
+
+  if (!isFirebaseConfigured) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 space-y-4">
+            <div className="text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
+                <Shield className="h-6 w-6 text-amber-500" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Configuración Requerida</h2>
+            </div>
+            <p className="text-muted-foreground text-center text-sm">
+              Firebase no está configurado. Añade las siguientes variables de entorno:
+            </p>
+            <div className="bg-muted/50 p-3 rounded-lg text-xs font-mono">
+              <p>VITE_FIREBASE_API_KEY</p>
+              <p>VITE_FIREBASE_PROJECT_ID</p>
+              <p>VITE_FIREBASE_APP_ID</p>
+            </div>
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="w-full"
+              variant="outline"
+            >
+              Recargar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const onLoginSubmit = (values: LoginFormValues) => {

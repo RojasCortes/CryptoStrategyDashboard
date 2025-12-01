@@ -2,6 +2,7 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
+  "framework": null,
   "functions": {
     "api/index.js": {
       "maxDuration": 10
@@ -9,8 +10,12 @@
   },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
+      "source": "/api/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/((?!api|assets|_next).*)",
+      "destination": "/index.html"
     }
   ]
 }

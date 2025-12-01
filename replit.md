@@ -197,3 +197,30 @@ The application now maintains complete data integrity - displaying only authenti
 - **WebSocket primary**: Real-time data with REST API fallback, <0.5% rate limit usage
 - **User-controlled**: Each user manages their own API access and data permissions
 - **Production optimization**: Serverless-ready with connection pooling for 5-10 concurrent users
+
+## Vercel Deployment Troubleshooting (December 2025)
+
+### Required Environment Variables in Vercel
+For the application to work correctly, add these environment variables in Vercel Dashboard → Settings → Environment Variables:
+
+**Firebase (Required for Authentication):**
+- `VITE_FIREBASE_API_KEY` - Firebase API key from Firebase Console
+- `VITE_FIREBASE_PROJECT_ID` - Firebase project ID
+- `VITE_FIREBASE_APP_ID` - Firebase app ID
+
+**Supabase (Required for Database):**
+- `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `SUPABASE_ANON_KEY` - Supabase anon key
+
+### Blank Screen Fix
+If the app shows a blank screen after deployment:
+1. Check that all Firebase environment variables are set in Vercel
+2. The app now shows a helpful configuration message instead of a blank screen when Firebase is missing
+3. SPA fallback routing is configured in vercel.json to handle client-side routing
+
+### Security Notes
+- **Recommended**: Set `FIREBASE_SERVICE_ACCOUNT_KEY` env var for cryptographic token verification
+  - Get the service account JSON from Firebase Console → Project Settings → Service Accounts
+  - Paste the JSON as-is or base64 encode it
+- Without Firebase Admin, basic JWT validation is used (expiration, issuer checks only)
+- User Binance API keys are stored encrypted in the database, not in environment variables

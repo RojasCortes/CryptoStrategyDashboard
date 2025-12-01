@@ -1,10 +1,63 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+// Firebase Admin initialization for token verification
+let firebaseAdmin = null;
+const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+const firebaseProjectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+
+async function initFirebaseAdmin() {
+  if (firebaseAdmin) return firebaseAdmin;
+  
+  if (serviceAccountKey) {
+    try {
+      const admin = await import('firebase-admin');
+      
+      let credential;
+      try {
+        // Try parsing as JSON string first
+        const parsed = JSON.parse(serviceAccountKey);
+        credential = admin.credential.cert(parsed);
+      } catch {
+        // Try base64 decoding
+        try {
+          const decoded = Buffer.from(serviceAccountKey, 'base64').toString('utf8');
+          const parsed = JSON.parse(decoded);
+          credential = admin.credential.cert(parsed);
+        } catch {
+          console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY');
+          return null;
+        }
+      }
+      
+      if (!admin.apps.length) {
+        admin.initializeApp({ credential });
+      }
+      firebaseAdmin = admin;
+      return admin;
+    } catch (error) {
+      console.error('Failed to initialize Firebase Admin:', error);
+      return null;
+    }
+  }
+  return null;
+}
+
+// Initialize Supabase client - check multiple possible env var names
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Also support direct database URL for Drizzle/PostgreSQL style connection
+const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+
+let supabase = null;
+if (supabaseUrl && supabaseKey) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  } catch (error) {
+    console.error('Failed to initialize Supabase client:', error);
+  }
+}
 
 // Simple session storage (in production, use a proper session store)
 const sessions = new Map();
@@ -40,10 +93,25 @@ export default async function handler(req, res) {
   const urlObj = new URL(url, `http://${req.headers.host}`);
   const pathname = urlObj.pathname;
   
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Enable CORS - allow same-origin and Vercel domains
+  const origin = headers.origin;
+  
+  // In Vercel, requests from the same domain don't have origin header
+  // Allow all vercel.app subdomains and localhost for development
+  const isAllowed = !origin || 
+    origin.endsWith('.vercel.app') || 
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1');
+  
+  if (isAllowed && origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (method === 'OPTIONS') {
     return res.status(200).end();
@@ -57,6 +125,152 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString(),
       hasSupabase: !!supabase
     });
+  }
+  
+  // Firebase Auth Session endpoint - syncs Firebase auth with backend
+  if ((pathname === '/api/auth/session' || pathname === '/api/auth/session/') && method === 'POST') {
+    const authHeader = headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing or invalid authorization header' });
+    }
+    
+    try {
+      const token = authHeader.replace('Bearer ', '');
+      let email, name, uid;
+      
+      // Try Firebase Admin verification first (cryptographically secure)
+      const admin = await initFirebaseAdmin();
+      if (admin) {
+        try {
+          const decodedToken = await admin.auth().verifyIdToken(token);
+          email = decodedToken.email;
+          name = decodedToken.name;
+          uid = decodedToken.uid;
+          console.log('Token verified with Firebase Admin');
+        } catch (verifyError) {
+          console.error('Firebase token verification failed:', verifyError.message);
+          return res.status(401).json({ error: 'Invalid or expired token' });
+        }
+      } else {
+        // Fallback: Basic JWT validation (NOT cryptographically secure)
+        // This is only for development - production should set FIREBASE_SERVICE_ACCOUNT_KEY
+        console.warn('SECURITY WARNING: Firebase Admin not configured, using basic JWT validation');
+        
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+          return res.status(401).json({ error: 'Invalid token format' });
+        }
+        
+        let payload;
+        try {
+          let base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');
+          while (base64.length % 4) base64 += '=';
+          payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+        } catch (decodeError) {
+          return res.status(401).json({ error: 'Invalid token encoding' });
+        }
+        
+        const { iss, exp, iat } = payload;
+        email = payload.email;
+        name = payload.name;
+        uid = payload.user_id || payload.sub;
+        
+        // Basic validation checks
+        const now = Math.floor(Date.now() / 1000);
+        if (exp && exp < now) {
+          return res.status(401).json({ error: 'Token expired' });
+        }
+        if (iat && (now - iat) > 3600) {
+          return res.status(401).json({ error: 'Token too old' });
+        }
+        if (iss && !iss.includes('securetoken.google.com') && !iss.includes('firebase')) {
+          return res.status(401).json({ error: 'Invalid token issuer' });
+        }
+      }
+      
+      if (!email && !uid) {
+        return res.status(401).json({ error: 'Invalid token: missing user info' });
+      }
+      
+      // If we have Supabase, try to find or create the user
+      if (supabase) {
+        const username = name || email?.split('@')[0] || `user_${uid?.substring(0, 8)}`;
+        
+        // Check if user exists by Firebase UID
+        let { data: existingUser } = await supabase
+          .from('users')
+          .select('*')
+          .eq('firebase_uid', uid)
+          .single();
+        
+        if (!existingUser && email) {
+          // Try to find by email
+          const { data: userByEmail } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+          
+          if (userByEmail) {
+            // Update existing user with Firebase UID
+            const { data: updatedUser } = await supabase
+              .from('users')
+              .update({ firebase_uid: uid })
+              .eq('id', userByEmail.id)
+              .select()
+              .single();
+            existingUser = updatedUser || userByEmail;
+          }
+        }
+        
+        if (!existingUser) {
+          // Create new user
+          const { data: newUser, error } = await supabase
+            .from('users')
+            .insert([{ 
+              username, 
+              email: email || `${username}@firebase.local`,
+              firebase_uid: uid,
+              password: crypto.randomBytes(32).toString('hex')
+            }])
+            .select()
+            .single();
+          
+          if (error) {
+            console.error('Error creating user:', error);
+            // Return basic user info even if DB fails
+            return res.status(200).json({
+              id: 0,
+              username,
+              email: email || '',
+              displayName: name || username
+            });
+          }
+          
+          existingUser = newUser;
+        }
+        
+        return res.status(200).json({
+          id: existingUser.id,
+          username: existingUser.username,
+          email: existingUser.email,
+          displayName: name || existingUser.username,
+          apiKey: existingUser.binance_api_key ? '***configured***' : null
+        });
+      }
+      
+      // No database - return basic user info from token
+      return res.status(200).json({
+        id: 0,
+        username: name || email?.split('@')[0] || 'user',
+        email: email || '',
+        displayName: name || email?.split('@')[0] || 'User'
+      });
+    } catch (error) {
+      console.error('Session error:', error);
+      return res.status(500).json({ error: 'Failed to create session' });
+    }
   }
   
   // Register endpoint
