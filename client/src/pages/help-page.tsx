@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { AppBar } from "@/components/dashboard/app-bar";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 
 import {
   Card,
@@ -45,16 +43,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
 export default function HelpPage() {
-  const isMobile = useIsMobile();
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const { user } = useFirebaseAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  // FAQ data
   const faqs = [
     {
       question: "¿Cómo configurar una nueva estrategia de trading?",
@@ -108,7 +99,6 @@ export default function HelpPage() {
     }
   ];
 
-  // Getting started steps
   const gettingStartedSteps = [
     {
       step: 1,
@@ -162,7 +152,6 @@ export default function HelpPage() {
     );
   }
 
-  // Filter FAQs based on search query
   const filteredFaqs = faqs.filter(
     (faq) => 
       faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -170,220 +159,198 @@ export default function HelpPage() {
   );
 
   return (
-    <div className="flex h-screen bg-muted/10">
-      <Sidebar isMobile={isMobile} isOpen={sidebarOpen} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AppBar toggleSidebar={toggleSidebar} />
-        
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/5">
-          <div className="max-w-7xl mx-auto">
-            
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Centro de Ayuda</h1>
-                <p className="text-muted-foreground mt-1">
-                  Encuentra respuestas a tus preguntas y aprende a usar la plataforma
-                </p>
-              </div>
-            </div>
-            
-            {/* Search Box */}
-            <Card className="bg-white mb-6">
-              <CardContent className="pt-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Buscar en la documentación..."
-                    className="pl-10 py-6 text-lg"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("estrategia")}>
-                    Estrategias
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("binance")}>
-                    Conexión API
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("indicadores")}>
-                    Indicadores
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("portfolio")}>
-                    Portfolio
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("notificaciones")}>
-                    Notificaciones
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Tabs */}
-            <Tabs defaultValue="faq" className="mb-6">
-              <TabsList className="grid grid-cols-2 md:w-[300px]">
-                <TabsTrigger value="faq">FAQ</TabsTrigger>
-                <TabsTrigger value="getting-started">Primeros pasos</TabsTrigger>
-              </TabsList>
-              
-              {/* FAQs Tab */}
-              <TabsContent value="faq" className="pt-4">
-                <Card className="bg-white">
-                  <CardHeader>
-                    <CardTitle>Preguntas Frecuentes</CardTitle>
-                    <CardDescription>
-                      Respuestas a las preguntas más comunes sobre nuestra plataforma
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {searchQuery && (
-                      <div className="mb-4 p-2 bg-muted/20 rounded-md">
-                        <p className="text-sm text-muted-foreground">
-                          Mostrando {filteredFaqs.length} resultados para "{searchQuery}"
-                        </p>
-                      </div>
-                    )}
-                    
-                    <Accordion type="single" collapsible className="space-y-2">
-                      {filteredFaqs.length > 0 ? (
-                        filteredFaqs.map((faq, index) => (
-                          <AccordionItem key={index} value={`item-${index}`} className="border rounded-lg px-4">
-                            <AccordionTrigger className="text-left">
-                              <div className="flex items-start gap-3">
-                                <HelpCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                                <span>{faq.question}</span>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pl-8">
-                              <div className="pt-2 pb-3">
-                                <p className="text-muted-foreground">{faq.answer}</p>
-                                <div className="mt-3 flex justify-between items-center">
-                                  <Badge variant="outline">{
-                                    faq.category === "strategies" ? "Estrategias" :
-                                    faq.category === "account" ? "Cuenta" :
-                                    faq.category === "technical" ? "Indicadores Técnicos" :
-                                    faq.category === "portfolio" ? "Portfolio" :
-                                    faq.category === "notifications" ? "Notificaciones" :
-                                    "General"
-                                  }</Badge>
-                                  <Button variant="ghost" size="sm">
-                                    <span className="text-primary">Leer más</span>
-                                    <ChevronRight className="h-4 w-4 text-primary ml-1" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))
-                      ) : (
-                        <div className="py-12 text-center">
-                          <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="font-medium text-lg">No se encontraron resultados</h3>
-                          <p className="text-muted-foreground mt-1">
-                            Intenta con otros términos o <span className="text-primary cursor-pointer" onClick={() => setSearchQuery("")}>ver todas las preguntas</span>
-                          </p>
-                        </div>
-                      )}
-                    </Accordion>
-                  </CardContent>
-                  <CardFooter className="justify-center">
-                    <Button variant="outline">
-                      Ver más preguntas frecuentes <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
-              
-              {/* Getting Started Tab */}
-              <TabsContent value="getting-started" className="pt-4">
-                <Card className="bg-white mb-6">
-                  <CardHeader>
-                    <CardTitle>Primeros Pasos</CardTitle>
-                    <CardDescription>
-                      Guía paso a paso para empezar a usar la plataforma
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-8">
-                      {gettingStartedSteps.map((step, index) => (
-                        <div key={index} className="flex gap-4">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                            {step.icon}
-                          </div>
-                          <div>
-                            <h3 className="font-medium">Paso {step.step}: {step.title}</h3>
-                            <p className="text-muted-foreground mt-1">{step.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="justify-center">
-                    <Button>
-                      Ver guía completa <ExternalLink className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-                
-                <Card className="bg-white">
-                  <CardHeader>
-                    <CardTitle>Consejos para Principiantes</CardTitle>
-                    <CardDescription>
-                      Recomendaciones para aprovechar al máximo la plataforma
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Lightbulb className="h-5 w-5 text-amber-500" />
-                          <h3 className="font-medium">Comienza con estrategias sencillas</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Las estrategias simples suelen ser más robustas. Empieza con 1-2 indicadores y añade complejidad gradualmente.
-                        </p>
-                      </div>
-                      
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <AlertCircle className="h-5 w-5 text-red-500" />
-                          <h3 className="font-medium">Gestiona tu riesgo</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Nunca arriesgues más del 1-2% de tu capital en una sola operación. La preservación del capital es clave.
-                        </p>
-                      </div>
-                      
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <TrendingUp className="h-5 w-5 text-green-500" />
-                          <h3 className="font-medium">Realiza backtests exhaustivos</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Prueba tus estrategias en diferentes condiciones de mercado antes de operar con dinero real.
-                        </p>
-                      </div>
-                      
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Info className="h-5 w-5 text-blue-500" />
-                          <h3 className="font-medium">Mantén un diario de trading</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Registra tus operaciones, razones y resultados para identificar patrones y mejorar con el tiempo.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+    <DashboardLayout 
+      title="Centro de Ayuda" 
+      subtitle="Encuentra respuestas a tus preguntas y aprende a usar la plataforma"
+    >
+      <Card className="bg-white mb-6">
+        <CardContent className="pt-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Buscar en la documentación..."
+              className="pl-10 py-6 text-lg"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        </main>
-      </div>
-    </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("estrategia")}>
+              Estrategias
+            </Badge>
+            <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("binance")}>
+              Conexión API
+            </Badge>
+            <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("indicadores")}>
+              Indicadores
+            </Badge>
+            <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("portfolio")}>
+              Portfolio
+            </Badge>
+            <Badge variant="outline" className="cursor-pointer" onClick={() => setSearchQuery("notificaciones")}>
+              Notificaciones
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Tabs defaultValue="faq" className="mb-6">
+        <TabsList className="grid grid-cols-2 md:w-[300px]">
+          <TabsTrigger value="faq">FAQ</TabsTrigger>
+          <TabsTrigger value="getting-started">Primeros pasos</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="faq" className="pt-4">
+          <Card className="bg-white">
+            <CardHeader>
+              <CardTitle>Preguntas Frecuentes</CardTitle>
+              <CardDescription>
+                Respuestas a las preguntas más comunes sobre nuestra plataforma
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {searchQuery && (
+                <div className="mb-4 p-2 bg-muted/20 rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando {filteredFaqs.length} resultados para "{searchQuery}"
+                  </p>
+                </div>
+              )}
+              
+              <Accordion type="single" collapsible className="space-y-2">
+                {filteredFaqs.length > 0 ? (
+                  filteredFaqs.map((faq, index) => (
+                    <AccordionItem key={index} value={`item-${index}`} className="border rounded-lg px-4">
+                      <AccordionTrigger className="text-left">
+                        <div className="flex items-start gap-3">
+                          <HelpCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                          <span>{faq.question}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pl-8">
+                        <div className="pt-2 pb-3">
+                          <p className="text-muted-foreground">{faq.answer}</p>
+                          <div className="mt-3 flex justify-between items-center">
+                            <Badge variant="outline">{
+                              faq.category === "strategies" ? "Estrategias" :
+                              faq.category === "account" ? "Cuenta" :
+                              faq.category === "technical" ? "Indicadores Técnicos" :
+                              faq.category === "portfolio" ? "Portfolio" :
+                              faq.category === "notifications" ? "Notificaciones" :
+                              "General"
+                            }</Badge>
+                            <Button variant="ghost" size="sm">
+                              <span className="text-primary">Leer más</span>
+                              <ChevronRight className="h-4 w-4 text-primary ml-1" />
+                            </Button>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))
+                ) : (
+                  <div className="py-12 text-center">
+                    <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-medium text-lg">No se encontraron resultados</h3>
+                    <p className="text-muted-foreground mt-1">
+                      Intenta con otros términos o <span className="text-primary cursor-pointer" onClick={() => setSearchQuery("")}>ver todas las preguntas</span>
+                    </p>
+                  </div>
+                )}
+              </Accordion>
+            </CardContent>
+            <CardFooter className="justify-center">
+              <Button variant="outline">
+                Ver más preguntas frecuentes <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="getting-started" className="pt-4">
+          <Card className="bg-white mb-6">
+            <CardHeader>
+              <CardTitle>Primeros Pasos</CardTitle>
+              <CardDescription>
+                Guía paso a paso para empezar a usar la plataforma
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-8">
+                {gettingStartedSteps.map((step, index) => (
+                  <div key={index} className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                      {step.icon}
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Paso {step.step}: {step.title}</h3>
+                      <p className="text-muted-foreground mt-1">{step.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+            <CardFooter className="justify-center">
+              <Button>
+                Ver guía completa <ExternalLink className="ml-2 h-4 w-4" />
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          <Card className="bg-white">
+            <CardHeader>
+              <CardTitle>Consejos para Principiantes</CardTitle>
+              <CardDescription>
+                Recomendaciones para aprovechar al máximo la plataforma
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className="h-5 w-5 text-amber-500" />
+                    <h3 className="font-medium">Comienza con estrategias sencillas</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Las estrategias simples suelen ser más robustas. Empieza con 1-2 indicadores y añade complejidad gradualmente.
+                  </p>
+                </div>
+                
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                    <h3 className="font-medium">Gestiona tu riesgo</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Nunca arriesgues más del 1-2% de tu capital en una sola operación. La preservación del capital es clave.
+                  </p>
+                </div>
+                
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-green-500" />
+                    <h3 className="font-medium">Realiza backtests exhaustivos</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Prueba tus estrategias en diferentes condiciones de mercado antes de operar con dinero real.
+                  </p>
+                </div>
+                
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Info className="h-5 w-5 text-blue-500" />
+                    <h3 className="font-medium">Mantén un diario de trading</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Registra tus operaciones, razones y resultados para identificar patrones y mejorar con el tiempo.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </DashboardLayout>
   );
 }

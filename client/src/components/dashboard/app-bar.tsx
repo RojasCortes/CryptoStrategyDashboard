@@ -78,7 +78,7 @@ export function AppBar({ toggleSidebar }: AppBarProps) {
           const isPositive = priceChange >= 0;
           return (
             <div key={crypto.symbol} className="flex items-center gap-2">
-              <CryptoIcon symbol={crypto.symbol} size="h-5 w-5" />
+              <CryptoIcon symbol={crypto.symbol} size={20} />
               <span className="font-medium text-sm text-foreground">
                 {crypto.symbol.replace("USDT", "")}
               </span>

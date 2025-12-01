@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAvailablePairs } from "@/hooks/use-binance";
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { AppBar } from "@/components/dashboard/app-bar";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -149,8 +147,6 @@ const strategyFormSchema = insertStrategySchema
 type StrategyFormValues = z.infer<typeof strategyFormSchema>;
 
 export default function StrategiesPage() {
-  const isMobile = useIsMobile();
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const { user } = useFirebaseAuth();
   const { toast } = useToast();
   const { pairs = [] } = useAvailablePairs();
@@ -168,10 +164,6 @@ export default function StrategiesPage() {
     queryKey: ["/api/strategies"],
     enabled: !!user,
   });
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   // Form for creating/editing strategies
   const form = useForm<StrategyFormValues>({
@@ -457,40 +449,31 @@ export default function StrategiesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-background">
-        <Sidebar isMobile={isMobile} isOpen={sidebarOpen} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <AppBar toggleSidebar={toggleSidebar} />
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="space-y-6">
-                <Skeleton className="h-[50px] w-full" />
-                <Skeleton className="h-[400px] w-full" />
-              </div>
-            </div>
-          </main>
+      <DashboardLayout title="Estrategias de Trading" subtitle="Gestiona tus estrategias automatizadas">
+        <div className="max-w-7xl mx-auto">
+          <div className="space-y-6">
+            <Skeleton className="h-[50px] w-full" />
+            <Skeleton className="h-[400px] w-full" />
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Please log in to access your strategies.</p>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <p className="text-foreground">Por favor, inicia sesión para acceder a tus estrategias.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar isMobile={isMobile} isOpen={sidebarOpen} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AppBar toggleSidebar={toggleSidebar} />
-        
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
+    <DashboardLayout 
+      title="Estrategias de Trading"
+      subtitle="Gestiona tus estrategias automatizadas de trading de criptomonedas"
+    >
+      <div className="max-w-7xl mx-auto">
             
             {!hasApiKeys && (
               <Alert variant="destructive" className="mb-6">
@@ -505,14 +488,7 @@ export default function StrategiesPage() {
               </Alert>
             )}
             
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-              <div>
-                <h1 className="text-2xl font-semibold">Estrategias de Trading</h1>
-                <p className="text-muted-foreground">
-                  Gestiona tus estrategias automatizadas de trading de criptomonedas
-                </p>
-              </div>
-              
+            <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6">
               <div className="flex items-center gap-2 mt-4 md:mt-0">
                 <Button onClick={() => setIsImportDialogOpen(true)} variant="outline">
                   <Copy className="h-4 w-4 mr-2" />
@@ -928,10 +904,7 @@ export default function StrategiesPage() {
                 )}
               </CardContent>
             </Card>
-            
           </div>
-        </main>
-      </div>
       
       {/* Edit Strategy Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -1259,6 +1232,6 @@ export default function StrategiesPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </DashboardLayout>
   );
 }

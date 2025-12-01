@@ -1,18 +1,9 @@
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { AppBar } from "@/components/dashboard/app-bar";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { CryptocurrencyList } from "@/components/cryptocurrency-list";
-import { useState } from "react";
 
 export default function CryptocurrenciesPage() {
-  const isMobile = useIsMobile();
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const { user } = useFirebaseAuth();
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   if (!user) {
     return (
@@ -23,18 +14,11 @@ export default function CryptocurrenciesPage() {
   }
 
   return (
-    <div className="flex h-screen bg-muted/10">
-      <Sidebar isMobile={isMobile} isOpen={sidebarOpen} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AppBar toggleSidebar={toggleSidebar} />
-        
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/5">
-          <div className="max-w-7xl mx-auto">
-            <CryptocurrencyList />
-          </div>
-        </main>
-      </div>
-    </div>
+    <DashboardLayout 
+      title="Criptomonedas" 
+      subtitle="Lista de criptomonedas disponibles en el mercado"
+    >
+      <CryptocurrencyList />
+    </DashboardLayout>
   );
 }
