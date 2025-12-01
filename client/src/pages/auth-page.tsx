@@ -300,7 +300,7 @@ export default function AuthPage() {
                               </div>
                             </FormControl>
                             <FormMessage />
-                            <div className="mt-3 p-3 bg-muted/30 rounded-lg border">
+                            <div className="mt-3 p-3 bg-background rounded-lg border">
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-xs">
                                   {field.value && field.value.length >= 8 ? (

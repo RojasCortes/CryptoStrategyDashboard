@@ -457,7 +457,7 @@ export default function StrategiesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-muted/30">
+      <div className="flex h-screen bg-background">
         <Sidebar isMobile={isMobile} isOpen={sidebarOpen} />
         <div className="flex-1 flex flex-col overflow-hidden">
           <AppBar toggleSidebar={toggleSidebar} />
@@ -483,7 +483,7 @@ export default function StrategiesPage() {
   }
 
   return (
-    <div className="flex h-screen bg-muted/30">
+    <div className="flex h-screen bg-background">
       <Sidebar isMobile={isMobile} isOpen={sidebarOpen} />
       
       <div className="flex-1 flex flex-col overflow-hidden">

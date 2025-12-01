@@ -164,7 +164,7 @@ export function MarketDataWebSocket({ symbols = ['btcusdt', 'ethusdt', 'bnbusdt'
       </div>
 
       {/* Performance Stats */}
-      <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+      <div className="mt-6 p-4 bg-card rounded-lg">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
             <div className="text-sm font-medium">Fuente de Datos</div>

@@ -196,7 +196,7 @@ export function WebSocketStatus() {
         </div>
 
         {/* Performance Summary */}
-        <div className="bg-muted/30 rounded-lg p-3">
+        <div className="bg-card rounded-lg p-3">
           <div className="text-sm text-center text-muted-foreground">
             <strong>Arquitectura Optimizada:</strong> WebSocket principal + REST backup
             <br />

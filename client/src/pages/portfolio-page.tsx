@@ -37,7 +37,7 @@ export default function PortfolioPage(): JSX.Element {
   }
 
   return (
-    <div className="flex h-screen bg-muted/30">
+    <div className="flex h-screen bg-background">
       <Sidebar isMobile={isMobile} isOpen={sidebarOpen} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
