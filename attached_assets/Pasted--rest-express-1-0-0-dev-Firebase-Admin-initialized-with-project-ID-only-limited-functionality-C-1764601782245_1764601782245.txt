@@ -1,0 +1,43 @@
+> rest-express@1.0.0 dev
+Firebase Admin initialized with project ID only (limited functionality)
+Connecting to Binance WebSocket...
+WebSocket server initialized on /ws path
+3:08:24 PM [express] serving on port 5000
+Cuenta de email de prueba creada: nyedh4mevwuj5b7f@ethereal.email
+Connected to Binance WebSocket stream
+Browserslist: browsers data (caniuse-lite) is 14 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+3:08:36 PM [express] GET /api/auth/firebase-status 200 in 126ms :: {"enabled":true,"projectId":true}
+3:08:41 PM [express] GET /api/auth/firebase-status 304 in 3ms :: {"enabled":true,"projectId":true}
+Firebase auth - UID: YkLLFsQiI0XERQeKetO6YoOxQJo1 Email: juanrojas0399@gmail.com
+Firebase auth - UID: YkLLFsQiI0XERQeKetO6YoOxQJo1 Email: juanrojas0399@gmail.com
+User lookup by Firebase UID: not found
+User lookup by Firebase UID: not found
+User lookup by email: not found
+User lookup by email: not found
+Created new user: juanrojas0399
+Error creating user: error: duplicate key value violates unique constraint "users_username_unique"
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.createUser (/home/runner/workspace/server/db-storage.ts:52:20)
+    at async <anonymous> (/home/runner/workspace/server/auth.ts:313:18) {
+  length: 220,
+  severity: 'ERROR',
+  code: '23505',
+  detail: 'Key (username)=(juanrojas0399) already exists.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'users',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'users_username_unique',
+  file: 'nbtinsert.c',
+  line: '666',
+  routine: '_bt_check_unique'
+}
