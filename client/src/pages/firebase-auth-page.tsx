@@ -67,17 +67,6 @@ export default function FirebaseAuthPage() {
     signUpWithEmailMutation
   } = useFirebaseAuth();
 
-  useEffect(() => {
-    fetch("/api/auth/firebase-status")
-      .then(res => res.json())
-      .then(data => setFirebaseEnabled(data.enabled))
-      .catch(() => setFirebaseEnabled(false));
-  }, []);
-  
-  if (!isLoading && user) {
-    return <Redirect to="/" />;
-  }
-
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -95,6 +84,17 @@ export default function FirebaseAuthPage() {
       confirmPassword: "",
     },
   });
+
+  useEffect(() => {
+    fetch("/api/auth/firebase-status")
+      .then(res => res.json())
+      .then(data => setFirebaseEnabled(data.enabled))
+      .catch(() => setFirebaseEnabled(false));
+  }, []);
+  
+  if (!isLoading && user) {
+    return <Redirect to="/" />;
+  }
 
   const onLoginSubmit = (values: LoginFormValues) => {
     signInWithEmailMutation.mutate({
