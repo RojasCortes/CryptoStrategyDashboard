@@ -127,6 +127,24 @@ export default async function handler(req, res) {
     });
   }
   
+  // Firebase status endpoint
+  if (pathname === '/api/auth/firebase-status' || pathname === '/api/auth/firebase-status/') {
+    const admin = await initFirebaseAdmin();
+    const hasFirebaseEnvVars = !!(
+      process.env.FIREBASE_PROJECT_ID ||
+      process.env.FIREBASE_SERVICE_ACCOUNT_KEY ||
+      (process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY)
+    );
+
+    return res.status(200).json({
+      configured: !!admin,
+      hasClientConfig: !!(process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY),
+      hasServerConfig: !!admin,
+      projectId: process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || null,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   // Firebase Auth Session endpoint - syncs Firebase auth with backend
   if ((pathname === '/api/auth/session' || pathname === '/api/auth/session/') && method === 'POST') {
     const authHeader = headers.authorization;
