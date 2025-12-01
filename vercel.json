@@ -45,6 +45,10 @@
       "destination": "/api/market-data.js"
     },
     {
+      "source": "/api/market/data",
+      "destination": "/api/market-data.js"
+    },
+    {
       "source": "/api/market-stream",
       "destination": "/api/market-stream.js"
     },

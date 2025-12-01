@@ -35,34 +35,38 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // Map CoinGecko data to match expected format
+    // Map CoinGecko data to match expected format (MarketData[] interface)
     const marketData = [
       {
         symbol: 'BTCUSDT',
-        price: data.bitcoin?.usd || 0,
+        price: String(data.bitcoin?.usd || 0),
+        priceChangePercent: String((data.bitcoin?.usd_24h_change || 0).toFixed(2)),
         change24h: data.bitcoin?.usd_24h_change || 0,
-        volume: data.bitcoin?.usd_24h_vol || 0,
+        volume: String(Math.round(data.bitcoin?.usd_24h_vol || 0)),
         lastUpdate: Date.now()
       },
       {
         symbol: 'ETHUSDT',
-        price: data.ethereum?.usd || 0,
+        price: String(data.ethereum?.usd || 0),
+        priceChangePercent: String((data.ethereum?.usd_24h_change || 0).toFixed(2)),
         change24h: data.ethereum?.usd_24h_change || 0,
-        volume: data.ethereum?.usd_24h_vol || 0,
+        volume: String(Math.round(data.ethereum?.usd_24h_vol || 0)),
         lastUpdate: Date.now()
       },
       {
         symbol: 'BNBUSDT',
-        price: data.binancecoin?.usd || 0,
+        price: String(data.binancecoin?.usd || 0),
+        priceChangePercent: String((data.binancecoin?.usd_24h_change || 0).toFixed(2)),
         change24h: data.binancecoin?.usd_24h_change || 0,
-        volume: data.binancecoin?.usd_24h_vol || 0,
+        volume: String(Math.round(data.binancecoin?.usd_24h_vol || 0)),
         lastUpdate: Date.now()
       },
       {
         symbol: 'SOLUSDT',
-        price: data.solana?.usd || 0,
+        price: String(data.solana?.usd || 0),
+        priceChangePercent: String((data.solana?.usd_24h_change || 0).toFixed(2)),
         change24h: data.solana?.usd_24h_change || 0,
-        volume: data.solana?.usd_24h_vol || 0,
+        volume: String(Math.round(data.solana?.usd_24h_vol || 0)),
         lastUpdate: Date.now()
       }
     ];

@@ -437,18 +437,67 @@ export default async function handler(req, res) {
     }
   }
   
-  // Market data endpoints - handle multiple variations
-  if (pathname === '/api/market-data' || pathname === '/api/market-data/' || 
-      pathname === '/api/market/data' || pathname === '/api/market/data/') {
-    // Mock market data since we don't have API keys in serverless function
-    const mockData = {
-      symbols: [
-        { symbol: 'BTCUSDT', price: '43250.00', change: '+2.45%', volume: '1234567' },
-        { symbol: 'ETHUSDT', price: '2650.00', change: '+1.85%', volume: '987654' },
-        { symbol: 'BNBUSDT', price: '310.50', change: '+0.95%', volume: '456789' },
-      ],
-      timestamp: new Date().toISOString()
-    };
+  // Market data endpoints - NOTE: /api/market-data should be handled by api/market-data.js
+  // This is a fallback if that route doesn't work
+  if (pathname === '/api/market-data' || pathname === '/api/market-data/') {
+    // Return array format matching MarketData[] interface expected by client
+    const mockData = [
+      {
+        symbol: 'BTCUSDT',
+        price: '43250.00',
+        priceChangePercent: '2.45',
+        change24h: 2.45,
+        volume: '1234567',
+        lastUpdate: Date.now()
+      },
+      {
+        symbol: 'ETHUSDT',
+        price: '2650.00',
+        priceChangePercent: '1.85',
+        change24h: 1.85,
+        volume: '987654',
+        lastUpdate: Date.now()
+      },
+      {
+        symbol: 'BNBUSDT',
+        price: '310.50',
+        priceChangePercent: '0.95',
+        change24h: 0.95,
+        volume: '456789',
+        lastUpdate: Date.now()
+      },
+      {
+        symbol: 'SOLUSDT',
+        price: '95.75',
+        priceChangePercent: '3.15',
+        change24h: 3.15,
+        volume: '234567',
+        lastUpdate: Date.now()
+      },
+    ];
+    return res.status(200).json(mockData);
+  }
+
+  // Legacy market/data endpoint
+  if (pathname === '/api/market/data' || pathname === '/api/market/data/') {
+    const mockData = [
+      {
+        symbol: 'BTCUSDT',
+        price: '43250.00',
+        priceChangePercent: '2.45',
+        change24h: 2.45,
+        volume: '1234567',
+        lastUpdate: Date.now()
+      },
+      {
+        symbol: 'ETHUSDT',
+        price: '2650.00',
+        priceChangePercent: '1.85',
+        change24h: 1.85,
+        volume: '987654',
+        lastUpdate: Date.now()
+      },
+    ];
     return res.status(200).json(mockData);
   }
   
