@@ -157,16 +157,16 @@ export default function OpportunitiesPage() {
       subtitle="Señales basadas en datos de mercado en tiempo real"
     >
       {!hasApiKeys && (
-        <Alert className="mb-6 border-amber-200 bg-amber-50">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-800">Modo de visualización</AlertTitle>
-          <AlertDescription className="text-amber-700">
+        <Alert className="mb-6 border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/20">
+          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertTitle className="text-amber-700 dark:text-amber-300">Modo de visualización</AlertTitle>
+          <AlertDescription className="text-amber-600 dark:text-amber-400">
             Estás viendo oportunidades basadas en datos públicos. Para operar, configura tus claves API de Binance.
           </AlertDescription>
           <Button
             variant="outline"
             size="sm"
-            className="mt-2 border-amber-300 text-amber-800 hover:bg-amber-100"
+            className="mt-2 border-amber-500/50 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
             onClick={() => (window.location.href = "/settings")}
           >
             <Settings className="h-4 w-4 mr-2" />
@@ -175,10 +175,10 @@ export default function OpportunitiesPage() {
         </Alert>
       )}
 
-      <Alert className="mb-6 border-blue-200 bg-blue-50">
-        <AlertTriangle className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="text-blue-800">Importante</AlertTitle>
-        <AlertDescription className="text-blue-700">
+      <Alert className="mb-6 border-primary/30 bg-primary/10">
+        <AlertTriangle className="h-4 w-4 text-primary" />
+        <AlertTitle className="text-primary">Importante</AlertTitle>
+        <AlertDescription className="text-primary/80">
           Estas señales son solo orientativas y se basan en movimientos de precio. 
           No constituyen asesoramiento financiero. Opera bajo tu propio riesgo.
         </AlertDescription>
@@ -187,7 +187,7 @@ export default function OpportunitiesPage() {
       {isLoadingMarketData ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {[...Array(3)].map((_, i) => (
-            <Card key={i} className="bg-white">
+            <Card key={i} className="bg-card">
               <CardHeader className="pb-2">
                 <Skeleton className="h-4 w-24" />
               </CardHeader>
@@ -198,10 +198,10 @@ export default function OpportunitiesPage() {
           ))}
         </div>
       ) : opportunities.length === 0 ? (
-        <Card className="bg-white mb-6">
+        <Card className="bg-card mb-6">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Target className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Sin oportunidades detectadas</h3>
+            <h3 className="text-xl font-semibold mb-2 text-foreground">Sin oportunidades detectadas</h3>
             <p className="text-muted-foreground text-center max-w-md">
               No se han detectado movimientos significativos en el mercado en este momento.
               Las oportunidades se generan cuando hay cambios importantes de precio.
@@ -211,47 +211,47 @@ export default function OpportunitiesPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card className="bg-white">
+            <Card className="bg-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                  <TrendingUp className="h-4 w-4 mr-2 text-green-600" />
+                  <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
                   Señales de Compra
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{buyOpps}</div>
+                <div className="text-2xl font-bold text-green-500">{buyOpps}</div>
                 <p className="text-xs text-muted-foreground">Oportunidades alcistas</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-white">
+            <Card className="bg-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                  <TrendingDown className="h-4 w-4 mr-2 text-red-600" />
+                  <TrendingDown className="h-4 w-4 mr-2 text-red-500" />
                   Señales de Venta
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{sellOpps}</div>
+                <div className="text-2xl font-bold text-red-500">{sellOpps}</div>
                 <p className="text-xs text-muted-foreground">Posibles salidas</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-white">
+            <Card className="bg-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                  <Zap className="h-4 w-4 mr-2 text-amber-600" />
+                  <Zap className="h-4 w-4 mr-2 text-amber-500" />
                   Fuerza Promedio
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{avgStrength.toFixed(0)}%</div>
+                <div className="text-2xl font-bold text-foreground">{avgStrength.toFixed(0)}%</div>
                 <p className="text-xs text-muted-foreground">De las señales detectadas</p>
               </CardContent>
             </Card>
           </div>
 
-          <Card className="bg-white">
+          <Card className="bg-card">
             <CardHeader>
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -296,8 +296,8 @@ export default function OpportunitiesPage() {
                           key={opp.id}
                           className={`p-4 rounded-lg border ${
                             opp.type === "buy"
-                              ? "border-green-200 bg-green-50"
-                              : "border-red-200 bg-red-50"
+                              ? "border-green-500/30 bg-green-500/10 dark:bg-green-500/20"
+                              : "border-red-500/30 bg-red-500/10 dark:bg-red-500/20"
                           }`}
                         >
                           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -305,14 +305,14 @@ export default function OpportunitiesPage() {
                               <CryptoIcon symbol={opp.symbol} size={40} />
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-bold text-lg">
+                                  <span className="font-bold text-lg text-foreground">
                                     {opp.symbol.replace("USDT", "")}
                                   </span>
                                   <Badge
                                     className={
                                       opp.type === "buy"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
+                                        ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                                        : "bg-red-500/20 text-red-600 dark:text-red-400"
                                     }
                                   >
                                     {opp.type === "buy" ? "COMPRA" : "VENTA"}

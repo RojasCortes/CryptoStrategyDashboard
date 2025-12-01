@@ -50,7 +50,18 @@ export function CryptoIcon({ symbol, size = 24, className = "" }: CryptoIconProp
   };
 
   // Convertir el símbolo a mayúsculas y eliminar caracteres no alfanuméricos
-  const cleanSymbol = symbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  // También eliminar sufijos comunes de pares de trading (USDT, BUSD, USD, BTC, ETH, etc.)
+  let cleanSymbol = symbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  
+  // Remove common trading pair suffixes to get the base currency
+  const suffixes = ['USDT', 'BUSD', 'USDC', 'USD', 'TUSD', 'DAI', 'EUR', 'GBP', 'BTC', 'ETH', 'BNB'];
+  for (const suffix of suffixes) {
+    if (cleanSymbol.endsWith(suffix) && cleanSymbol.length > suffix.length) {
+      cleanSymbol = cleanSymbol.slice(0, -suffix.length);
+      break;
+    }
+  }
+  
   const colorClass = CRYPTO_COLORS[cleanSymbol] || 'text-gray-500';
   
   // Devolver el icono apropiado basado en el símbolo
