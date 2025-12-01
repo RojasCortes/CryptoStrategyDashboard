@@ -120,6 +120,20 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUserFirebaseUid(userId: number, firebaseUid: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ firebaseUid })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    return user;
+  }
+
   async getStrategies(userId: number): Promise<Strategy[]> {
     return db
       .select()

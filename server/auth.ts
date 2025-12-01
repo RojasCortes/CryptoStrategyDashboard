@@ -247,22 +247,42 @@ export function setupAuth(app: Express) {
       // Verify Firebase token
       const decodedToken = await verifyIdToken(idToken);
       if (!decodedToken) {
-        return res.status(401).json({ message: "Invalid token" });
+        return res.status(401).json({ message: "Invalid token - Firebase verification failed" });
       }
 
       const { uid, email, name } = decodedToken;
       const { username, displayName, photoURL } = req.body;
+      
+      console.log("Firebase auth - UID:", uid, "Email:", email);
 
+      let user = null;
+      
       // Try to find existing user by Firebase UID
-      let user = await storage.getUserByFirebaseUid(uid);
+      try {
+        user = await storage.getUserByFirebaseUid(uid);
+        console.log("User lookup by Firebase UID:", user ? "found" : "not found");
+      } catch (dbError) {
+        console.error("Database error looking up user by Firebase UID:", dbError);
+        // Continue to try other methods
+      }
       
       if (!user && email) {
         // Try to find by email (for migration from old accounts)
-        user = await storage.getUserByEmail(email);
-        
-        if (user && !user.firebaseUid) {
-          // Link existing account to Firebase
-          // This requires adding a method to update firebaseUid - for now we'll create new
+        try {
+          user = await storage.getUserByEmail(email);
+          console.log("User lookup by email:", user ? "found" : "not found");
+          
+          if (user && !user.firebaseUid) {
+            // Link existing account to Firebase - update the firebaseUid
+            try {
+              user = await storage.updateUserFirebaseUid(user.id, uid);
+              console.log("Linked existing account to Firebase UID");
+            } catch (linkError) {
+              console.error("Error linking account to Firebase:", linkError);
+            }
+          }
+        } catch (dbError) {
+          console.error("Database error looking up user by email:", dbError);
         }
       }
 
@@ -273,24 +293,44 @@ export function setupAuth(app: Express) {
         // Ensure username is unique
         let finalUsername = newUsername;
         let counter = 1;
-        while (await storage.getUserByUsername(finalUsername)) {
-          finalUsername = `${newUsername}_${counter}`;
-          counter++;
+        try {
+          while (await storage.getUserByUsername(finalUsername)) {
+            finalUsername = `${newUsername}_${counter}`;
+            counter++;
+          }
+        } catch (dbError) {
+          console.error("Database error checking username:", dbError);
+          finalUsername = `user_${Date.now()}`;
         }
 
-        user = await storage.createUser({
-          username: finalUsername,
-          email: email || `${uid}@firebase.local`,
-          password: "",
-          firebaseUid: uid,
-          displayName: displayName || name || null,
-          photoURL: photoURL || null,
-          apiKey: "",
-          apiSecret: ""
-        });
+        try {
+          user = await storage.createUser({
+            username: finalUsername,
+            email: email || `${uid}@firebase.local`,
+            password: "",
+            firebaseUid: uid,
+            displayName: displayName || name || null,
+            photoURL: photoURL || null,
+            apiKey: "",
+            apiSecret: ""
+          });
+          console.log("Created new user:", finalUsername);
+        } catch (createError) {
+          console.error("Error creating user:", createError);
+          return res.status(500).json({ message: "Error creating user account" });
+        }
       } else if (displayName || photoURL) {
         // Update display info if provided
-        user = await storage.updateUserFirebaseInfo(user.id, displayName, photoURL);
+        try {
+          user = await storage.updateUserFirebaseInfo(user.id, displayName, photoURL);
+        } catch (updateError) {
+          console.error("Error updating user info:", updateError);
+          // Continue with existing user data
+        }
+      }
+
+      if (!user) {
+        return res.status(500).json({ message: "Failed to create or find user" });
       }
 
       // Create session
@@ -305,7 +345,7 @@ export function setupAuth(app: Express) {
       res.json(safeUser);
     } catch (error) {
       console.error("Firebase session error:", error);
-      next(error);
+      return res.status(500).json({ message: "Authentication error - please try again" });
     }
   });
 
