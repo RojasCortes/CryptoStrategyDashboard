@@ -4,18 +4,12 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ui/theme-provider";
-import { AuthProvider } from "@/hooks/use-auth";
-import { ProtectedRoute } from "@/lib/protected-route";
+import { FirebaseAuthProvider } from "@/hooks/use-firebase-auth";
+import { FirebaseProtectedRoute } from "@/lib/firebase-protected-route";
 
 import NotFound from "@/pages/not-found";
-import HomePage from "@/pages/home-page";
-import SimpleHome from "@/pages/simple-home";
-import EnhancedHomePage from "@/pages/enhanced-home";
-import ImprovedHomePage from "@/pages/improved-home";
-import ModernHomePage from "@/pages/modern-home";
-import DebugDashboard from "@/pages/debug-dashboard";
-import DashboardPage from "@/pages/dashboard-page";
-import AuthPage from "@/pages/auth-page";
+import CleanDashboard from "@/pages/clean-dashboard";
+import FirebaseAuthPage from "@/pages/firebase-auth-page";
 import SettingsPage from "@/pages/settings-page";
 import NotificationsPage from "@/pages/notifications-page";
 import PortfolioPage from "@/pages/portfolio-page";
@@ -30,21 +24,18 @@ import CryptocurrenciesPage from "@/pages/cryptocurrencies-page";
 function Router() {
   return (
     <Switch>
-      <ProtectedRoute path="/debug" component={DebugDashboard} />
-      <ProtectedRoute path="/simple" component={SimpleHome} />
-      <ProtectedRoute path="/" component={ModernHomePage} />
-      <ProtectedRoute path="/dashboard" component={DashboardPage} />
-      <ProtectedRoute path="/portfolio" component={PortfolioPage} />
-      <ProtectedRoute path="/strategies" component={StrategiesPage} />
-      <ProtectedRoute path="/cryptocurrencies" component={CryptocurrenciesPage} />
-      <ProtectedRoute path="/settings" component={SettingsPage} />
-      <ProtectedRoute path="/notifications" component={NotificationsPage} />
-      <ProtectedRoute path="/markets" component={MarketsPage} />
-      <ProtectedRoute path="/performance" component={PerformancePage} />
-      <ProtectedRoute path="/opportunities" component={OpportunitiesPage} />
-      <ProtectedRoute path="/charts" component={ChartPage} />
-      <ProtectedRoute path="/help" component={HelpPage} />
-      <Route path="/auth" component={AuthPage} />
+      <FirebaseProtectedRoute path="/" component={CleanDashboard} />
+      <FirebaseProtectedRoute path="/portfolio" component={PortfolioPage} />
+      <FirebaseProtectedRoute path="/strategies" component={StrategiesPage} />
+      <FirebaseProtectedRoute path="/cryptocurrencies" component={CryptocurrenciesPage} />
+      <FirebaseProtectedRoute path="/settings" component={SettingsPage} />
+      <FirebaseProtectedRoute path="/notifications" component={NotificationsPage} />
+      <FirebaseProtectedRoute path="/markets" component={MarketsPage} />
+      <FirebaseProtectedRoute path="/performance" component={PerformancePage} />
+      <FirebaseProtectedRoute path="/opportunities" component={OpportunitiesPage} />
+      <FirebaseProtectedRoute path="/charts" component={ChartPage} />
+      <FirebaseProtectedRoute path="/help" component={HelpPage} />
+      <Route path="/auth" component={FirebaseAuthPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -53,13 +44,13 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
-        <AuthProvider>
+      <ThemeProvider defaultTheme="dark">
+        <FirebaseAuthProvider>
           <TooltipProvider>
             <Toaster />
             <Router />
           </TooltipProvider>
-        </AuthProvider>
+        </FirebaseAuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
