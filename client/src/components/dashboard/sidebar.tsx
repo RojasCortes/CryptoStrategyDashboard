@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -14,20 +13,13 @@ import {
   Wallet,
   Settings,
   Bell,
-  Zap,
-  ChevronLeft,
-  Users,
-  BarChart4,
-  Database,
   HelpCircle,
   LogOut,
   Layers,
-  CreditCard,
   PieChart,
-  Globe,
-  CalendarRange,
   CandlestickChart,
   Coins,
+  TrendingUp,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -41,24 +33,33 @@ interface SidebarItemProps {
   href: string;
   active?: boolean;
   badge?: number;
+  isOpen?: boolean;
 }
 
-const SidebarItem = ({ icon, label, href, active, badge }: SidebarItemProps) => {
+const SidebarItem = ({ icon, label, href, active, badge, isOpen = true }: SidebarItemProps) => {
   return (
     <Link href={href}>
       <Button 
         variant="ghost" 
+        data-testid={`nav-${label.toLowerCase().replace(/\s+/g, '-')}`}
         className={cn(
-          "w-full justify-start gap-3 font-normal h-10",
-          active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50"
+          "w-full justify-start gap-3 font-normal h-11 rounded-lg transition-all duration-200 text-muted-foreground",
+          active 
+            ? "bg-primary/15 text-primary font-medium border-l-2 border-primary ml-0.5" 
+            : "hover:bg-secondary hover:text-foreground border-l-2 border-transparent",
+          !isOpen && "justify-center px-2"
         )}
       >
-        {icon}
-        <span className="flex-1 text-left">{label}</span>
-        {badge && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-            {badge}
-          </span>
+        <span className="flex-shrink-0">{icon}</span>
+        {isOpen && (
+          <>
+            <span className="flex-1 text-left truncate">{label}</span>
+            {badge !== undefined && badge > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground px-1.5">
+                {badge > 99 ? "99+" : badge}
+              </span>
+            )}
+          </>
         )}
       </Button>
     </Link>
@@ -70,7 +71,6 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
   const { user, logoutMutation } = useFirebaseAuth();
   const { unreadCount } = useNotifications();
   
-  // Get user initials for avatar
   const getInitials = (name: string) => {
     if (!name) return "U";
     const parts = name.split(" ");
@@ -78,70 +78,68 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   };
   
-  const userInitials = getInitials(user?.username || "");
+  const userInitials = getInitials(user?.username || user?.email || "");
   
   const handleLogout = () => {
     logoutMutation.mutate();
   };
 
-  // Hide sidebar entirely on mobile if it's closed
   if (isMobile && !isOpen) {
     return null;
   }
 
   return (
     <div
+      data-testid="sidebar"
       className={cn(
-        "border-r bg-white/95 h-screen flex flex-col",
-        isOpen ? "w-64" : "w-20",
-        isMobile && isOpen && "fixed inset-y-0 left-0 z-50"
+        "h-screen flex flex-col bg-card border-r border-border transition-all duration-300",
+        isOpen ? "w-64" : "w-[72px]",
+        isMobile && isOpen && "fixed inset-y-0 left-0 z-50 shadow-xl"
       )}
     >
-      {/* Logo and brand section */}
       <div className={cn(
-        "h-16 flex items-center border-b px-4",
-        isOpen ? "justify-between" : "justify-center"
+        "h-16 flex items-center border-b border-border px-4 shrink-0",
+        isOpen ? "justify-start" : "justify-center"
       )}>
-        {isOpen ? (
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center justify-center h-9 w-9 rounded-md bg-primary">
-              <LineChart className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-bold text-lg">TradingAI</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-cyan-400 shadow-lg glow-primary">
+            <TrendingUp className="h-5 w-5 text-white" />
           </div>
-        ) : (
-          <div className="flex items-center justify-center h-9 w-9 rounded-md bg-primary">
-            <LineChart className="h-5 w-5 text-white" />
-          </div>
-        )}
+          {isOpen && (
+            <span className="font-bold text-xl text-gradient">TradingAI</span>
+          )}
+        </div>
       </div>
 
-      {/* Scrollable sidebar content */}
-      <ScrollArea className="flex-1 py-3">
+      <ScrollArea className="flex-1 py-4 scrollbar-thin">
         <div className="px-3 space-y-1">
           <SidebarItem
             icon={<Home className="h-5 w-5" />}
             label="Inicio"
             href="/"
             active={location === "/"}
+            isOpen={isOpen}
           />
           <SidebarItem
             icon={<LayoutDashboard className="h-5 w-5" />}
             label="Dashboard"
             href="/dashboard"
             active={location === "/dashboard"}
+            isOpen={isOpen}
           />
           <SidebarItem
             icon={<LineChart className="h-5 w-5" />}
             label="Estrategias"
             href="/strategies"
             active={location === "/strategies"}
+            isOpen={isOpen}
           />
           <SidebarItem
             icon={<Wallet className="h-5 w-5" />}
             label="Portfolio"
             href="/portfolio"
             active={location === "/portfolio"}
+            isOpen={isOpen}
           />
           <SidebarItem
             icon={<Bell className="h-5 w-5" />}
@@ -149,55 +147,63 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
             href="/notifications"
             active={location === "/notifications"}
             badge={unreadCount > 0 ? unreadCount : undefined}
+            isOpen={isOpen}
           />
         </div>
         
-        <Separator className="my-4" />
-        
-        <div className="px-4 mb-2">
-          <h3 className={cn(
-            "text-xs font-medium text-muted-foreground mb-2",
-            !isOpen && "sr-only"
-          )}>
-            Análisis
-          </h3>
+        <div className="px-3 my-4">
+          <Separator className="bg-border/50" />
         </div>
+        
+        {isOpen && (
+          <div className="px-4 mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              Análisis
+            </span>
+          </div>
+        )}
         
         <div className="px-3 space-y-1">
           <SidebarItem
-            icon={<BarChart4 className="h-5 w-5" />}
+            icon={<TrendingUp className="h-5 w-5" />}
             label="Mercados"
             href="/markets"
             active={location === "/markets"}
+            isOpen={isOpen}
           />
-          
           <SidebarItem
             icon={<Coins className="h-5 w-5" />}
             label="Criptomonedas"
             href="/cryptocurrencies"
             active={location === "/cryptocurrencies"}
+            isOpen={isOpen}
           />
           <SidebarItem
             icon={<Layers className="h-5 w-5" />}
             label="Oportunidades"
             href="/opportunities"
             active={location === "/opportunities"}
+            isOpen={isOpen}
           />
           <SidebarItem
             icon={<PieChart className="h-5 w-5" />}
             label="Rendimiento"
             href="/performance"
             active={location === "/performance"}
+            isOpen={isOpen}
           />
           <SidebarItem
             icon={<CandlestickChart className="h-5 w-5" />}
             label="Gráficos"
             href="/charts"
             active={location === "/charts"}
+            isOpen={isOpen}
           />
         </div>
         
-        <Separator className="my-4" />
+        <div className="px-3 my-4">
+          <Separator className="bg-border/50" />
+        </div>
         
         <div className="px-3 space-y-1">
           <SidebarItem
@@ -205,46 +211,56 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
             label="Ajustes"
             href="/settings"
             active={location === "/settings"}
+            isOpen={isOpen}
           />
           <SidebarItem
             icon={<HelpCircle className="h-5 w-5" />}
             label="Ayuda"
             href="/help"
             active={location === "/help"}
+            isOpen={isOpen}
           />
         </div>
       </ScrollArea>
 
-      {/* User section */}
       <div 
         className={cn(
-          "border-t p-3", 
+          "border-t border-border p-3 shrink-0", 
           isOpen ? "block" : "flex justify-center"
         )}
       >
         {isOpen ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarFallback>{userInitials}</AvatarFallback>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Avatar className="h-9 w-9 shrink-0 border-2 border-primary/20">
+                <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                  {userInitials}
+                </AvatarFallback>
               </Avatar>
-              <div>
-                <p className="text-sm font-medium line-clamp-1">{user?.username}</p>
-                <p className="text-xs text-muted-foreground truncate max-w-[140px]">{user?.email}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate text-foreground">
+                  {user?.username || "Usuario"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user?.email}
+                </p>
               </div>
             </div>
             <Button 
               onClick={handleLogout} 
               variant="ghost" 
               size="icon" 
-              className="text-muted-foreground hover:text-primary hover:bg-muted/50"
+              data-testid="button-logout"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
             >
               <LogOut className="h-5 w-5" />
             </Button>
           </div>
         ) : (
-          <Avatar>
-            <AvatarFallback>{userInitials}</AvatarFallback>
+          <Avatar className="h-9 w-9 border-2 border-primary/20">
+            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+              {userInitials}
+            </AvatarFallback>
           </Avatar>
         )}
       </div>
