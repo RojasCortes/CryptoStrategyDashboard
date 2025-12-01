@@ -2,7 +2,6 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "framework": null,
   "functions": {
     "api/**/*.js": {
       "maxDuration": 30
@@ -10,25 +9,12 @@
   },
   "rewrites": [
     {
-      "source": "/api/market-data",
-      "destination": "/api/market-data.js"
-    },
-    {
-      "source": "/api/market-stream",
-      "destination": "/api/market-stream.js"
-    },
-    {
       "source": "/api/:path*",
       "destination": "/api/index.js"
-    }
-  ],
-  "routes": [
-    {
-      "handle": "filesystem"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
