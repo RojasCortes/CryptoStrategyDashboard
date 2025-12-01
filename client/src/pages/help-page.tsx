@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { AppBar } from "@/components/dashboard/app-bar";
@@ -47,7 +47,7 @@ import { Input } from "@/components/ui/input";
 export default function HelpPage() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
   const toggleSidebar = () => {

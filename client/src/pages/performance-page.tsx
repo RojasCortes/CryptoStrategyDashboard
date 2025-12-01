@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBinanceData } from "@/hooks/use-binance";
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -187,7 +187,7 @@ const COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#94a3b8"
 export default function PerformancePage() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>("all");
 

@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { CandleData } from "@shared/schema";
-import { useAuth } from "./use-auth";
+import { useFirebaseAuth } from "./use-firebase-auth";
 
 /**
  * Hook for fetching historical candle data from the API
  */
 export function useHistoricalData(symbol: string, interval: string = "1d", limit: number = 90) {
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   
   const {
     data: candleData,

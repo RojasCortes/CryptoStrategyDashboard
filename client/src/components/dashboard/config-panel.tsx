@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Strategy, InsertStrategy, insertStrategySchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useAvailablePairs } from "@/hooks/use-binance";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -67,7 +67,7 @@ const extendedSchema = insertStrategySchema.omit({ userId: true }).extend({
 type FormValues = z.infer<typeof extendedSchema>;
 
 export function ConfigPanel({ selectedStrategy, onStrategyUpdated }: ConfigPanelProps) {
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const { toast } = useToast();
   const { pairs, isLoading: isPairsLoading } = useAvailablePairs();
   const [parameterFields, setParameterFields] = useState<JSX.Element | null>(null);
@@ -165,20 +165,21 @@ export function ConfigPanel({ selectedStrategy, onStrategyUpdated }: ConfigPanel
     };
 
     // Set parameters based on strategy type
+    const params = selectedStrategy.parameters as Record<string, number>;
     if (selectedStrategy.strategyType === "MACD Crossover") {
-      defaultValues.macdFast = selectedStrategy.parameters.fast;
-      defaultValues.macdSlow = selectedStrategy.parameters.slow;
-      defaultValues.macdSignal = selectedStrategy.parameters.signal;
+      defaultValues.macdFast = params.fast;
+      defaultValues.macdSlow = params.slow;
+      defaultValues.macdSignal = params.signal;
     } else if (selectedStrategy.strategyType === "RSI Oversold/Overbought") {
-      defaultValues.rsiPeriod = selectedStrategy.parameters.period;
-      defaultValues.rsiOverbought = selectedStrategy.parameters.overbought;
-      defaultValues.rsiOversold = selectedStrategy.parameters.oversold;
+      defaultValues.rsiPeriod = params.period;
+      defaultValues.rsiOverbought = params.overbought;
+      defaultValues.rsiOversold = params.oversold;
     } else if (selectedStrategy.strategyType === "Bollinger Bands") {
-      defaultValues.bbPeriod = selectedStrategy.parameters.period;
-      defaultValues.bbDeviation = selectedStrategy.parameters.deviation;
+      defaultValues.bbPeriod = params.period;
+      defaultValues.bbDeviation = params.deviation;
     } else if (selectedStrategy.strategyType === "Moving Average Cross") {
-      defaultValues.maPeriod1 = selectedStrategy.parameters.period1;
-      defaultValues.maPeriod2 = selectedStrategy.parameters.period2;
+      defaultValues.maPeriod1 = params.period1;
+      defaultValues.maPeriod2 = params.period2;
     }
   }
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAvailablePairs } from "@/hooks/use-binance";
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -28,7 +28,7 @@ import { CryptoIcon } from "@/components/crypto-icon";
 export default function ChartPage() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const { pairs = [], isLoading: isLoadingPairs } = useAvailablePairs();
   
   // Selected pair and interval state

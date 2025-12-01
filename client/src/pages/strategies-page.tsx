@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAvailablePairs } from "@/hooks/use-binance";
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -151,7 +151,7 @@ type StrategyFormValues = z.infer<typeof strategyFormSchema>;
 export default function StrategiesPage() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const { toast } = useToast();
   const { pairs = [] } = useAvailablePairs();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);

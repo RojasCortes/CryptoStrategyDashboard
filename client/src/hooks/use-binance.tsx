@@ -1,11 +1,11 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MarketData, CryptoPair } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useAuth } from "./use-auth";
+import { useFirebaseAuth } from "./use-firebase-auth";
 import { useToast } from "./use-toast";
 
 export function useBinanceData(symbols?: string[]) {
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const symbolsParam = symbols ? symbols.join(",") : undefined;
   
   const { data: marketData, isLoading, error } = useQuery<MarketData[], Error>({
@@ -22,7 +22,7 @@ export function useBinanceData(symbols?: string[]) {
 }
 
 export function useAvailablePairs() {
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   
   const { data: pairs, isLoading, error } = useQuery<CryptoPair[], Error>({
     queryKey: ["/api/market/pairs"],

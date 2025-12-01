@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBinanceData } from "@/hooks/use-binance";
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -279,7 +279,7 @@ const correlationData = [
 export default function MarketsPage() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const { marketData = [], isLoading: isLoadingMarketData } = useBinanceData();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");

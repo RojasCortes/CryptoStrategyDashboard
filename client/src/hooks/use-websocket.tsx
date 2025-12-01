@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useAuth } from './use-auth';
+import { useFirebaseAuth } from './use-firebase-auth';
 
 interface MarketData {
   symbol: string;
@@ -34,7 +34,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     reconnectInterval = 5000
   } = options;
 
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isConnected, setIsConnected] = useState(false);

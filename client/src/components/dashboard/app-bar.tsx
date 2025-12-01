@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useBinanceData } from "@/hooks/use-binance";
 import { useTestBinanceConnection } from "@/hooks/use-binance";
 import { useNotifications, AppNotification } from "@/hooks/use-notifications";
@@ -34,7 +34,7 @@ interface AppBarProps {
 }
 
 export function AppBar({ toggleSidebar }: AppBarProps) {
-  const { user, logoutMutation } = useAuth();
+  const { user, logoutMutation } = useFirebaseAuth();
   const { marketData = [], isLoading } = useBinanceData();
   const { mutate: testConnection, isSuccess: isConnected } = useTestBinanceConnection();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();

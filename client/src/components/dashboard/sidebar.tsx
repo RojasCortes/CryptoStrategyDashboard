@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useNotifications } from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ const SidebarItem = ({ icon, label, href, active, badge }: SidebarItemProps) => 
 
 export function Sidebar({ isMobile, isOpen }: SidebarProps) {
   const [location] = useLocation();
-  const { user, logoutMutation } = useAuth();
+  const { user, logoutMutation } = useFirebaseAuth();
   const { unreadCount } = useNotifications();
   
   // Get user initials for avatar

@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { AlertCircle, CheckCircle2, X } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useTestBinanceConnection } from "@/hooks/use-binance";
 
 export function ApiStatusAlert() {
   const [isVisible, setIsVisible] = useState(true);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const testConnection = useTestBinanceConnection();
 
   useEffect(() => {
@@ -31,8 +31,8 @@ export function ApiStatusAlert() {
 
   return (
     <Alert
-      variant={isConnected ? "success" : "destructive"}
-      className="mb-4 flex items-center justify-between"
+      variant={isConnected ? "default" : "destructive"}
+      className={`mb-4 flex items-center justify-between ${isConnected ? "border-green-500 bg-green-50 text-green-900" : ""}`}
     >
       <div className="flex items-center">
         {isConnected ? (

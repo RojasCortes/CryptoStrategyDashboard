@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { AppBar } from "@/components/dashboard/app-bar";
@@ -81,7 +81,7 @@ type NotificationFormValues = z.infer<typeof notificationSchema>;
 export default function SettingsPage(): JSX.Element {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const { user, updateApiKeysMutation } = useAuth();
+  const { user, updateApiKeysMutation } = useFirebaseAuth();
   const { toast } = useToast();
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
 

@@ -1,4 +1,4 @@
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { AppBar } from "@/components/dashboard/app-bar";
@@ -8,7 +8,7 @@ import { useState } from "react";
 export default function CryptocurrenciesPage() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

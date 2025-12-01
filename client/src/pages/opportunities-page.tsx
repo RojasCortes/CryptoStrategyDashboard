@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBinanceData, useAvailablePairs } from "@/hooks/use-binance";
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -541,7 +541,7 @@ function generateSeasonalPatterns(marketData: MarketData[]): SeasonalPattern[] {
 export default function OpportunitiesPage() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const { user } = useAuth();
+  const { user } = useFirebaseAuth();
   const { pairs = [] } = useAvailablePairs();
   const { marketData = [], isLoading: isLoadingMarketData } = useBinanceData();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
