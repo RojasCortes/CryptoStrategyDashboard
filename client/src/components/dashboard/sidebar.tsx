@@ -106,7 +106,10 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
             <TrendingUp className="h-5 w-5 text-white" />
           </div>
           {isOpen && (
-            <span className="font-bold text-xl text-gradient">TradingAI</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-lg text-gradient leading-tight">CryptoDashboard</span>
+              <span className="text-[10px] font-medium text-primary/80 tracking-wider">SK</span>
+            </div>
           )}
         </div>
       </div>

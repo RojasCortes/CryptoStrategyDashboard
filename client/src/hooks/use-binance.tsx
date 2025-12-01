@@ -8,7 +8,7 @@ export function useBinanceData(symbols?: string[]) {
   const { user } = useFirebaseAuth();
   const symbolsParam = symbols ? symbols.join(",") : undefined;
   
-  const { data: marketData, isLoading, error } = useQuery<MarketData[], Error>({
+  const { data: marketData, isLoading, error, refetch } = useQuery<MarketData[], Error>({
     queryKey: [symbolsParam ? `/api/market/data?symbols=${symbolsParam}` : "/api/market/data"],
     enabled: !!user,
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -18,6 +18,7 @@ export function useBinanceData(symbols?: string[]) {
     marketData: marketData || [],
     isLoading,
     error,
+    refetch,
   };
 }
 
