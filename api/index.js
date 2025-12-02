@@ -658,8 +658,16 @@ export default async function handler(req, res) {
   if (pathname === '/api/trading-pairs' || pathname === '/api/trading-pairs/' ||
       pathname === '/api/market/pairs' || pathname === '/api/market/pairs/') {
     const pairs = [
-      'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'DOTUSDT',
-      'SOLUSDT', 'MATICUSDT', 'AVAXUSDT', 'LINKUSDT', 'UNIUSDT'
+      { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
+      { symbol: 'ETHUSDT', baseAsset: 'ETH', quoteAsset: 'USDT' },
+      { symbol: 'BNBUSDT', baseAsset: 'BNB', quoteAsset: 'USDT' },
+      { symbol: 'ADAUSDT', baseAsset: 'ADA', quoteAsset: 'USDT' },
+      { symbol: 'DOTUSDT', baseAsset: 'DOT', quoteAsset: 'USDT' },
+      { symbol: 'SOLUSDT', baseAsset: 'SOL', quoteAsset: 'USDT' },
+      { symbol: 'MATICUSDT', baseAsset: 'MATIC', quoteAsset: 'USDT' },
+      { symbol: 'AVAXUSDT', baseAsset: 'AVAX', quoteAsset: 'USDT' },
+      { symbol: 'LINKUSDT', baseAsset: 'LINK', quoteAsset: 'USDT' },
+      { symbol: 'UNIUSDT', baseAsset: 'UNI', quoteAsset: 'USDT' }
     ];
     return res.status(200).json(pairs);
   }
