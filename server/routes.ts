@@ -254,45 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Account balance endpoint
-  app.get("/api/account/balance", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const user = req.user;
-      const apiKey = user.apiKey || "";
-      const apiSecret = user.apiSecret || "";
-
-      if (!apiKey || !apiSecret) {
-        return res.status(400).json({ 
-          error: "API credentials required",
-          message: "Para acceder a los datos de tu cuenta, configura tus claves API de Binance en la sección de Ajustes.",
-          requiresApiKey: true
-        });
-      }
-
-      console.log("Fetching real account balance from Binance");
-      const binanceService = createBinanceService(apiKey, apiSecret);
-      const accountData = await binanceService.getAccountInfo();
-
-      res.set({
-        'Cache-Control': 'private, max-age=30', // Cache privately for 30 seconds
-        'X-Data-Source': 'Binance-API-Real-Account'
-      });
-      res.json(accountData);
-    } catch (error) {
-      console.error("Error fetching account balance:", error);
-      res.status(500).json({ 
-        error: "No se pudieron obtener los datos de la cuenta",
-        message: "Verifica que tus claves API de Binance sean correctas y tengan los permisos necesarios. Configúralas en Ajustes.",
-        requiresApiKey: true
-      });
-    }
-  });
-  
-  // Nuevo endpoint: obtener información de la cuenta y balances
+  // Obtener información de la cuenta y balances (con soporte multi-TLD)
   app.get("/api/account/balance", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });

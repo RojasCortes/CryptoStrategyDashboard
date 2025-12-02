@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 
 // Firebase Admin initialization for token verification
 let firebaseAdmin = null;
@@ -59,31 +60,101 @@ if (supabaseUrl && supabaseKey) {
   }
 }
 
-// Simple session storage (in production, use a proper session store)
-const sessions = new Map();
+// Secure password hashing with bcrypt
+const SALT_ROUNDS = 12; // Higher = more secure but slower
 
-// Helper function to hash passwords
 async function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
+  return await bcrypt.hash(password, SALT_ROUNDS);
 }
 
-// Helper function to create session
-function createSession(userId) {
-  const sessionId = crypto.randomBytes(32).toString('hex');
-  sessions.set(sessionId, { userId, createdAt: Date.now() });
-  return sessionId;
+async function comparePassword(password, hash) {
+  return await bcrypt.compare(password, hash);
 }
 
-// Helper function to get user from session
-function getUserFromSession(sessionId) {
-  const session = sessions.get(sessionId);
-  if (!session) return null;
-  // Simple session expiry (24 hours)
-  if (Date.now() - session.createdAt > 24 * 60 * 60 * 1000) {
-    sessions.delete(sessionId);
+// Encryption key for API keys (use a strong key from environment)
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+const ALGORITHM = 'aes-256-gcm';
+
+// Encrypt sensitive data (API keys, secrets)
+function encrypt(text) {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY, 'hex').slice(0, 32), iv);
+
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+
+  const authTag = cipher.getAuthTag();
+
+  return {
+    iv: iv.toString('hex'),
+    encryptedData: encrypted,
+    authTag: authTag.toString('hex')
+  };
+}
+
+// Decrypt sensitive data
+function decrypt(encrypted) {
+  const decipher = crypto.createDecipheriv(
+    ALGORITHM,
+    Buffer.from(ENCRYPTION_KEY, 'hex').slice(0, 32),
+    Buffer.from(encrypted.iv, 'hex')
+  );
+
+  decipher.setAuthTag(Buffer.from(encrypted.authTag, 'hex'));
+
+  let decrypted = decipher.update(encrypted.encryptedData, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+
+  return decrypted;
+}
+
+// Simple rate limiting (in-memory, resets on function restart)
+const rateLimits = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 60; // 60 requests per minute
+
+function checkRateLimit(identifier) {
+  const now = Date.now();
+  const userLimits = rateLimits.get(identifier) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
+
+  // Reset if window expired
+  if (now > userLimits.resetAt) {
+    userLimits.count = 0;
+    userLimits.resetAt = now + RATE_LIMIT_WINDOW;
+  }
+
+  userLimits.count++;
+  rateLimits.set(identifier, userLimits);
+
+  if (userLimits.count > MAX_REQUESTS) {
+    return false; // Rate limit exceeded
+  }
+
+  return true; // OK
+}
+
+// Helper to verify Firebase JWT token from Authorization header
+async function verifyFirebaseToken(authHeader) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
-  return session.userId;
+
+  const token = authHeader.replace('Bearer ', '');
+
+  try {
+    const admin = await initFirebaseAdmin();
+
+    if (!admin) {
+      console.warn('Firebase Admin not initialized, cannot verify token');
+      return null;
+    }
+
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    return decodedToken.uid; // Return Firebase UID
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    return null;
+  }
 }
 
 export default async function handler(req, res) {
@@ -129,23 +200,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // Debug endpoint - only for troubleshooting
-  if (pathname === '/api/debug/config' || pathname === '/api/debug/config/') {
-    return res.status(200).json({
-      timestamp: new Date().toISOString(),
-      environment: {
-        hasSupabaseUrl: !!supabaseUrl,
-        hasSupabaseKey: !!supabaseKey,
-        hasDatabaseUrl: !!databaseUrl,
-        hasFirebaseProjectId: !!firebaseProjectId,
-        hasFirebaseServiceKey: !!serviceAccountKey,
-        firebaseProjectId: firebaseProjectId || 'not configured',
-        supabaseConfigured: !!supabase,
-      },
-      note: 'This endpoint shows configuration status without exposing sensitive values'
-    });
-  }
-  
   // Firebase status endpoint
   if (pathname === '/api/auth/firebase-status' || pathname === '/api/auth/firebase-status/') {
     const admin = await initFirebaseAdmin();
@@ -332,24 +386,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Username already exists' });
       }
       
-      // Create user
+      // Create user with bcrypt hashed password
       const hashedPassword = await hashPassword(password);
       const { data: newUser, error } = await supabase
         .from('users')
         .insert([{ username, password: hashedPassword, email }])
         .select()
         .single();
-        
+
       if (error) throw error;
-      
-      // Create session
-      const sessionId = createSession(newUser.id);
-      
-      return res.status(201).json({ 
+
+      // Return user data (Firebase JWT handles session)
+      return res.status(201).json({
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        sessionId
+        message: 'User created successfully. Please login with Firebase.'
       });
     } catch (error) {
       return res.status(500).json({ error: error.message });
@@ -369,66 +421,68 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing credentials' });
       }
       
-      // Get user
-      const hashedPassword = await hashPassword(password);
+      // Get user by username
       const { data: user, error } = await supabase
         .from('users')
         .select('*')
         .eq('username', username)
-        .eq('password', hashedPassword)
         .single();
-        
+
       if (error || !user) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
-      
-      // Create session
-      const sessionId = createSession(user.id);
-      
-      return res.status(200).json({ 
+
+      // Verify password with bcrypt
+      const isValidPassword = await comparePassword(password, user.password);
+
+      if (!isValidPassword) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      // Return user data (Firebase JWT handles session)
+      return res.status(200).json({
         id: user.id,
         username: user.username,
         email: user.email,
-        sessionId
+        message: 'Login successful. Use Firebase authentication.'
       });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
   }
   
-  // Logout endpoint
+  // Logout endpoint (Firebase handles session on client-side)
   if ((pathname === '/api/logout' || pathname === '/api/logout/') && method === 'POST') {
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    if (sessionId) {
-      sessions.delete(sessionId);
-    }
-    return res.status(200).json({ message: 'Logged out successfully' });
+    // With JWT-based auth, logout is handled on the client by clearing the Firebase token
+    return res.status(200).json({
+      message: 'Logout successful. Clear Firebase token on client.',
+      success: true
+    });
   }
   
-  // User endpoint
+  // User endpoint (use /api/auth/session instead for Firebase auth)
   if (pathname === '/api/user' || pathname === '/api/user/') {
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
-    
+
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
-    
+
     try {
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, username, email')
-        .eq('id', userId)
+        .select('id, username, email, firebase_uid')
+        .eq('firebase_uid', firebaseUid)
         .single();
-        
+
       if (error || !user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      
+
       return res.status(200).json(user);
     } catch (error) {
       return res.status(500).json({ error: error.message });
@@ -504,13 +558,21 @@ export default async function handler(req, res) {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
-    
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
+
+    // Get user ID from firebase_uid
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('firebase_uid', firebaseUid)
+      .single();
+
+    const userId = userData?.id;
     
     if (method === 'GET') {
       try {
@@ -548,13 +610,21 @@ export default async function handler(req, res) {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
-    
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
+
+    // Get user ID from firebase_uid
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('firebase_uid', firebaseUid)
+      .single();
+
+    const userId = userData?.id;
     
     try {
       const { data: trades, error } = await supabase
@@ -572,14 +642,13 @@ export default async function handler(req, res) {
   
   // Binance account info endpoint
   if (pathname === '/api/binance/account' || pathname === '/api/binance/account/') {
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
-    
-    // Return mock account data since we can't store API keys in serverless functions
+
+    // Return mock account data (or implement real Binance API call with decrypted keys)
     return res.status(200).json({
       balances: [
         { asset: 'USDT', free: '1280.00', locked: '0.00' },
@@ -604,35 +673,46 @@ export default async function handler(req, res) {
     ]);
   }
   
-  // Update API keys endpoint
+  // Update API keys endpoint - NOW WITH AES-256 ENCRYPTION
   if ((pathname === '/api/user/api-keys' || pathname === '/api/user/api-keys/') && method === 'PUT') {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
-    
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
-    
+
     try {
       const { apiKey, apiSecret } = body;
-      
-      // In a real implementation, encrypt these keys
+
+      if (!apiKey || !apiSecret) {
+        return res.status(400).json({ error: 'API key and secret are required' });
+      }
+
+      // ENCRYPT API keys before storing (AES-256-GCM)
+      const encryptedKey = encrypt(apiKey);
+      const encryptedSecret = encrypt(apiSecret);
+
+      // Store encrypted data as JSON string
       const { data: user, error } = await supabase
         .from('users')
-        .update({ 
-          binance_api_key: apiKey,
-          binance_api_secret: apiSecret 
+        .update({
+          binance_api_key: JSON.stringify(encryptedKey),
+          binance_api_secret: JSON.stringify(encryptedSecret)
         })
-        .eq('id', userId)
+        .eq('firebase_uid', firebaseUid)
         .select('id, username, email')
         .single();
-        
+
       if (error) throw error;
-      return res.status(200).json(user);
+
+      return res.status(200).json({
+        ...user,
+        message: 'API keys encrypted and saved successfully'
+      });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -678,13 +758,12 @@ export default async function handler(req, res) {
   }
   
   if (pathname.startsWith('/api/trades') && pathname.includes('limit')) {
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
-    
+
     return res.status(200).json([]);
   }
   
