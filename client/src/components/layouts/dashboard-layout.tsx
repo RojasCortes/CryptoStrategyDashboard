@@ -21,7 +21,6 @@ import {
 import { CryptoIcon } from "@/components/ui/crypto-icons";
 import {
   Home,
-  LayoutDashboard,
   LineChart,
   Wallet,
   Settings,
@@ -165,13 +164,6 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
                   label="Inicio"
                   href="/"
                   active={location === "/"}
-                  isOpen={sidebarOpen}
-                />
-                <SidebarItem
-                  icon={<LayoutDashboard className="h-5 w-5" />}
-                  label="Dashboard"
-                  href="/dashboard"
-                  active={location === "/dashboard"}
                   isOpen={sidebarOpen}
                 />
                 <SidebarItem
