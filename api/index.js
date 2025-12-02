@@ -167,15 +167,15 @@ export default async function handler(req, res) {
   // Firebase Auth Session endpoint - syncs Firebase auth with backend
   if ((pathname === '/api/auth/session' || pathname === '/api/auth/session/') && method === 'POST') {
     const authHeader = headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Missing or invalid authorization header' });
     }
-    
+
     try {
       const token = authHeader.replace('Bearer ', '');
-      let email, name, uid;
-      
+      let email, name, uid, picture;
+
       // Try Firebase Admin verification first (cryptographically secure)
       const admin = await initFirebaseAdmin();
       if (admin) {
@@ -184,21 +184,21 @@ export default async function handler(req, res) {
           email = decodedToken.email;
           name = decodedToken.name;
           uid = decodedToken.uid;
-          console.log('Token verified with Firebase Admin');
+          picture = decodedToken.picture;
+          console.log('Token verified with Firebase Admin for user:', email || uid);
         } catch (verifyError) {
           console.error('Firebase token verification failed:', verifyError.message);
           return res.status(401).json({ error: 'Invalid or expired token' });
         }
       } else {
         // Fallback: Basic JWT validation (NOT cryptographically secure)
-        // This is only for development - production should set FIREBASE_SERVICE_ACCOUNT_KEY
         console.warn('SECURITY WARNING: Firebase Admin not configured, using basic JWT validation');
-        
+
         const tokenParts = token.split('.');
         if (tokenParts.length !== 3) {
           return res.status(401).json({ error: 'Invalid token format' });
         }
-        
+
         let payload;
         try {
           let base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -207,12 +207,13 @@ export default async function handler(req, res) {
         } catch (decodeError) {
           return res.status(401).json({ error: 'Invalid token encoding' });
         }
-        
+
         const { iss, exp, iat } = payload;
         email = payload.email;
         name = payload.name;
         uid = payload.user_id || payload.sub;
-        
+        picture = payload.picture;
+
         // Basic validation checks
         const now = Math.floor(Date.now() / 1000);
         if (exp && exp < now) {
@@ -225,88 +226,85 @@ export default async function handler(req, res) {
           return res.status(401).json({ error: 'Invalid token issuer' });
         }
       }
-      
-      if (!email && !uid) {
-        return res.status(401).json({ error: 'Invalid token: missing user info' });
+
+      if (!uid) {
+        return res.status(401).json({ error: 'Invalid token: missing user ID' });
       }
-      
-      // If we have Supabase, try to find or create the user
+
+      // Prepare basic user data from Firebase token (ALWAYS available)
+      const username = name || email?.split('@')[0] || `user_${uid.substring(0, 8)}`;
+      const userData = {
+        id: uid, // Use Firebase UID as primary ID
+        username,
+        email: email || '',
+        displayName: name || username,
+        photoURL: picture || null,
+        firebaseUid: uid,
+        apiKey: null // Will be populated from Supabase if available
+      };
+
+      // Try to sync with Supabase (OPTIONAL - non-blocking)
       if (supabase) {
-        const username = name || email?.split('@')[0] || `user_${uid?.substring(0, 8)}`;
-        
-        // Check if user exists by Firebase UID
-        let { data: existingUser } = await supabase
-          .from('users')
-          .select('*')
-          .eq('firebase_uid', uid)
-          .single();
-        
-        if (!existingUser && email) {
-          // Try to find by email
-          const { data: userByEmail } = await supabase
+        try {
+          // Check if user exists by Firebase UID
+          const { data: existingUser, error: selectError } = await supabase
             .from('users')
             .select('*')
-            .eq('email', email)
-            .single();
-          
-          if (userByEmail) {
-            // Update existing user with Firebase UID
-            const { data: updatedUser } = await supabase
+            .eq('firebase_uid', uid)
+            .maybeSingle(); // Use maybeSingle() to avoid error if no rows found
+
+          if (selectError) {
+            console.warn('Supabase select error:', selectError.message);
+          } else if (existingUser) {
+            // User exists in Supabase - merge data
+            userData.id = existingUser.id;
+            userData.username = existingUser.username || userData.username;
+            userData.displayName = existingUser.display_name || userData.displayName;
+            userData.photoURL = existingUser.photo_url || userData.photoURL;
+            userData.apiKey = existingUser.api_key ? '***configured***' : null;
+
+            console.log('User found in Supabase:', existingUser.id);
+          } else if (email) {
+            // Try to create user in Supabase
+            console.log('Creating new user in Supabase for:', email);
+            const { data: newUser, error: insertError } = await supabase
               .from('users')
-              .update({ firebase_uid: uid })
-              .eq('id', userByEmail.id)
+              .insert([{
+                username,
+                email: email || `${username}@firebase.local`,
+                firebase_uid: uid,
+                display_name: name,
+                photo_url: picture,
+                password: crypto.randomBytes(32).toString('hex') // Random password for Firebase users
+              }])
               .select()
               .single();
-            existingUser = updatedUser || userByEmail;
+
+            if (insertError) {
+              console.warn('Could not create user in Supabase:', insertError.message);
+              // Continue anyway - app works without Supabase
+            } else if (newUser) {
+              userData.id = newUser.id;
+              userData.displayName = newUser.display_name || userData.displayName;
+              userData.photoURL = newUser.photo_url || userData.photoURL;
+              console.log('User created in Supabase:', newUser.id);
+            }
           }
+        } catch (dbError) {
+          console.warn('Supabase operation failed:', dbError.message);
+          // Continue anyway - app works without Supabase
         }
-        
-        if (!existingUser) {
-          // Create new user
-          const { data: newUser, error } = await supabase
-            .from('users')
-            .insert([{ 
-              username, 
-              email: email || `${username}@firebase.local`,
-              firebase_uid: uid,
-              password: crypto.randomBytes(32).toString('hex')
-            }])
-            .select()
-            .single();
-          
-          if (error) {
-            console.error('Error creating user:', error);
-            // Return basic user info even if DB fails
-            return res.status(200).json({
-              id: 0,
-              username,
-              email: email || '',
-              displayName: name || username
-            });
-          }
-          
-          existingUser = newUser;
-        }
-        
-        return res.status(200).json({
-          id: existingUser.id,
-          username: existingUser.username,
-          email: existingUser.email,
-          displayName: name || existingUser.username,
-          apiKey: existingUser.binance_api_key ? '***configured***' : null
-        });
       }
-      
-      // No database - return basic user info from token
-      return res.status(200).json({
-        id: 0,
-        username: name || email?.split('@')[0] || 'user',
-        email: email || '',
-        displayName: name || email?.split('@')[0] || 'User'
-      });
+
+      // ALWAYS return user data, even if Supabase failed
+      return res.status(200).json(userData);
+
     } catch (error) {
-      console.error('Session error:', error);
-      return res.status(500).json({ error: 'Failed to create session' });
+      console.error('Session endpoint error:', error);
+      return res.status(500).json({
+        error: 'Failed to create session',
+        details: error.message
+      });
     }
   }
   
