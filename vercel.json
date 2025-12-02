@@ -14,6 +14,10 @@
     "api/market-stream.js": {
       "maxDuration": 30,
       "memory": 1024
+    },
+    "api/candles.js": {
+      "maxDuration": 30,
+      "memory": 1024
     }
   },
   "headers": [
@@ -51,6 +55,10 @@
     {
       "source": "/api/market-stream",
       "destination": "/api/market-stream.js"
+    },
+    {
+      "source": "/api/market/candles",
+      "destination": "/api/candles.js"
     },
     {
       "source": "/api/:path*",
