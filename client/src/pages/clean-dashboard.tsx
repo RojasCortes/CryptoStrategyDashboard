@@ -28,7 +28,7 @@ export default function CleanDashboard() {
 
   const { data: marketData, isLoading: marketLoading, refetch } = useQuery<MarketData[]>({
     queryKey: ["/api/market-data"],
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Refresh every 60 seconds (reduced from 30s)
   });
 
   const handleNavigation = (href: string) => {

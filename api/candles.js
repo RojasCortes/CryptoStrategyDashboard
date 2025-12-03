@@ -23,7 +23,32 @@ export default async function handler(req, res) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const symbol = url.searchParams.get('symbol') || 'BTCUSDT';
     const interval = url.searchParams.get('interval') || '1d';
-    const limit = parseInt(url.searchParams.get('limit') || '90');
+    const limitParam = url.searchParams.get('limit') || '90';
+
+    // INPUT VALIDATION: Validate limit
+    const MAX_LIMIT = 1000; // Maximum candles to prevent abuse
+    const MIN_LIMIT = 1;
+    let limit = parseInt(limitParam);
+
+    if (isNaN(limit) || limit < MIN_LIMIT) {
+      limit = 90; // Default
+    } else if (limit > MAX_LIMIT) {
+      return res.status(400).json({
+        error: 'Invalid limit parameter',
+        message: `Limit must be between ${MIN_LIMIT} and ${MAX_LIMIT}`,
+        maxLimit: MAX_LIMIT
+      });
+    }
+
+    // INPUT VALIDATION: Validate interval
+    const validIntervals = ['1h', '4h', '1d', '1w'];
+    if (!validIntervals.includes(interval)) {
+      return res.status(400).json({
+        error: 'Invalid interval parameter',
+        message: 'Interval must be one of: 1h, 4h, 1d, 1w',
+        validIntervals
+      });
+    }
 
     // Map our intervals to CoinGecko days
     const intervalToDays = {
@@ -33,7 +58,7 @@ export default async function handler(req, res) {
       '1w': 365
     };
 
-    const days = intervalToDays[interval] || 90;
+    const days = intervalToDays[interval];
 
     // Map symbol to CoinGecko ID
     const symbolToId = {
@@ -44,10 +69,22 @@ export default async function handler(req, res) {
       'ADAUSDT': 'cardano',
       'DOTUSDT': 'polkadot',
       'MATICUSDT': 'matic-network',
-      'AVAXUSDT': 'avalanche-2'
+      'AVAXUSDT': 'avalanche-2',
+      'LINKUSDT': 'chainlink',
+      'UNIUSDT': 'uniswap'
     };
 
-    const coinId = symbolToId[symbol] || 'bitcoin';
+    // INPUT VALIDATION: Validate symbol
+    if (!symbolToId[symbol]) {
+      return res.status(400).json({
+        error: 'Invalid symbol parameter',
+        message: 'Symbol not supported',
+        validSymbols: Object.keys(symbolToId),
+        example: 'BTCUSDT'
+      });
+    }
+
+    const coinId = symbolToId[symbol];
 
     // Use CoinGecko market chart API
     const cgUrl = `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`;

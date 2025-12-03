@@ -11,7 +11,7 @@ export function useBinanceData(symbols?: string[]) {
   const { data: marketData, isLoading, error, refetch } = useQuery<MarketData[], Error>({
     queryKey: [symbolsParam ? `/api/market/data?symbols=${symbolsParam}` : "/api/market/data"],
     enabled: !!user,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 60000, // Refresh every 60 seconds (reduced from 30s to avoid rate limits)
   });
 
   return {

@@ -104,43 +104,57 @@ export default function MarketsPage() {
     return sorted;
   }, [filteredData, sortConfig]);
 
-  const topGainers = useMemo(() => {
-    if (!marketData || marketData.length === 0) return [];
-    return [...marketData]
+  // Optimize: Calculate all sorted data in one pass to avoid multiple sorts
+  const { topGainers, topLosers, volumeChartData, marketCapDistribution } = useMemo(() => {
+    if (!marketData || marketData.length === 0) {
+      return {
+        topGainers: [],
+        topLosers: [],
+        volumeChartData: [],
+        marketCapDistribution: []
+      };
+    }
+
+    // Create a copy once instead of multiple times
+    const dataCopy = [...marketData];
+
+    // Calculate topGainers (sort by priceChangePercent desc)
+    const gainers = dataCopy
       .sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent))
       .slice(0, 5);
-  }, [marketData]);
 
-  const topLosers = useMemo(() => {
-    if (!marketData || marketData.length === 0) return [];
-    return [...marketData]
+    // Calculate topLosers (reuse sorted data, just reverse slice)
+    const losers = dataCopy
       .sort((a, b) => parseFloat(a.priceChangePercent) - parseFloat(b.priceChangePercent))
       .slice(0, 5);
-  }, [marketData]);
 
-  const volumeChartData = useMemo(() => {
-    if (!marketData || marketData.length === 0) return [];
-    return [...marketData]
+    // Calculate volumeChartData (sort by volume desc)
+    const volumeData = [...marketData]
       .sort((a, b) => parseFloat(b.volume) - parseFloat(a.volume))
       .slice(0, 8)
       .map(crypto => ({
         name: crypto.symbol.replace('USDT', ''),
         volume: parseFloat(crypto.volume) / 1000000
       }));
-  }, [marketData]);
 
-  const marketCapDistribution = useMemo(() => {
-    if (!marketData || marketData.length === 0) return [];
-    const top5 = [...marketData]
+    // Calculate marketCapDistribution (sort by market cap desc)
+    const top5MarketCap = [...marketData]
       .sort((a, b) => parseFloat(b.volume) * parseFloat(b.price) - parseFloat(a.volume) * parseFloat(a.price))
       .slice(0, 5);
-    
-    const total = top5.reduce((acc, c) => acc + parseFloat(c.volume) * parseFloat(c.price), 0);
-    
-    return top5.map(c => ({
+
+    const total = top5MarketCap.reduce((acc, c) => acc + parseFloat(c.volume) * parseFloat(c.price), 0);
+
+    const distribution = top5MarketCap.map(c => ({
       name: c.symbol.replace('USDT', ''),
       value: Math.round((parseFloat(c.volume) * parseFloat(c.price) / total) * 100)
     }));
+
+    return {
+      topGainers: gainers,
+      topLosers: losers,
+      volumeChartData: volumeData,
+      marketCapDistribution: distribution
+    };
   }, [marketData]);
 
   const handleSort = (key: string) => {
