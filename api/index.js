@@ -784,8 +784,8 @@ export default async function handler(req, res) {
       const { data: user, error } = await supabase
         .from('users')
         .update({
-          binance_api_key: JSON.stringify(encryptedKey),
-          binance_api_secret: JSON.stringify(encryptedSecret)
+          api_key: JSON.stringify(encryptedKey),
+          api_secret: JSON.stringify(encryptedSecret)
         })
         .eq('firebase_uid', firebaseUid)
         .select('id, username, email')
