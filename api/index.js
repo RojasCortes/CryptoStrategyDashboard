@@ -842,16 +842,29 @@ export default async function handler(req, res) {
     }
   }
   
-  // Binance price endpoint
+  // Binance price endpoint - REAL DATA
   if (pathname === '/api/binance/price' || pathname === '/api/binance/price/') {
-    // Return mock price data
-    return res.status(200).json([
-      { symbol: 'BTCUSDT', price: '43250.00' },
-      { symbol: 'ETHUSDT', price: '2650.00' },
-      { symbol: 'BNBUSDT', price: '310.50' },
-      { symbol: 'ADAUSDT', price: '0.4850' },
-      { symbol: 'DOTUSDT', price: '7.25' }
-    ]);
+    try {
+      // Get ALL current prices from Binance
+      const response = await fetch('https://api.binance.com/api/v3/ticker/price');
+
+      if (!response.ok) {
+        throw new Error(`Binance API error: ${response.status}`);
+      }
+
+      const prices = await response.json();
+
+      // Cache for 10 seconds
+      res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
+
+      return res.status(200).json(prices);
+    } catch (error) {
+      console.error('Error fetching Binance prices:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch prices',
+        details: error.message
+      });
+    }
   }
   
   // Update API keys endpoint - NOW WITH AES-256 ENCRYPTION
@@ -921,39 +934,105 @@ export default async function handler(req, res) {
     }
   }
   
-  // Cryptocurrency list endpoint
+  // Cryptocurrency list endpoint - REAL DATA FROM BINANCE
   if (pathname === '/api/cryptocurrencies' || pathname === '/api/cryptocurrencies/' ||
       pathname === '/api/market/cryptocurrencies' || pathname === '/api/market/cryptocurrencies/') {
-    // Return a subset of popular cryptocurrencies
-    const cryptos = [
-      { symbol: 'BTC', name: 'Bitcoin', price: '43250.00', change: '+2.45%' },
-      { symbol: 'ETH', name: 'Ethereum', price: '2650.00', change: '+1.85%' },
-      { symbol: 'BNB', name: 'BNB', price: '310.50', change: '+0.95%' },
-      { symbol: 'ADA', name: 'Cardano', price: '0.4850', change: '-0.75%' },
-      { symbol: 'DOT', name: 'Polkadot', price: '7.25', change: '+1.25%' },
-      { symbol: 'SOL', name: 'Solana', price: '95.75', change: '+3.15%' },
-      { symbol: 'MATIC', name: 'Polygon', price: '0.8950', change: '+2.05%' },
-      { symbol: 'AVAX', name: 'Avalanche', price: '36.50', change: '+1.95%' }
-    ];
-    return res.status(200).json(cryptos);
+    try {
+      // Get 24hr ticker data for ALL trading pairs
+      const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+
+      if (!response.ok) {
+        throw new Error(`Binance API error: ${response.status}`);
+      }
+
+      const allTickers = await response.json();
+
+      // Filter only USDT pairs and enrich with data
+      const usdtPairs = allTickers
+        .filter(ticker => ticker.symbol.endsWith('USDT'))
+        .map(ticker => {
+          // Extract base asset (e.g., BTC from BTCUSDT)
+          const baseAsset = ticker.symbol.replace('USDT', '');
+
+          return {
+            symbol: baseAsset,
+            fullSymbol: ticker.symbol,
+            name: baseAsset, // We'll add proper names with icons later
+            price: parseFloat(ticker.lastPrice).toFixed(8),
+            priceChangePercent: parseFloat(ticker.priceChangePercent).toFixed(2),
+            change: parseFloat(ticker.priceChangePercent).toFixed(2) + '%',
+            volume: parseFloat(ticker.volume).toFixed(2),
+            quoteVolume: parseFloat(ticker.quoteVolume).toFixed(2),
+            high24h: parseFloat(ticker.highPrice).toFixed(8),
+            low24h: parseFloat(ticker.lowPrice).toFixed(8),
+            trades: ticker.count
+          };
+        })
+        // Sort by quote volume (USD volume) descending
+        .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
+        // Take top 200 by volume
+        .slice(0, 200);
+
+      // Cache for 30 seconds
+      res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+
+      return res.status(200).json(usdtPairs);
+    } catch (error) {
+      console.error('Error fetching cryptocurrencies:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch cryptocurrencies',
+        details: error.message
+      });
+    }
   }
   
-  // Trading pairs endpoint
+  // Trading pairs endpoint - REAL DATA FROM BINANCE
   if (pathname === '/api/trading-pairs' || pathname === '/api/trading-pairs/' ||
       pathname === '/api/market/pairs' || pathname === '/api/market/pairs/') {
-    const pairs = [
-      { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
-      { symbol: 'ETHUSDT', baseAsset: 'ETH', quoteAsset: 'USDT' },
-      { symbol: 'BNBUSDT', baseAsset: 'BNB', quoteAsset: 'USDT' },
-      { symbol: 'ADAUSDT', baseAsset: 'ADA', quoteAsset: 'USDT' },
-      { symbol: 'DOTUSDT', baseAsset: 'DOT', quoteAsset: 'USDT' },
-      { symbol: 'SOLUSDT', baseAsset: 'SOL', quoteAsset: 'USDT' },
-      { symbol: 'MATICUSDT', baseAsset: 'MATIC', quoteAsset: 'USDT' },
-      { symbol: 'AVAXUSDT', baseAsset: 'AVAX', quoteAsset: 'USDT' },
-      { symbol: 'LINKUSDT', baseAsset: 'LINK', quoteAsset: 'USDT' },
-      { symbol: 'UNIUSDT', baseAsset: 'UNI', quoteAsset: 'USDT' }
-    ];
-    return res.status(200).json(pairs);
+    try {
+      // Get exchange information from Binance
+      const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+
+      if (!response.ok) {
+        throw new Error(`Binance API error: ${response.status}`);
+      }
+
+      const exchangeInfo = await response.json();
+
+      // Filter for USDT pairs that are actively trading
+      const usdtPairs = exchangeInfo.symbols
+        .filter(symbol =>
+          symbol.quoteAsset === 'USDT' &&
+          symbol.status === 'TRADING' &&
+          symbol.isSpotTradingAllowed
+        )
+        .map(symbol => ({
+          symbol: symbol.symbol,
+          baseAsset: symbol.baseAsset,
+          quoteAsset: symbol.quoteAsset,
+          status: symbol.status,
+          baseAssetPrecision: symbol.baseAssetPrecision,
+          quoteAssetPrecision: symbol.quoteAssetPrecision,
+          orderTypes: symbol.orderTypes,
+          icebergAllowed: symbol.icebergAllowed,
+          ocoAllowed: symbol.ocoAllowed,
+          isSpotTradingAllowed: symbol.isSpotTradingAllowed,
+          isMarginTradingAllowed: symbol.isMarginTradingAllowed,
+          permissions: symbol.permissions
+        }))
+        .sort((a, b) => a.symbol.localeCompare(b.symbol));
+
+      // Cache for 60 seconds (exchange info doesn't change frequently)
+      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+
+      return res.status(200).json(usdtPairs);
+    } catch (error) {
+      console.error('Error fetching Binance exchange info:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch trading pairs',
+        details: error.message
+      });
+    }
   }
   
   // WebSocket stats endpoint
