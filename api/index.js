@@ -8,39 +8,64 @@ const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 const firebaseProjectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
 
 async function initFirebaseAdmin() {
-  if (firebaseAdmin) return firebaseAdmin;
-  
+  if (firebaseAdmin) {
+    console.log('[initFirebaseAdmin] Already initialized, returning cached instance');
+    return firebaseAdmin;
+  }
+
+  console.log('[initFirebaseAdmin] Starting initialization...');
+  console.log('[initFirebaseAdmin] Has serviceAccountKey:', !!serviceAccountKey);
+
   if (serviceAccountKey) {
     try {
       const admin = await import('firebase-admin');
-      
+      console.log('[initFirebaseAdmin] firebase-admin imported successfully');
+
       let credential;
+      let parseMethod = 'unknown';
       try {
         // Try parsing as JSON string first
+        console.log('[initFirebaseAdmin] Attempting JSON parse...');
         const parsed = JSON.parse(serviceAccountKey);
+        console.log('[initFirebaseAdmin] JSON parsed, project_id:', parsed.project_id);
         credential = admin.credential.cert(parsed);
-      } catch {
+        parseMethod = 'direct-json';
+      } catch (e1) {
+        console.log('[initFirebaseAdmin] Direct JSON parse failed, trying base64:', e1.message);
         // Try base64 decoding
         try {
           const decoded = Buffer.from(serviceAccountKey, 'base64').toString('utf8');
           const parsed = JSON.parse(decoded);
+          console.log('[initFirebaseAdmin] Base64 decoded and parsed, project_id:', parsed.project_id);
           credential = admin.credential.cert(parsed);
-        } catch {
-          console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY');
+          parseMethod = 'base64-decoded';
+        } catch (e2) {
+          console.error('[initFirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e2.message);
           return null;
         }
       }
-      
+
+      console.log('[initFirebaseAdmin] Credential created using:', parseMethod);
+      console.log('[initFirebaseAdmin] Existing apps count:', admin.apps.length);
+
       if (!admin.apps.length) {
         admin.initializeApp({ credential });
+        console.log('[initFirebaseAdmin] Firebase Admin app initialized');
+      } else {
+        console.log('[initFirebaseAdmin] Using existing Firebase Admin app');
       }
+
       firebaseAdmin = admin;
+      console.log('[initFirebaseAdmin] Initialization complete');
       return admin;
     } catch (error) {
-      console.error('Failed to initialize Firebase Admin:', error);
+      console.error('[initFirebaseAdmin] Failed to initialize Firebase Admin:', error);
+      console.error('[initFirebaseAdmin] Error stack:', error.stack);
       return null;
     }
   }
+
+  console.error('[initFirebaseAdmin] No serviceAccountKey found');
   return null;
 }
 
@@ -136,6 +161,7 @@ function checkRateLimit(identifier) {
 // Helper to verify Firebase JWT token from Authorization header
 async function verifyFirebaseToken(authHeader) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[verifyToken] No auth header or wrong format');
     return null;
   }
 
@@ -145,14 +171,18 @@ async function verifyFirebaseToken(authHeader) {
     const admin = await initFirebaseAdmin();
 
     if (!admin) {
-      console.warn('Firebase Admin not initialized, cannot verify token');
+      console.error('[verifyToken] Firebase Admin not initialized');
       return null;
     }
 
+    console.log('[verifyToken] Attempting to verify token...');
     const decodedToken = await admin.auth().verifyIdToken(token);
+    console.log('[verifyToken] Token verified successfully, UID:', decodedToken.uid);
     return decodedToken.uid; // Return Firebase UID
   } catch (error) {
-    console.error('Token verification failed:', error.message);
+    console.error('[verifyToken] Token verification failed:', error.message);
+    console.error('[verifyToken] Error code:', error.code);
+    console.error('[verifyToken] Full error:', error);
     return null;
   }
 }
@@ -176,7 +206,8 @@ export default async function handler(req, res) {
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // NOTE: Removed Access-Control-Allow-Credentials to allow wildcard origin (*)
+  // JWT Bearer tokens in Authorization header don't require credentials mode
   res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
   if (method === 'OPTIONS') {
