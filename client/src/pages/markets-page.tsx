@@ -61,6 +61,8 @@ export default function MarketsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   const hasApiKeys = user?.apiKey && user?.apiSecret;
 
@@ -74,15 +76,15 @@ export default function MarketsPage() {
 
   const sortedData = useMemo(() => {
     if (!filteredData || filteredData.length === 0) return [];
-    
+
     const sorted = [...filteredData].sort((a, b) => {
       if (!sortConfig) {
         return parseFloat(b.volume) - parseFloat(a.volume);
       }
-      
+
       const key = sortConfig.key;
       let aVal: number, bVal: number;
-      
+
       if (key === 'price') {
         aVal = parseFloat(a.price);
         bVal = parseFloat(b.price);
@@ -95,14 +97,27 @@ export default function MarketsPage() {
       } else {
         return 0;
       }
-      
+
       if (aVal < bVal) return sortConfig.direction === 'ascending' ? -1 : 1;
       if (aVal > bVal) return sortConfig.direction === 'ascending' ? 1 : -1;
       return 0;
     });
-    
+
     return sorted;
   }, [filteredData, sortConfig]);
+
+  // Pagination
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedData.slice(startIndex, endIndex);
+  }, [sortedData, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when search or sort changes
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortConfig]);
 
   // Optimize: Calculate all sorted data in one pass to avoid multiple sorts
   const { topGainers, topLosers, volumeChartData, marketCapDistribution } = useMemo(() => {
@@ -437,104 +452,140 @@ export default function MarketsPage() {
                 {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 bg-secondary" />)}
               </div>
             ) : (
-              <div
-                ref={tableContainerRef}
-                className="overflow-x-auto"
-                style={{ maxHeight: '600px', overflowY: 'auto' }}
-                role="region"
-                aria-label="Tabla de criptomonedas"
-              >
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
-                    <TableRow className="border-border hover:bg-transparent">
-                      <TableHead className="text-muted-foreground">Par</TableHead>
-                      <TableHead className="text-muted-foreground">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSort('price')}
-                          className="text-muted-foreground hover:text-foreground p-0 h-auto"
-                          aria-label="Ordenar por precio"
-                        >
-                          Precio <ArrowUpDown className="ml-1 h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-muted-foreground">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSort('priceChangePercent')}
-                          className="text-muted-foreground hover:text-foreground p-0 h-auto"
-                          aria-label="Ordenar por cambio en 24 horas"
-                        >
-                          Cambio 24h <ArrowUpDown className="ml-1 h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-muted-foreground hidden md:table-cell">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSort('volume')}
-                          className="text-muted-foreground hover:text-foreground p-0 h-auto"
-                          aria-label="Ordenar por volumen en 24 horas"
-                        >
-                          Volumen 24h <ArrowUpDown className="ml-1 h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody
-                    style={{
-                      height: `${rowVirtualizer.getTotalSize()}px`,
-                      position: 'relative',
-                    }}
-                  >
-                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                      const crypto = displayData[virtualRow.index];
-                      const change = parseFloat(crypto.priceChangePercent);
-                      const isPositive = change >= 0;
-                      return (
-                        <TableRow
-                          key={crypto.symbol}
-                          className="border-border hover:bg-secondary/50"
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: `${virtualRow.size}px`,
-                            transform: `translateY(${virtualRow.start}px)`,
-                          }}
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <CryptoIcon symbol={crypto.symbol} size={32} />
-                              <div>
-                                <p className="font-medium text-foreground">{crypto.symbol.replace('USDT', '')}</p>
-                                <p className="text-xs text-muted-foreground">USDT</p>
+              <>
+                <div className="overflow-x-auto" role="region" aria-label="Tabla de criptomonedas">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="text-muted-foreground">Par</TableHead>
+                        <TableHead className="text-muted-foreground">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('price')}
+                            className="text-muted-foreground hover:text-foreground p-0 h-auto"
+                            aria-label="Ordenar por precio"
+                          >
+                            Precio <ArrowUpDown className="ml-1 h-4 w-4" aria-hidden="true" />
+                          </Button>
+                        </TableHead>
+                        <TableHead className="text-muted-foreground">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('priceChangePercent')}
+                            className="text-muted-foreground hover:text-foreground p-0 h-auto"
+                            aria-label="Ordenar por cambio en 24 horas"
+                          >
+                            Cambio 24h <ArrowUpDown className="ml-1 h-4 w-4" aria-hidden="true" />
+                          </Button>
+                        </TableHead>
+                        <TableHead className="text-muted-foreground hidden md:table-cell">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('volume')}
+                            className="text-muted-foreground hover:text-foreground p-0 h-auto"
+                            aria-label="Ordenar por volumen en 24 horas"
+                          >
+                            Volumen 24h <ArrowUpDown className="ml-1 h-4 w-4" aria-hidden="true" />
+                          </Button>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedData.map((crypto) => {
+                        const change = parseFloat(crypto.priceChangePercent);
+                        const isPositive = change >= 0;
+                        return (
+                          <TableRow
+                            key={crypto.symbol}
+                            className="border-border hover:bg-secondary/50"
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <CryptoIcon symbol={crypto.symbol} size={32} />
+                                <div>
+                                  <p className="font-medium text-foreground">{crypto.symbol.replace('USDT', '')}</p>
+                                  <p className="text-xs text-muted-foreground">USDT</p>
+                                </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium text-foreground">
-                            ${parseFloat(crypto.price).toLocaleString(undefined, { maximumFractionDigits: 8 })}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={isPositive ? "bg-emerald-500/20 text-emerald-400 border-0" : "bg-red-500/20 text-red-400 border-0"}
-                              aria-label={`${isPositive ? 'Aumento' : 'Disminución'} de ${Math.abs(change).toFixed(2)} por ciento`}
+                            </TableCell>
+                            <TableCell className="font-medium text-foreground">
+                              ${parseFloat(crypto.price).toLocaleString(undefined, { maximumFractionDigits: 8 })}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                className={isPositive ? "bg-emerald-500/20 text-emerald-400 border-0" : "bg-red-500/20 text-red-400 border-0"}
+                                aria-label={`${isPositive ? 'Aumento' : 'Disminución'} de ${Math.abs(change).toFixed(2)} por ciento`}
+                              >
+                                {isPositive ? '+' : ''}{change.toFixed(2)}%
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-muted-foreground">
+                              ${(parseFloat(crypto.volume) / 1000000).toFixed(2)}M
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 px-2">
+                    <p className="text-sm text-muted-foreground">
+                      Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, sortedData.length)} de {sortedData.length}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="border-border"
+                      >
+                        Anterior
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={currentPage === pageNum ? "" : "border-border"}
                             >
-                              {isPositive ? '+' : ''}{change.toFixed(2)}%
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                            ${(parseFloat(crypto.volume) / 1000000).toFixed(2)}M
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="border-border"
+                      >
+                        Siguiente
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

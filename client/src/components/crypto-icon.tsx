@@ -68,13 +68,11 @@ export function CryptoIcon({ symbol, size = 24, className = "" }: CryptoIconProp
       return;
     }
 
-    // Fetch icon from CoinGecko API
+    // Fetch icon from backend API (which proxies to CoinGecko with proper ID mapping)
     const fetchIcon = async () => {
       try {
-        // CoinGecko API: /api/v3/coins/{id} - id is lowercase
-        const coinId = cleanSymbol.toLowerCase();
         const response = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`
+          `/api/crypto/icon?symbol=${encodeURIComponent(cleanSymbol)}`
         );
 
         if (!response.ok) {
@@ -82,11 +80,10 @@ export function CryptoIcon({ symbol, size = 24, className = "" }: CryptoIconProp
         }
 
         const data = await response.json();
-        const imageUrl = data.image?.small || data.image?.thumb;
 
-        if (imageUrl) {
-          iconCache.set(cleanSymbol, imageUrl);
-          setIconUrl(imageUrl);
+        if (data.iconUrl) {
+          iconCache.set(cleanSymbol, data.iconUrl);
+          setIconUrl(data.iconUrl);
         } else {
           throw new Error('No image in response');
         }

@@ -866,7 +866,104 @@ export default async function handler(req, res) {
       });
     }
   }
-  
+
+  // Crypto icon endpoint - Maps symbols to CoinGecko IDs
+  if (pathname === '/api/crypto/icon' || pathname === '/api/crypto/icon/') {
+    try {
+      const symbol = urlObj.searchParams.get('symbol');
+
+      if (!symbol) {
+        return res.status(400).json({ error: 'Symbol parameter required' });
+      }
+
+      // Map common crypto symbols to CoinGecko IDs
+      const symbolToId: Record<string, string> = {
+        'BTC': 'bitcoin',
+        'ETH': 'ethereum',
+        'BNB': 'binancecoin',
+        'SOL': 'solana',
+        'XRP': 'ripple',
+        'ADA': 'cardano',
+        'DOT': 'polkadot',
+        'DOGE': 'dogecoin',
+        'LTC': 'litecoin',
+        'LINK': 'chainlink',
+        'XLM': 'stellar',
+        'USDT': 'tether',
+        'USDC': 'usd-coin',
+        'AVAX': 'avalanche-2',
+        'MATIC': 'matic-network',
+        'TRX': 'tron',
+        'UNI': 'uniswap',
+        'ATOM': 'cosmos',
+        'XMR': 'monero',
+        'FTM': 'fantom',
+        'AAVE': 'aave',
+        'XTZ': 'tezos',
+        'ALGO': 'algorand',
+        'NEAR': 'near',
+        'NEO': 'neo',
+        'DASH': 'dash',
+        'ZEC': 'zcash',
+        'SHIB': 'shiba-inu',
+        'APE': 'apecoin',
+        'CRO': 'crypto-com-chain',
+        'FIL': 'filecoin',
+        'HBAR': 'hedera-hashgraph',
+        'VET': 'vechain',
+        'ICP': 'internet-computer',
+        'APT': 'aptos',
+        'ARB': 'arbitrum',
+        'OP': 'optimism',
+        'LDO': 'lido-dao',
+        'INJ': 'injective-protocol',
+        'MKR': 'maker',
+        'GRT': 'the-graph',
+        'SAND': 'the-sandbox',
+        'MANA': 'decentraland',
+        'ETC': 'ethereum-classic',
+        'THETA': 'theta-token',
+        'RUNE': 'thorchain',
+        'PEPE': 'pepe',
+        'STX': 'blockstack'
+      };
+
+      const cleanSymbol = symbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const coinId = symbolToId[cleanSymbol] || cleanSymbol.toLowerCase();
+
+      // Fetch from CoinGecko
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`
+      );
+
+      if (!response.ok) {
+        return res.status(404).json({ error: 'Icon not found' });
+      }
+
+      const data = await response.json();
+      const imageUrl = data.image?.small || data.image?.thumb;
+
+      if (!imageUrl) {
+        return res.status(404).json({ error: 'No image available' });
+      }
+
+      // Cache for 24 hours (icons don't change)
+      res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+
+      return res.status(200).json({
+        symbol: cleanSymbol,
+        iconUrl: imageUrl,
+        coinId: coinId
+      });
+    } catch (error) {
+      console.error('Error fetching crypto icon:', error);
+      return res.status(404).json({
+        error: 'Icon not found',
+        details: error.message
+      });
+    }
+  }
+
   // Update API keys endpoint - NOW WITH AES-256 ENCRYPTION
   // Support both /api/user/api-keys and /api/user/apikeys for compatibility
   if ((pathname === '/api/user/api-keys' || pathname === '/api/user/api-keys/' ||
