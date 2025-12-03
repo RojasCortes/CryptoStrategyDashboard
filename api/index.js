@@ -719,7 +719,7 @@ export default async function handler(req, res) {
     }
   }
   
-  // Binance account info endpoint (multiple route aliases)
+  // Binance account info endpoint (multiple route aliases) - REAL DATA
   if (pathname === '/api/binance/account' || pathname === '/api/binance/account/' ||
       pathname === '/api/account/balance' || pathname === '/api/account/balance/') {
     const firebaseUid = await verifyFirebaseToken(headers.authorization);
@@ -728,45 +728,118 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
 
-    // Return mock account data matching AccountInfo interface
-    const mockBalances = [
-      {
-        asset: 'USDT',
-        free: '1280.00',
-        locked: '0.00',
-        total: 1280.00,
-        usdValue: '1280.00'
-      },
-      {
-        asset: 'BTC',
-        free: '0.02850000',
-        locked: '0.00',
-        total: 0.02850000,
-        usdValue: '2650.00' // ~$93k per BTC
-      },
-      {
-        asset: 'ETH',
-        free: '4.75000000',
-        locked: '0.00',
-        total: 4.75,
-        usdValue: '14250.00' // ~$3k per ETH
-      }
-    ];
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database not configured' });
+    }
 
-    return res.status(200).json({
-      makerCommission: 10,
-      takerCommission: 10,
-      buyerCommission: 0,
-      sellerCommission: 0,
-      canTrade: true,
-      canWithdraw: true,
-      canDeposit: true,
-      updateTime: Date.now(),
-      accountType: 'SPOT',
-      balances: mockBalances,
-      permissions: ['SPOT'],
-      totalBalanceUSD: mockBalances.reduce((sum, b) => sum + parseFloat(b.usdValue), 0)
-    });
+    try {
+      // Get user's encrypted API keys from database
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('api_key, api_secret')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      if (userError || !user || !user.api_key || !user.api_secret) {
+        return res.status(400).json({ error: 'API keys not configured. Please add your Binance API keys in settings.' });
+      }
+
+      // Decrypt API keys
+      const encryptedKey = JSON.parse(user.api_key);
+      const encryptedSecret = JSON.parse(user.api_secret);
+      const apiKey = decrypt(encryptedKey);
+      const apiSecret = decrypt(encryptedSecret);
+
+      // Call Binance API - Account Information
+      const timestamp = Date.now();
+      const queryString = `timestamp=${timestamp}`;
+
+      // Create signature
+      const signature = crypto
+        .createHmac('sha256', apiSecret)
+        .update(queryString)
+        .digest('hex');
+
+      const binanceUrl = `https://api.binance.com/api/v3/account?${queryString}&signature=${signature}`;
+
+      const binanceResponse = await fetch(binanceUrl, {
+        headers: {
+          'X-MBX-APIKEY': apiKey
+        }
+      });
+
+      if (!binanceResponse.ok) {
+        const errorText = await binanceResponse.text();
+        console.error('Binance API error:', errorText);
+        return res.status(500).json({
+          error: 'Failed to fetch Binance account data',
+          details: errorText
+        });
+      }
+
+      const accountData = await binanceResponse.json();
+
+      // Get current prices for USD valuation
+      const pricesResponse = await fetch('https://api.binance.com/api/v3/ticker/price');
+      const prices = await pricesResponse.json();
+      const priceMap = {};
+      prices.forEach(p => {
+        priceMap[p.symbol] = parseFloat(p.price);
+      });
+
+      // Filter and enrich balances with USD values
+      const enrichedBalances = accountData.balances
+        .filter(b => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0)
+        .map(balance => {
+          const free = parseFloat(balance.free);
+          const locked = parseFloat(balance.locked);
+          const total = free + locked;
+
+          // Calculate USD value
+          let usdValue = 0;
+          if (balance.asset === 'USDT' || balance.asset === 'BUSD' || balance.asset === 'USDC') {
+            usdValue = total;
+          } else {
+            const pairSymbol = `${balance.asset}USDT`;
+            const price = priceMap[pairSymbol];
+            if (price) {
+              usdValue = total * price;
+            }
+          }
+
+          return {
+            asset: balance.asset,
+            free: balance.free,
+            locked: balance.locked,
+            total,
+            usdValue: usdValue.toFixed(2)
+          };
+        })
+        .sort((a, b) => parseFloat(b.usdValue) - parseFloat(a.usdValue)); // Sort by USD value descending
+
+      const totalBalanceUSD = enrichedBalances.reduce((sum, b) => sum + parseFloat(b.usdValue), 0);
+
+      return res.status(200).json({
+        makerCommission: accountData.makerCommission,
+        takerCommission: accountData.takerCommission,
+        buyerCommission: accountData.buyerCommission,
+        sellerCommission: accountData.sellerCommission,
+        canTrade: accountData.canTrade,
+        canWithdraw: accountData.canWithdraw,
+        canDeposit: accountData.canDeposit,
+        updateTime: accountData.updateTime,
+        accountType: accountData.accountType,
+        balances: enrichedBalances,
+        permissions: accountData.permissions,
+        totalBalanceUSD
+      });
+    } catch (error) {
+      console.error('Error fetching Binance account:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch account balance',
+        details: error.message
+      });
+    }
   }
   
   // Binance price endpoint

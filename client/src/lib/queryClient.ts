@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getIdToken } from "@/lib/firebase";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -17,26 +18,25 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Get sessionId from localStorage
-  const sessionId = localStorage.getItem('sessionId');
+  // Get Firebase JWT token
+  const token = await getIdToken();
   const headers: HeadersInit = data ? { "Content-Type": "application/json" } : {};
-  
-  if (sessionId) {
-    headers['Authorization'] = `Bearer ${sessionId}`;
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   const res = await fetch(url, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
   });
 
   // Don't throw for login/register requests, let them handle their own errors
   if (method === 'POST' && (url.includes('/login') || url.includes('/register'))) {
     return res;
   }
-  
+
   await throwIfResNotOk(res);
   return res;
 }
@@ -47,16 +47,15 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Get sessionId from localStorage
-    const sessionId = localStorage.getItem('sessionId');
+    // Get Firebase JWT token
+    const token = await getIdToken();
     const headers: HeadersInit = {};
-    
-    if (sessionId) {
-      headers['Authorization'] = `Bearer ${sessionId}`;
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
       headers,
     });
 
