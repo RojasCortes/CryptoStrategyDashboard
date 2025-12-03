@@ -674,7 +674,10 @@ export default async function handler(req, res) {
   }
   
   // Update API keys endpoint - NOW WITH AES-256 ENCRYPTION
-  if ((pathname === '/api/user/api-keys' || pathname === '/api/user/api-keys/') && method === 'PUT') {
+  // Support both /api/user/api-keys and /api/user/apikeys for compatibility
+  if ((pathname === '/api/user/api-keys' || pathname === '/api/user/api-keys/' ||
+       pathname === '/api/user/apikeys' || pathname === '/api/user/apikeys/') &&
+      (method === 'PUT' || method === 'POST')) {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
