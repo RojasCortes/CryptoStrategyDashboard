@@ -719,24 +719,53 @@ export default async function handler(req, res) {
     }
   }
   
-  // Binance account info endpoint
-  if (pathname === '/api/binance/account' || pathname === '/api/binance/account/') {
+  // Binance account info endpoint (multiple route aliases)
+  if (pathname === '/api/binance/account' || pathname === '/api/binance/account/' ||
+      pathname === '/api/account/balance' || pathname === '/api/account/balance/') {
     const firebaseUid = await verifyFirebaseToken(headers.authorization);
 
     if (!firebaseUid) {
       return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
 
-    // Return mock account data (or implement real Binance API call with decrypted keys)
+    // Return mock account data matching AccountInfo interface
+    const mockBalances = [
+      {
+        asset: 'USDT',
+        free: '1280.00',
+        locked: '0.00',
+        total: 1280.00,
+        usdValue: '1280.00'
+      },
+      {
+        asset: 'BTC',
+        free: '0.02850000',
+        locked: '0.00',
+        total: 0.02850000,
+        usdValue: '2650.00' // ~$93k per BTC
+      },
+      {
+        asset: 'ETH',
+        free: '4.75000000',
+        locked: '0.00',
+        total: 4.75,
+        usdValue: '14250.00' // ~$3k per ETH
+      }
+    ];
+
     return res.status(200).json({
-      balances: [
-        { asset: 'USDT', free: '1280.00', locked: '0.00' },
-        { asset: 'BTC', free: '0.02850000', locked: '0.00' },
-        { asset: 'ETH', free: '4.75000000', locked: '0.00' }
-      ],
-      totalWalletBalance: '12500.00',
-      totalUnrealizedPnl: '0.00',
-      totalMarginBalance: '12500.00'
+      makerCommission: 10,
+      takerCommission: 10,
+      buyerCommission: 0,
+      sellerCommission: 0,
+      canTrade: true,
+      canWithdraw: true,
+      canDeposit: true,
+      updateTime: Date.now(),
+      accountType: 'SPOT',
+      balances: mockBalances,
+      permissions: ['SPOT'],
+      totalBalanceUSD: mockBalances.reduce((sum, b) => sum + parseFloat(b.usdValue), 0)
     });
   }
   
@@ -854,11 +883,23 @@ export default async function handler(req, res) {
     return res.status(200).json(pairs);
   }
   
-  // Additional endpoints that might be needed
+  // WebSocket stats endpoint
+  if (pathname === '/api/ws/stats' || pathname === '/api/ws/stats/') {
+    return res.status(200).json({
+      connected: true,
+      latency: 45,
+      lastUpdate: Date.now(),
+      reconnections: 0,
+      messagesReceived: 1250,
+      status: 'healthy'
+    });
+  }
+
+  // Notifications endpoint
   if (pathname === '/api/notifications' || pathname === '/api/notifications/') {
     return res.status(200).json([]);
   }
-  
+
   if (pathname.startsWith('/api/trades') && pathname.includes('limit')) {
     const firebaseUid = await verifyFirebaseToken(headers.authorization);
 
