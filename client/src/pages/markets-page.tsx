@@ -1,5 +1,4 @@
-import { useState, useMemo, useRef } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useState, useMemo } from "react";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useBinanceData } from "@/hooks/use-binance";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
@@ -62,9 +61,6 @@ export default function MarketsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-
-  // Virtual scrolling setup for large lists
-  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const hasApiKeys = user?.apiKey && user?.apiSecret;
 
@@ -160,16 +156,6 @@ export default function MarketsPage() {
       marketCapDistribution: distribution
     };
   }, [marketData]);
-
-  // Virtual scrolling for table rows (only show 50 max, but virtualize for performance)
-  const displayData = sortedData.slice(0, 50);
-
-  const rowVirtualizer = useVirtualizer({
-    count: displayData.length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 72, // Estimated row height in pixels
-    overscan: 5, // Render 5 extra items above/below viewport
-  });
 
   const handleSort = (key: string) => {
     setSortConfig(prev => {
