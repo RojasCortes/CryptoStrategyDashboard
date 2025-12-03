@@ -231,6 +231,41 @@ export default async function handler(req, res) {
     });
   }
 
+  // Firebase Debug endpoint - to diagnose initialization issues
+  if (pathname === '/api/debug/firebase' || pathname === '/api/debug/firebase/') {
+    const admin = await initFirebaseAdmin();
+    const hasServiceKey = !!serviceAccountKey;
+    let keyFormat = 'none';
+    let parseError = null;
+
+    if (hasServiceKey) {
+      try {
+        JSON.parse(serviceAccountKey);
+        keyFormat = 'valid-json';
+      } catch (e1) {
+        try {
+          const decoded = Buffer.from(serviceAccountKey, 'base64').toString('utf8');
+          JSON.parse(decoded);
+          keyFormat = 'valid-base64-json';
+        } catch (e2) {
+          keyFormat = 'invalid-format';
+          parseError = e2.message;
+        }
+      }
+    }
+
+    return res.status(200).json({
+      timestamp: new Date().toISOString(),
+      hasServiceAccountKey: hasServiceKey,
+      serviceKeyLength: hasServiceKey ? serviceAccountKey.length : 0,
+      serviceKeyFormat: keyFormat,
+      parseError,
+      firebaseAdminInitialized: !!admin,
+      firebaseProjectId,
+      appsCount: admin ? admin.apps.length : 0
+    });
+  }
+
   // Firebase status endpoint
   if (pathname === '/api/auth/firebase-status' || pathname === '/api/auth/firebase-status/') {
     const admin = await initFirebaseAdmin();
