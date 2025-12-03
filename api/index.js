@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
+import admin from 'firebase-admin';
 
 // Firebase Admin initialization for token verification
 let firebaseAdmin = null;
 const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 const firebaseProjectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
 
-async function initFirebaseAdmin() {
+function initFirebaseAdmin() {
   if (firebaseAdmin) {
     console.log('[initFirebaseAdmin] Already initialized, returning cached instance');
     return firebaseAdmin;
@@ -18,7 +19,6 @@ async function initFirebaseAdmin() {
 
   if (serviceAccountKey) {
     try {
-      const admin = await import('firebase-admin');
       console.log('[initFirebaseAdmin] firebase-admin imported successfully');
 
       let credential;
@@ -61,6 +61,8 @@ async function initFirebaseAdmin() {
     } catch (error) {
       console.error('[initFirebaseAdmin] Failed to initialize Firebase Admin:', error);
       console.error('[initFirebaseAdmin] Error stack:', error.stack);
+      console.error('[initFirebaseAdmin] Error name:', error.name);
+      console.error('[initFirebaseAdmin] Error code:', error.code);
       return null;
     }
   }
@@ -168,7 +170,7 @@ async function verifyFirebaseToken(authHeader) {
   const token = authHeader.replace('Bearer ', '');
 
   try {
-    const admin = await initFirebaseAdmin();
+    const admin = initFirebaseAdmin();
 
     if (!admin) {
       console.error('[verifyToken] Firebase Admin not initialized');
@@ -233,7 +235,7 @@ export default async function handler(req, res) {
 
   // Firebase Debug endpoint - to diagnose initialization issues
   if (pathname === '/api/debug/firebase' || pathname === '/api/debug/firebase/') {
-    const admin = await initFirebaseAdmin();
+    const admin = initFirebaseAdmin();
     const hasServiceKey = !!serviceAccountKey;
     let keyFormat = 'none';
     let parseError = null;
@@ -268,7 +270,7 @@ export default async function handler(req, res) {
 
   // Firebase status endpoint
   if (pathname === '/api/auth/firebase-status' || pathname === '/api/auth/firebase-status/') {
-    const admin = await initFirebaseAdmin();
+    const admin = initFirebaseAdmin();
     const hasFirebaseEnvVars = !!(
       process.env.FIREBASE_PROJECT_ID ||
       process.env.FIREBASE_SERVICE_ACCOUNT_KEY ||
@@ -297,7 +299,7 @@ export default async function handler(req, res) {
       let email, name, uid, picture;
 
       // Try Firebase Admin verification first (cryptographically secure)
-      const admin = await initFirebaseAdmin();
+      const admin = initFirebaseAdmin();
       if (admin) {
         try {
           const decodedToken = await admin.auth().verifyIdToken(token);
