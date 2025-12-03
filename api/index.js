@@ -362,7 +362,8 @@ export default async function handler(req, res) {
         displayName: name || username,
         photoURL: picture || null,
         firebaseUid: uid,
-        apiKey: null // Will be populated from Supabase if available
+        apiKey: null, // Will be populated from Supabase if available
+        apiSecret: null // Will be populated from Supabase if available
       };
 
       // Try to sync with Supabase (OPTIONAL - non-blocking)
@@ -384,6 +385,7 @@ export default async function handler(req, res) {
             userData.displayName = existingUser.display_name || userData.displayName;
             userData.photoURL = existingUser.photo_url || userData.photoURL;
             userData.apiKey = existingUser.api_key ? '***configured***' : null;
+            userData.apiSecret = existingUser.api_secret ? '***configured***' : null;
 
             console.log('User found in Supabase:', existingUser.id);
           } else if (email) {
@@ -543,7 +545,7 @@ export default async function handler(req, res) {
     try {
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, username, email, firebase_uid')
+        .select('id, username, email, firebase_uid, api_key, api_secret')
         .eq('firebase_uid', firebaseUid)
         .single();
 
@@ -551,7 +553,16 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      return res.status(200).json(user);
+      // Return user data with API key status (not the actual keys)
+      return res.status(200).json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firebase_uid: user.firebase_uid,
+        // Indicate if keys are configured without exposing actual values
+        apiKey: user.api_key ? '***configured***' : null,
+        apiSecret: user.api_secret ? '***configured***' : null
+      });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -788,13 +799,19 @@ export default async function handler(req, res) {
           api_secret: JSON.stringify(encryptedSecret)
         })
         .eq('firebase_uid', firebaseUid)
-        .select('id, username, email')
+        .select('id, username, email, firebase_uid')
         .single();
 
       if (error) throw error;
 
       return res.status(200).json({
-        ...user,
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firebase_uid: user.firebase_uid,
+        // Indicate keys are now configured
+        apiKey: '***configured***',
+        apiSecret: '***configured***',
         message: 'API keys encrypted and saved successfully'
       });
     } catch (error) {
