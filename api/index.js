@@ -678,14 +678,27 @@ export default async function handler(req, res) {
   if ((pathname === '/api/user/api-keys' || pathname === '/api/user/api-keys/' ||
        pathname === '/api/user/apikeys' || pathname === '/api/user/apikeys/') &&
       (method === 'PUT' || method === 'POST')) {
+
+    console.log('[API Keys] Endpoint called, method:', method);
+    console.log('[API Keys] Has Authorization header:', !!headers.authorization);
+
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
 
     const firebaseUid = await verifyFirebaseToken(headers.authorization);
 
+    console.log('[API Keys] Firebase UID from token:', firebaseUid);
+
     if (!firebaseUid) {
-      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+      return res.status(401).json({
+        error: 'Not authenticated. Use Firebase JWT token.',
+        debug: {
+          hasAuthHeader: !!headers.authorization,
+          hasServiceAccountKey: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+          authHeaderFormat: headers.authorization ? headers.authorization.substring(0, 20) + '...' : 'missing'
+        }
+      });
     }
 
     try {
