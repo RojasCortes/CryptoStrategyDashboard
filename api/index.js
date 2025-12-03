@@ -278,6 +278,7 @@ export default async function handler(req, res) {
     );
 
     return res.status(200).json({
+      enabled: !!admin, // Frontend expects 'enabled'
       configured: !!admin,
       hasClientConfig: !!(process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY),
       hasServerConfig: !!admin,

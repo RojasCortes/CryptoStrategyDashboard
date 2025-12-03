@@ -78,7 +78,7 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async () => {
       const fbUser = await signInWithGoogle();
       const token = await fbUser.getIdToken();
-      
+
       const response = await fetch("/api/auth/session", {
         method: "POST",
         headers: {
@@ -90,12 +90,18 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
           photoURL: fbUser.photoURL
         })
       });
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al iniciar sesión");
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          // Server returned HTML or non-JSON (likely 500 error page)
+          throw new Error("Error del servidor. Por favor verifica la configuración de Firebase en Vercel.");
+        }
+        throw new Error(errorData.message || errorData.error || "Error al iniciar sesión");
       }
-      
+
       return await response.json();
     },
     onSuccess: (userData) => {
@@ -119,7 +125,7 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
       const fbUser = await signInWithEmail(email, password);
       const token = await fbUser.getIdToken();
-      
+
       const response = await fetch("/api/auth/session", {
         method: "POST",
         headers: {
@@ -127,12 +133,18 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
           "Authorization": `Bearer ${token}`
         }
       });
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al iniciar sesión");
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          // Server returned HTML or non-JSON (likely 500 error page)
+          throw new Error("Error del servidor. Por favor verifica la configuración de Firebase en Vercel.");
+        }
+        throw new Error(errorData.message || errorData.error || "Error al iniciar sesión");
       }
-      
+
       return await response.json();
     },
     onSuccess: (userData) => {
@@ -162,7 +174,7 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async ({ email, password, username }: { email: string; password: string; username: string }) => {
       const fbUser = await signUpWithEmail(email, password);
       const token = await fbUser.getIdToken();
-      
+
       const response = await fetch("/api/auth/session", {
         method: "POST",
         headers: {
@@ -171,12 +183,18 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({ username })
       });
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al registrarse");
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          // Server returned HTML or non-JSON (likely 500 error page)
+          throw new Error("Error del servidor. Por favor verifica la configuración de Firebase en Vercel.");
+        }
+        throw new Error(errorData.message || errorData.error || "Error al registrarse");
       }
-      
+
       return await response.json();
     },
     onSuccess: (userData) => {
