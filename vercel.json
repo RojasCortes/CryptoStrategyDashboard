@@ -61,6 +61,14 @@
       "destination": "/api/candles.js"
     },
     {
+      "source": "/api/user/apikeys",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/api/user/api-keys",
+      "destination": "/api/index.js"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/index.js"
     },
