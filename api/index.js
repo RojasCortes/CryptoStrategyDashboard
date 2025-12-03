@@ -820,7 +820,8 @@ export default async function handler(req, res) {
   }
   
   // Cryptocurrency list endpoint
-  if (pathname === '/api/cryptocurrencies' || pathname === '/api/cryptocurrencies/') {
+  if (pathname === '/api/cryptocurrencies' || pathname === '/api/cryptocurrencies/' ||
+      pathname === '/api/market/cryptocurrencies' || pathname === '/api/market/cryptocurrencies/') {
     // Return a subset of popular cryptocurrencies
     const cryptos = [
       { symbol: 'BTC', name: 'Bitcoin', price: '43250.00', change: '+2.45%' },
