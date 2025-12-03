@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useBinanceData } from "@/hooks/use-binance";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
@@ -61,6 +62,9 @@ export default function MarketsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Virtual scrolling setup for large lists
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const hasApiKeys = user?.apiKey && user?.apiSecret;
 
@@ -156,6 +160,16 @@ export default function MarketsPage() {
       marketCapDistribution: distribution
     };
   }, [marketData]);
+
+  // Virtual scrolling for table rows (only show 50 max, but virtualize for performance)
+  const displayData = sortedData.slice(0, 50);
+
+  const rowVirtualizer = useVirtualizer({
+    count: displayData.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 72, // Estimated row height in pixels
+    overscan: 5, // Render 5 extra items above/below viewport
+  });
 
   const handleSort = (key: string) => {
     setSortConfig(prev => {
@@ -437,49 +451,75 @@ export default function MarketsPage() {
                 {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 bg-secondary" />)}
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div
+                ref={tableContainerRef}
+                className="overflow-x-auto"
+                style={{ maxHeight: '600px', overflowY: 'auto' }}
+                role="region"
+                aria-label="Tabla de criptomonedas"
+              >
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow className="border-border hover:bg-transparent">
                       <TableHead className="text-muted-foreground">Par</TableHead>
                       <TableHead className="text-muted-foreground">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleSort('price')}
                           className="text-muted-foreground hover:text-foreground p-0 h-auto"
+                          aria-label="Ordenar por precio"
                         >
-                          Precio <ArrowUpDown className="ml-1 h-4 w-4" />
+                          Precio <ArrowUpDown className="ml-1 h-4 w-4" aria-hidden="true" />
                         </Button>
                       </TableHead>
                       <TableHead className="text-muted-foreground">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleSort('priceChangePercent')}
                           className="text-muted-foreground hover:text-foreground p-0 h-auto"
+                          aria-label="Ordenar por cambio en 24 horas"
                         >
-                          Cambio 24h <ArrowUpDown className="ml-1 h-4 w-4" />
+                          Cambio 24h <ArrowUpDown className="ml-1 h-4 w-4" aria-hidden="true" />
                         </Button>
                       </TableHead>
                       <TableHead className="text-muted-foreground hidden md:table-cell">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleSort('volume')}
                           className="text-muted-foreground hover:text-foreground p-0 h-auto"
+                          aria-label="Ordenar por volumen en 24 horas"
                         >
-                          Volumen 24h <ArrowUpDown className="ml-1 h-4 w-4" />
+                          Volumen 24h <ArrowUpDown className="ml-1 h-4 w-4" aria-hidden="true" />
                         </Button>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {sortedData.slice(0, 50).map((crypto) => {
+                  <TableBody
+                    style={{
+                      height: `${rowVirtualizer.getTotalSize()}px`,
+                      position: 'relative',
+                    }}
+                  >
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const crypto = displayData[virtualRow.index];
                       const change = parseFloat(crypto.priceChangePercent);
                       const isPositive = change >= 0;
                       return (
-                        <TableRow key={crypto.symbol} className="border-border hover:bg-secondary/50">
+                        <TableRow
+                          key={crypto.symbol}
+                          className="border-border hover:bg-secondary/50"
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: `${virtualRow.size}px`,
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                        >
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <CryptoIcon symbol={crypto.symbol} size={32} />
@@ -493,7 +533,10 @@ export default function MarketsPage() {
                             ${parseFloat(crypto.price).toLocaleString(undefined, { maximumFractionDigits: 8 })}
                           </TableCell>
                           <TableCell>
-                            <Badge className={isPositive ? "bg-emerald-500/20 text-emerald-400 border-0" : "bg-red-500/20 text-red-400 border-0"}>
+                            <Badge
+                              className={isPositive ? "bg-emerald-500/20 text-emerald-400 border-0" : "bg-red-500/20 text-red-400 border-0"}
+                              aria-label={`${isPositive ? 'Aumento' : 'Disminución'} de ${Math.abs(change).toFixed(2)} por ciento`}
+                            >
                               {isPositive ? '+' : ''}{change.toFixed(2)}%
                             </Badge>
                           </TableCell>

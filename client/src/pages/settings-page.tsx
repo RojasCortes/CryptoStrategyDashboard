@@ -178,13 +178,13 @@ export default function SettingsPage(): JSX.Element {
     },
     onSuccess: () => {
       toast({
-        title: "Notification settings updated",
-        description: "Your notification preferences have been saved.",
+        title: "Configuración de notificaciones actualizada",
+        description: "Tus preferencias de notificación han sido guardadas.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to update notification settings",
+        title: "Error al actualizar configuración de notificaciones",
         description: error.message,
         variant: "destructive",
       });
@@ -229,7 +229,7 @@ export default function SettingsPage(): JSX.Element {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>Please log in to access settings.</p>
+        <p>Por favor, inicia sesión para acceder a la configuración.</p>
       </div>
     );
   }

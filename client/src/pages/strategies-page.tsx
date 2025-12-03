@@ -478,12 +478,12 @@ export default function StrategiesPage() {
             {!hasApiKeys && (
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>API Keys Not Configured</AlertTitle>
+                <AlertTitle>API Keys no configuradas</AlertTitle>
                 <AlertDescription>
-                  You haven't set up your Binance API keys yet. Go to the settings page to configure your API keys.
+                  Aún no has configurado tus claves API de Binance. Ve a la página de ajustes para configurar tus claves API.
                 </AlertDescription>
                 <Button variant="outline" className="mt-2" onClick={() => window.location.href = "/settings"}>
-                  Go to Settings
+                  Ir a Ajustes
                 </Button>
               </Alert>
             )}
@@ -910,9 +910,9 @@ export default function StrategiesPage() {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Strategy</DialogTitle>
+            <DialogTitle>Editar Estrategia</DialogTitle>
             <DialogDescription>
-              Update your strategy settings. Click save when you're done.
+              Actualiza la configuración de tu estrategia. Haz clic en guardar cuando hayas terminado.
             </DialogDescription>
           </DialogHeader>
           
