@@ -44,14 +44,14 @@ export default function CleanDashboard() {
     >
       <div className="space-y-6 animate-fade-in">
         <div className="flex justify-end">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground transition-smooth"
             onClick={() => refetch()}
             data-testid="button-refresh"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-2 btn-icon-animated" />
             Actualizar
           </Button>
         </div>
@@ -69,8 +69,8 @@ export default function CleanDashboard() {
                     <p className="text-xs text-primary mt-1">Configura API Keys</p>
                   )}
                 </div>
-                <div className="p-3 bg-emerald-500/10 rounded-xl">
-                  <Wallet className="h-6 w-6 text-emerald-400" />
+                <div className="p-3 bg-emerald-500/10 rounded-xl transition-smooth hover-scale">
+                  <Wallet className="h-6 w-6 icon-success" />
                 </div>
               </div>
             </CardContent>
@@ -84,8 +84,8 @@ export default function CleanDashboard() {
                   <p className="stat-value">0</p>
                   <p className="text-xs text-muted-foreground mt-1">De 0 totales</p>
                 </div>
-                <div className="p-3 bg-blue-500/10 rounded-xl">
-                  <Target className="h-6 w-6 text-blue-400" />
+                <div className="p-3 bg-blue-500/10 rounded-xl transition-smooth hover-scale">
+                  <Target className="h-6 w-6 text-blue-400 animate-pulse-glow" />
                 </div>
               </div>
             </CardContent>
@@ -99,7 +99,7 @@ export default function CleanDashboard() {
                   <p className="stat-value">0</p>
                   <p className="text-xs text-muted-foreground mt-1">Sin actividad</p>
                 </div>
-                <div className="p-3 bg-purple-500/10 rounded-xl">
+                <div className="p-3 bg-purple-500/10 rounded-xl transition-smooth hover-scale">
                   <Activity className="h-6 w-6 text-purple-400" />
                 </div>
               </div>
@@ -114,8 +114,8 @@ export default function CleanDashboard() {
                   <p className="stat-value">$0.00</p>
                   <p className="text-xs text-muted-foreground mt-1">0.00%</p>
                 </div>
-                <div className="p-3 bg-primary/10 rounded-xl">
-                  <TrendingUp className="h-6 w-6 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-xl transition-smooth hover-scale">
+                  <TrendingUp className="h-6 w-6 icon-primary" />
                 </div>
               </div>
             </CardContent>
@@ -126,7 +126,7 @@ export default function CleanDashboard() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-foreground">Mercado en Tiempo Real</CardTitle>
-              <Badge variant="outline" className="text-emerald-400 border-emerald-500/50 bg-emerald-500/10">
+              <Badge variant="outline" className="badge-success-glow animate-glow-pulse">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
                 En vivo
               </Badge>
@@ -136,7 +136,7 @@ export default function CleanDashboard() {
             {marketLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton key={i} className="h-20 bg-secondary/50" />
+                  <div key={i} className="skeleton-enhanced h-20" />
                 ))}
               </div>
             ) : topCoins.length > 0 ? (
@@ -206,34 +206,34 @@ export default function CleanDashboard() {
               <CardTitle className="text-lg font-semibold text-foreground">Acciones Rápidas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-14"
+              <Button
+                variant="outline"
+                className="w-full justify-start h-14 transition-smooth hover-scale group"
                 onClick={() => handleNavigation("/strategies")}
               >
-                <Target className="h-5 w-5 mr-3 text-primary" />
+                <Target className="h-5 w-5 mr-3 icon-primary group-hover:animate-wiggle" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Nueva Estrategia</p>
                   <p className="text-xs text-muted-foreground">Crear una estrategia de trading</p>
                 </div>
               </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-14"
+              <Button
+                variant="outline"
+                className="w-full justify-start h-14 transition-smooth hover-scale group"
                 onClick={() => handleNavigation("/portfolio")}
               >
-                <Wallet className="h-5 w-5 mr-3 text-emerald-400" />
+                <Wallet className="h-5 w-5 mr-3 icon-success group-hover:animate-wiggle" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Ver Portfolio</p>
                   <p className="text-xs text-muted-foreground">Revisar tus activos</p>
                 </div>
               </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-14"
+              <Button
+                variant="outline"
+                className="w-full justify-start h-14 transition-smooth hover-scale group"
                 onClick={() => handleNavigation("/settings")}
               >
-                <Activity className="h-5 w-5 mr-3 text-purple-400" />
+                <Activity className="h-5 w-5 mr-3 text-purple-400 group-hover:animate-wiggle" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Configurar API</p>
                   <p className="text-xs text-muted-foreground">Conectar con Binance</p>

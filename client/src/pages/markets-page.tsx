@@ -239,10 +239,10 @@ export default function MarketsPage() {
           size="sm"
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="border-border hover:bg-secondary"
+          className="border-border hover:bg-secondary transition-smooth"
           data-testid="button-refresh"
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : 'btn-icon-animated'}`} />
           Actualizar
         </Button>
       </div>
@@ -253,7 +253,7 @@ export default function MarketsPage() {
             <Card className="stat-card hover-lift-sm">
               <CardHeader className="pb-2">
                 <CardDescription className="text-muted-foreground flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
+                  <BarChart3 className="h-4 w-4 icon-primary" />
                   Pares Activos
                 </CardDescription>
               </CardHeader>
@@ -266,25 +266,25 @@ export default function MarketsPage() {
             <Card className="stat-card hover-lift-sm">
               <CardHeader className="pb-2">
                 <CardDescription className="text-muted-foreground flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
+                  <TrendingUp className="h-4 w-4 icon-success" />
                   Top Ganador
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {topGainer ? (
                   <>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 animate-fade-in-scale">
                       <CryptoIcon symbol={topGainer.symbol} size={24} />
                       <span className="text-xl font-bold text-foreground">
                         {topGainer.symbol.replace('USDT', '')}
                       </span>
                     </div>
-                    <span className="ticker-positive mt-1 inline-block">
+                    <span className="ticker-positive mt-1 inline-block badge-animated">
                       +{parseFloat(topGainer.priceChangePercent).toFixed(2)}%
                     </span>
                   </>
                 ) : (
-                  <Skeleton className="h-10 w-24 bg-secondary" />
+                  <div className="skeleton-enhanced h-10 w-24" />
                 )}
               </CardContent>
             </Card>
@@ -292,25 +292,25 @@ export default function MarketsPage() {
             <Card className="stat-card hover-lift-sm">
               <CardHeader className="pb-2">
                 <CardDescription className="text-muted-foreground flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4" />
+                  <TrendingDown className="h-4 w-4 icon-danger" />
                   Mayor Pérdida
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {topLoser ? (
                   <>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 animate-fade-in-scale">
                       <CryptoIcon symbol={topLoser.symbol} size={24} />
                       <span className="text-xl font-bold text-foreground">
                         {topLoser.symbol.replace('USDT', '')}
                       </span>
                     </div>
-                    <span className="ticker-negative mt-1 inline-block">
+                    <span className="ticker-negative mt-1 inline-block badge-animated">
                       {parseFloat(topLoser.priceChangePercent).toFixed(2)}%
                     </span>
                   </>
                 ) : (
-                  <Skeleton className="h-10 w-24 bg-secondary" />
+                  <div className="skeleton-enhanced h-10 w-24" />
                 )}
               </CardContent>
             </Card>
@@ -320,14 +320,14 @@ export default function MarketsPage() {
             <Card className="dashboard-card">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-                  <TrendingUp className="h-5 w-5 text-emerald-400" />
+                  <TrendingUp className="h-5 w-5 icon-success animate-bounce-soft" />
                   Mayores subidas en las últimas 24 horas
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoadingMarketData ? (
                   <div className="space-y-3">
-                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-12 skeleton-shimmer" />)}
+                    {[1,2,3,4].map(i => <div key={i} className="skeleton-enhanced h-12" />)}
                   </div>
                 ) : topGainers.length > 0 ? (
                   <div className="space-y-3">
@@ -356,14 +356,14 @@ export default function MarketsPage() {
             <Card className="dashboard-card">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-                  <TrendingDown className="h-5 w-5 text-red-400" />
+                  <TrendingDown className="h-5 w-5 icon-danger animate-bounce-soft" />
                   Mayores bajadas en las últimas 24 horas
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoadingMarketData ? (
                   <div className="space-y-3">
-                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-12 skeleton-shimmer" />)}
+                    {[1,2,3,4].map(i => <div key={i} className="skeleton-enhanced h-12" />)}
                   </div>
                 ) : topLosers.length > 0 ? (
                   <div className="space-y-3">
@@ -457,7 +457,7 @@ export default function MarketsPage() {
           <CardContent>
             {isLoadingMarketData ? (
               <div className="space-y-3">
-                {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 skeleton-shimmer" />)}
+                {[1,2,3,4,5].map(i => <div key={i} className="skeleton-enhanced h-16" />)}
               </div>
             ) : (
               <>
