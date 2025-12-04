@@ -268,23 +268,36 @@ export default async function handler(req, res) {
     });
   }
 
-  // Firebase status endpoint
+  // Firebase status endpoint - MUST NEVER FAIL
   if (pathname === '/api/auth/firebase-status' || pathname === '/api/auth/firebase-status/') {
-    const admin = initFirebaseAdmin();
-    const hasFirebaseEnvVars = !!(
-      process.env.FIREBASE_PROJECT_ID ||
-      process.env.FIREBASE_SERVICE_ACCOUNT_KEY ||
-      (process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY)
-    );
+    try {
+      const admin = initFirebaseAdmin();
+      const hasFirebaseEnvVars = !!(
+        process.env.FIREBASE_PROJECT_ID ||
+        process.env.FIREBASE_SERVICE_ACCOUNT_KEY ||
+        (process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY)
+      );
 
-    return res.status(200).json({
-      enabled: !!admin, // Frontend expects 'enabled'
-      configured: !!admin,
-      hasClientConfig: !!(process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY),
-      hasServerConfig: !!admin,
-      projectId: process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || null,
-      timestamp: new Date().toISOString()
-    });
+      return res.status(200).json({
+        enabled: !!admin, // Frontend expects 'enabled'
+        configured: !!admin,
+        hasClientConfig: !!(process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY),
+        hasServerConfig: !!admin,
+        projectId: process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || null,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      // Endpoint must never fail - return false if any error
+      console.error('[firebase-status] Error checking Firebase status:', error);
+      return res.status(200).json({
+        enabled: false,
+        configured: false,
+        hasClientConfig: !!(process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY),
+        hasServerConfig: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
   }
 
   // Firebase Auth Session endpoint - syncs Firebase auth with backend
