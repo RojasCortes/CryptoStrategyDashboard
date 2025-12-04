@@ -25,10 +25,11 @@ export default function PortfolioPage(): JSX.Element {
   }
 
   return (
-    <DashboardLayout 
+    <DashboardLayout
       title="Portafolio"
       subtitle="Resumen de tus activos en Binance"
     >
+      <div className="animate-fade-in">
       {!hasApiKeys && (
         <Alert variant="destructive" className="mb-6 bg-destructive/10 border-destructive/30">
           <AlertCircle className="h-4 w-4" />
@@ -79,6 +80,7 @@ export default function PortfolioPage(): JSX.Element {
             )}
           </div>
         </div>
+      </div>
       </div>
     </DashboardLayout>
   );

@@ -28,7 +28,7 @@ export default function CleanDashboard() {
 
   const { data: marketData, isLoading: marketLoading, refetch } = useQuery<MarketData[]>({
     queryKey: ["/api/market-data"],
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Refresh every 60 seconds (reduced from 30s)
   });
 
   const handleNavigation = (href: string) => {
@@ -38,95 +38,95 @@ export default function CleanDashboard() {
   const topCoins = marketData?.slice(0, 6) || [];
 
   return (
-    <DashboardLayout 
+    <DashboardLayout
       title="Dashboard"
       subtitle={`Bienvenido, ${user?.displayName || user?.username || 'Usuario'}`}
     >
-      <div className="space-y-6">
+      <div className="space-y-6 animate-fade-in">
         <div className="flex justify-end">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground transition-smooth"
             onClick={() => refetch()}
             data-testid="button-refresh"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-2 btn-icon-animated" />
             Actualizar
           </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-card border-border">
+          <Card className="stat-card hover-lift-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Balance Total</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">
+                  <p className="stat-value">
                     {user?.apiKey ? "$0.00" : "--"}
                   </p>
                   {!user?.apiKey && (
                     <p className="text-xs text-primary mt-1">Configura API Keys</p>
                   )}
                 </div>
-                <div className="p-3 bg-emerald-500/10 rounded-xl">
-                  <Wallet className="h-6 w-6 text-emerald-400" />
+                <div className="p-3 bg-emerald-500/10 rounded-xl transition-smooth hover-scale">
+                  <Wallet className="h-6 w-6 icon-success" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          <Card className="stat-card hover-lift-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Estrategias Activas</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">0</p>
+                  <p className="stat-value">0</p>
                   <p className="text-xs text-muted-foreground mt-1">De 0 totales</p>
                 </div>
-                <div className="p-3 bg-blue-500/10 rounded-xl">
-                  <Target className="h-6 w-6 text-blue-400" />
+                <div className="p-3 bg-blue-500/10 rounded-xl transition-smooth hover-scale">
+                  <Target className="h-6 w-6 text-blue-400 animate-pulse-glow" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          <Card className="stat-card hover-lift-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Trades Hoy</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">0</p>
+                  <p className="stat-value">0</p>
                   <p className="text-xs text-muted-foreground mt-1">Sin actividad</p>
                 </div>
-                <div className="p-3 bg-purple-500/10 rounded-xl">
+                <div className="p-3 bg-purple-500/10 rounded-xl transition-smooth hover-scale">
                   <Activity className="h-6 w-6 text-purple-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          <Card className="stat-card hover-lift-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">P&L Hoy</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">$0.00</p>
+                  <p className="stat-value">$0.00</p>
                   <p className="text-xs text-muted-foreground mt-1">0.00%</p>
                 </div>
-                <div className="p-3 bg-primary/10 rounded-xl">
-                  <TrendingUp className="h-6 w-6 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-xl transition-smooth hover-scale">
+                  <TrendingUp className="h-6 w-6 icon-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="bg-card border-border">
+        <Card className="dashboard-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-foreground">Mercado en Tiempo Real</CardTitle>
-              <Badge variant="outline" className="text-emerald-400 border-emerald-500/50 bg-emerald-500/10">
+              <Badge variant="outline" className="badge-success-glow animate-glow-pulse">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
                 En vivo
               </Badge>
@@ -136,7 +136,7 @@ export default function CleanDashboard() {
             {marketLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton key={i} className="h-20 bg-secondary/50" />
+                  <div key={i} className="skeleton-enhanced h-20" />
                 ))}
               </div>
             ) : topCoins.length > 0 ? (
@@ -147,7 +147,7 @@ export default function CleanDashboard() {
                   return (
                     <div
                       key={coin.symbol}
-                      className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors cursor-pointer"
+                      className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 hover-lift-sm transition-all cursor-pointer"
                       onClick={() => handleNavigation("/markets")}
                       data-testid={`market-card-${coin.symbol}`}
                     >
@@ -160,7 +160,7 @@ export default function CleanDashboard() {
                           </p>
                         </div>
                       </div>
-                      <div className={`flex items-center gap-1 ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
+                      <div className={`flex items-center gap-1 ${isPositive ? "ticker-positive" : "ticker-negative"}`}>
                         {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                         <span className="font-medium">{change.toFixed(2)}%</span>
                       </div>
@@ -188,52 +188,52 @@ export default function CleanDashboard() {
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-card border-border">
+          <Card className="dashboard-card">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-foreground">Actividad Reciente</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Activity className="h-12 w-12 mb-3 opacity-50" />
-                <p>No hay actividad reciente</p>
-                <p className="text-sm mt-1">Tus trades aparecerán aquí</p>
+              <div className="empty-state">
+                <Activity className="empty-state-icon" />
+                <p className="empty-state-title">No hay actividad reciente</p>
+                <p className="empty-state-description">Tus trades aparecerán aquí</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          <Card className="dashboard-card">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-foreground">Acciones Rápidas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-14"
+              <Button
+                variant="outline"
+                className="w-full justify-start h-14 transition-smooth hover-scale group"
                 onClick={() => handleNavigation("/strategies")}
               >
-                <Target className="h-5 w-5 mr-3 text-primary" />
+                <Target className="h-5 w-5 mr-3 icon-primary group-hover:animate-wiggle" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Nueva Estrategia</p>
                   <p className="text-xs text-muted-foreground">Crear una estrategia de trading</p>
                 </div>
               </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-14"
+              <Button
+                variant="outline"
+                className="w-full justify-start h-14 transition-smooth hover-scale group"
                 onClick={() => handleNavigation("/portfolio")}
               >
-                <Wallet className="h-5 w-5 mr-3 text-emerald-400" />
+                <Wallet className="h-5 w-5 mr-3 icon-success group-hover:animate-wiggle" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Ver Portfolio</p>
                   <p className="text-xs text-muted-foreground">Revisar tus activos</p>
                 </div>
               </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-14"
+              <Button
+                variant="outline"
+                className="w-full justify-start h-14 transition-smooth hover-scale group"
                 onClick={() => handleNavigation("/settings")}
               >
-                <Activity className="h-5 w-5 mr-3 text-purple-400" />
+                <Activity className="h-5 w-5 mr-3 text-purple-400 group-hover:animate-wiggle" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Configurar API</p>
                   <p className="text-xs text-muted-foreground">Conectar con Binance</p>

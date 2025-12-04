@@ -1,42 +1,40 @@
-import React from 'react';
-import { 
-  SiBitcoin, SiEthereum, SiLitecoin, SiCardano, SiPolkadot, 
-  SiDogecoin, SiStellar, SiRipple, SiChainlink, SiBinance,
-  SiTether, SiMonero, SiDash, SiZcash
-} from 'react-icons/si';
+import React, { useState, useEffect } from 'react';
 
-// Colores para las criptomonedas
+// Cache for CoinGecko icons to avoid repeated API calls
+const iconCache = new Map<string, string>();
+const failedIcons = new Set<string>();
+
+// Background colors for fallback icons
 const CRYPTO_COLORS: Record<string, string> = {
-  BTC: 'text-orange-500',
-  ETH: 'text-indigo-400',
-  BNB: 'text-yellow-500',
-  SOL: 'text-purple-500',
-  XRP: 'text-blue-400',
-  ADA: 'text-blue-500',
-  DOT: 'text-pink-500',
-  DOGE: 'text-yellow-400',
-  LTC: 'text-gray-400',
-  LINK: 'text-blue-400',
-  XLM: 'text-gray-600',
-  USDT: 'text-green-500',
-  USDC: 'text-blue-500',
-  AVAX: 'text-red-500',
-  MATIC: 'text-purple-600',
-  TRX: 'text-red-400',
-  UNI: 'text-pink-400',
-  ATOM: 'text-purple-400',
-  XMR: 'text-orange-600',
-  FTM: 'text-blue-300',
-  AAVE: 'text-purple-300',
-  XTZ: 'text-blue-300',
-  ALGO: 'text-gray-500',
-  NEAR: 'text-black',
-  NEO: 'text-green-600',
-  DASH: 'text-blue-500',
-  ZEC: 'text-yellow-300'
+  BTC: '#F7931A',
+  ETH: '#627EEA',
+  BNB: '#F0B90B',
+  SOL: '#9945FF',
+  XRP: '#23292F',
+  ADA: '#3CC8C8',
+  DOT: '#E6007A',
+  DOGE: '#C2A633',
+  LTC: '#345D9D',
+  LINK: '#2A5ADA',
+  XLM: '#000000',
+  USDT: '#26A17B',
+  USDC: '#2775CA',
+  AVAX: '#E84142',
+  MATIC: '#8247E5',
+  TRX: '#FF0013',
+  UNI: '#FF007A',
+  ATOM: '#6F7390',
+  XMR: '#FF6600',
+  FTM: '#1969FF',
+  AAVE: '#B6509E',
+  XTZ: '#2C7DF7',
+  ALGO: '#000000',
+  NEAR: '#000000',
+  NEO: '#00E599',
+  DASH: '#008CE7',
+  ZEC: '#F4B728'
 };
 
-// Definir los tipos para las props
 interface CryptoIconProps {
   symbol: string;
   size?: number;
@@ -44,16 +42,11 @@ interface CryptoIconProps {
 }
 
 export function CryptoIcon({ symbol, size = 24, className = "" }: CryptoIconProps) {
-  const iconProps = {
-    size,
-    className
-  };
+  const [iconUrl, setIconUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
-  // Convertir el símbolo a mayúsculas y eliminar caracteres no alfanuméricos
-  // También eliminar sufijos comunes de pares de trading (USDT, BUSD, USD, BTC, ETH, etc.)
+  // Clean symbol: remove trading pair suffixes
   let cleanSymbol = symbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  
-  // Remove common trading pair suffixes to get the base currency
   const suffixes = ['USDT', 'BUSD', 'USDC', 'USD', 'TUSD', 'DAI', 'EUR', 'GBP', 'BTC', 'ETH', 'BNB'];
   for (const suffix of suffixes) {
     if (cleanSymbol.endsWith(suffix) && cleanSymbol.length > suffix.length) {
@@ -61,109 +54,79 @@ export function CryptoIcon({ symbol, size = 24, className = "" }: CryptoIconProp
       break;
     }
   }
-  
-  const colorClass = CRYPTO_COLORS[cleanSymbol] || 'text-gray-500';
-  
-  // Devolver el icono apropiado basado en el símbolo
-  switch (cleanSymbol) {
-    case 'BTC':
-      return <SiBitcoin {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'ETH':
-      return <SiEthereum {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'BNB':
-      return <SiBinance {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'SOL':
-      return <div className={`flex items-center justify-center bg-purple-500 text-white rounded-full font-bold ${className}`} style={{ width: size, height: size, fontSize: size * 0.5 }}>SOL</div>;
-    case 'XRP':
-      return <SiRipple {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'ADA':
-      return <SiCardano {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'DOT':
-      return <SiPolkadot {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'DOGE':
-      return <SiDogecoin {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'LTC':
-      return <SiLitecoin {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'LINK':
-      return <SiChainlink {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'XLM':
-      return <SiStellar {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'USDT':
-      return <SiTether {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'XMR':
-      return <SiMonero {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'DASH':
-      return <SiDash {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'ZEC':
-      return <SiZcash {...iconProps} className={`${colorClass} ${className}`} />;
-    case 'NEO':
-      return (
-        <div 
-          className={`flex items-center justify-center ${className} rounded-full font-bold text-white`}
-          style={{ 
-            width: size, 
-            height: size, 
-            fontSize: size * 0.5,
-            backgroundColor: '#00E599' 
-          }}
-        >
-          NE
-        </div>
-      );
-    
-    // Para los tokens que no tienen iconos específicos:
-    case 'USDC':
-      return (
-        <div 
-          className={`flex items-center justify-center ${className} rounded-full font-bold text-white`}
-          style={{ 
-            width: size, 
-            height: size, 
-            fontSize: size * 0.5,
-            backgroundColor: '#2775CA' 
-          }}
-        >
-          DC
-        </div>
-      );
-    case 'AVAX':
-      return (
-        <div 
-          className={`flex items-center justify-center ${className} rounded-full font-bold text-white`}
-          style={{ 
-            width: size, 
-            height: size, 
-            fontSize: size * 0.5,
-            backgroundColor: '#E84142' 
-          }}
-        >
-          AX
-        </div>
-      );
-    case 'MATIC':
-    case 'POLYGON':
-      return (
-        <div 
-          className={`flex items-center justify-center ${className} rounded-full font-bold text-white`}
-          style={{ 
-            width: size, 
-            height: size, 
-            fontSize: size * 0.5,
-            backgroundColor: '#8247E5' 
-          }}
-        >
-          MT
-        </div>
-      );
-    default:
-      // Para tokens sin iconos específicos, mostrar un contenedor circular con las primeras dos letras
-      return (
-        <div 
-          className={`flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full font-bold ${className}`} 
-          style={{ width: size, height: size, fontSize: size * 0.5 }}
-        >
-          {cleanSymbol.substring(0, 2)}
-        </div>
-      );
+
+  useEffect(() => {
+    // Check cache first
+    if (iconCache.has(cleanSymbol)) {
+      setIconUrl(iconCache.get(cleanSymbol)!);
+      return;
+    }
+
+    // Skip if previously failed
+    if (failedIcons.has(cleanSymbol)) {
+      setError(true);
+      return;
+    }
+
+    // Fetch icon from backend API (which proxies to CoinGecko with proper ID mapping)
+    const fetchIcon = async () => {
+      try {
+        const response = await fetch(
+          `/api/crypto/icon?symbol=${encodeURIComponent(cleanSymbol)}`
+        );
+
+        if (!response.ok) {
+          throw new Error('Icon not found');
+        }
+
+        const data = await response.json();
+
+        if (data.iconUrl) {
+          iconCache.set(cleanSymbol, data.iconUrl);
+          setIconUrl(data.iconUrl);
+        } else {
+          throw new Error('No image in response');
+        }
+      } catch (err) {
+        // Mark as failed and use fallback
+        failedIcons.add(cleanSymbol);
+        setError(true);
+      }
+    };
+
+    fetchIcon();
+  }, [cleanSymbol]);
+
+  // Fallback: colored circle with initials
+  if (error || !iconUrl) {
+    const bgColor = CRYPTO_COLORS[cleanSymbol] || '#6B7280';
+    return (
+      <div
+        className={`flex items-center justify-center rounded-full font-bold text-white ${className}`}
+        style={{
+          width: size,
+          height: size,
+          fontSize: size * 0.4,
+          backgroundColor: bgColor
+        }}
+      >
+        {cleanSymbol.substring(0, 2)}
+      </div>
+    );
   }
+
+  // Render CoinGecko image
+  return (
+    <img
+      src={iconUrl}
+      alt={cleanSymbol}
+      className={`rounded-full ${className}`}
+      style={{ width: size, height: size }}
+      onError={() => {
+        // If image fails to load, mark as failed and show fallback
+        failedIcons.add(cleanSymbol);
+        setError(true);
+      }}
+    />
+  );
 }

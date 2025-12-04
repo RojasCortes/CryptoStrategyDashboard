@@ -1,45 +1,73 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
+import admin from 'firebase-admin';
 
 // Firebase Admin initialization for token verification
 let firebaseAdmin = null;
 const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 const firebaseProjectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
 
-async function initFirebaseAdmin() {
-  if (firebaseAdmin) return firebaseAdmin;
-  
+function initFirebaseAdmin() {
+  if (firebaseAdmin) {
+    console.log('[initFirebaseAdmin] Already initialized, returning cached instance');
+    return firebaseAdmin;
+  }
+
+  console.log('[initFirebaseAdmin] Starting initialization...');
+  console.log('[initFirebaseAdmin] Has serviceAccountKey:', !!serviceAccountKey);
+
   if (serviceAccountKey) {
     try {
-      const admin = await import('firebase-admin');
-      
+      console.log('[initFirebaseAdmin] firebase-admin imported successfully');
+
       let credential;
+      let parseMethod = 'unknown';
       try {
         // Try parsing as JSON string first
+        console.log('[initFirebaseAdmin] Attempting JSON parse...');
         const parsed = JSON.parse(serviceAccountKey);
+        console.log('[initFirebaseAdmin] JSON parsed, project_id:', parsed.project_id);
         credential = admin.credential.cert(parsed);
-      } catch {
+        parseMethod = 'direct-json';
+      } catch (e1) {
+        console.log('[initFirebaseAdmin] Direct JSON parse failed, trying base64:', e1.message);
         // Try base64 decoding
         try {
           const decoded = Buffer.from(serviceAccountKey, 'base64').toString('utf8');
           const parsed = JSON.parse(decoded);
+          console.log('[initFirebaseAdmin] Base64 decoded and parsed, project_id:', parsed.project_id);
           credential = admin.credential.cert(parsed);
-        } catch {
-          console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY');
+          parseMethod = 'base64-decoded';
+        } catch (e2) {
+          console.error('[initFirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e2.message);
           return null;
         }
       }
-      
+
+      console.log('[initFirebaseAdmin] Credential created using:', parseMethod);
+      console.log('[initFirebaseAdmin] Existing apps count:', admin.apps.length);
+
       if (!admin.apps.length) {
         admin.initializeApp({ credential });
+        console.log('[initFirebaseAdmin] Firebase Admin app initialized');
+      } else {
+        console.log('[initFirebaseAdmin] Using existing Firebase Admin app');
       }
+
       firebaseAdmin = admin;
+      console.log('[initFirebaseAdmin] Initialization complete');
       return admin;
     } catch (error) {
-      console.error('Failed to initialize Firebase Admin:', error);
+      console.error('[initFirebaseAdmin] Failed to initialize Firebase Admin:', error);
+      console.error('[initFirebaseAdmin] Error stack:', error.stack);
+      console.error('[initFirebaseAdmin] Error name:', error.name);
+      console.error('[initFirebaseAdmin] Error code:', error.code);
       return null;
     }
   }
+
+  console.error('[initFirebaseAdmin] No serviceAccountKey found');
   return null;
 }
 
@@ -59,31 +87,106 @@ if (supabaseUrl && supabaseKey) {
   }
 }
 
-// Simple session storage (in production, use a proper session store)
-const sessions = new Map();
+// Secure password hashing with bcrypt
+const SALT_ROUNDS = 12; // Higher = more secure but slower
 
-// Helper function to hash passwords
 async function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
+  return await bcrypt.hash(password, SALT_ROUNDS);
 }
 
-// Helper function to create session
-function createSession(userId) {
-  const sessionId = crypto.randomBytes(32).toString('hex');
-  sessions.set(sessionId, { userId, createdAt: Date.now() });
-  return sessionId;
+async function comparePassword(password, hash) {
+  return await bcrypt.compare(password, hash);
 }
 
-// Helper function to get user from session
-function getUserFromSession(sessionId) {
-  const session = sessions.get(sessionId);
-  if (!session) return null;
-  // Simple session expiry (24 hours)
-  if (Date.now() - session.createdAt > 24 * 60 * 60 * 1000) {
-    sessions.delete(sessionId);
+// Encryption key for API keys (use a strong key from environment)
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+const ALGORITHM = 'aes-256-gcm';
+
+// Encrypt sensitive data (API keys, secrets)
+function encrypt(text) {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY, 'hex').slice(0, 32), iv);
+
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+
+  const authTag = cipher.getAuthTag();
+
+  return {
+    iv: iv.toString('hex'),
+    encryptedData: encrypted,
+    authTag: authTag.toString('hex')
+  };
+}
+
+// Decrypt sensitive data
+function decrypt(encrypted) {
+  const decipher = crypto.createDecipheriv(
+    ALGORITHM,
+    Buffer.from(ENCRYPTION_KEY, 'hex').slice(0, 32),
+    Buffer.from(encrypted.iv, 'hex')
+  );
+
+  decipher.setAuthTag(Buffer.from(encrypted.authTag, 'hex'));
+
+  let decrypted = decipher.update(encrypted.encryptedData, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+
+  return decrypted;
+}
+
+// Simple rate limiting (in-memory, resets on function restart)
+const rateLimits = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 60; // 60 requests per minute
+
+function checkRateLimit(identifier) {
+  const now = Date.now();
+  const userLimits = rateLimits.get(identifier) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
+
+  // Reset if window expired
+  if (now > userLimits.resetAt) {
+    userLimits.count = 0;
+    userLimits.resetAt = now + RATE_LIMIT_WINDOW;
+  }
+
+  userLimits.count++;
+  rateLimits.set(identifier, userLimits);
+
+  if (userLimits.count > MAX_REQUESTS) {
+    return false; // Rate limit exceeded
+  }
+
+  return true; // OK
+}
+
+// Helper to verify Firebase JWT token from Authorization header
+async function verifyFirebaseToken(authHeader) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[verifyToken] No auth header or wrong format');
     return null;
   }
-  return session.userId;
+
+  const token = authHeader.replace('Bearer ', '');
+
+  try {
+    const admin = initFirebaseAdmin();
+
+    if (!admin) {
+      console.error('[verifyToken] Firebase Admin not initialized');
+      return null;
+    }
+
+    console.log('[verifyToken] Attempting to verify token...');
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    console.log('[verifyToken] Token verified successfully, UID:', decodedToken.uid);
+    return decodedToken.uid; // Return Firebase UID
+  } catch (error) {
+    console.error('[verifyToken] Token verification failed:', error.message);
+    console.error('[verifyToken] Error code:', error.code);
+    console.error('[verifyToken] Full error:', error);
+    return null;
+  }
 }
 
 export default async function handler(req, res) {
@@ -105,7 +208,8 @@ export default async function handler(req, res) {
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // NOTE: Removed Access-Control-Allow-Credentials to allow wildcard origin (*)
+  // JWT Bearer tokens in Authorization header don't require credentials mode
   res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
   if (method === 'OPTIONS') {
@@ -129,76 +233,108 @@ export default async function handler(req, res) {
     });
   }
 
-  // Debug endpoint - only for troubleshooting
-  if (pathname === '/api/debug/config' || pathname === '/api/debug/config/') {
-    return res.status(200).json({
-      timestamp: new Date().toISOString(),
-      environment: {
-        hasSupabaseUrl: !!supabaseUrl,
-        hasSupabaseKey: !!supabaseKey,
-        hasDatabaseUrl: !!databaseUrl,
-        hasFirebaseProjectId: !!firebaseProjectId,
-        hasFirebaseServiceKey: !!serviceAccountKey,
-        firebaseProjectId: firebaseProjectId || 'not configured',
-        supabaseConfigured: !!supabase,
-      },
-      note: 'This endpoint shows configuration status without exposing sensitive values'
-    });
-  }
-  
-  // Firebase status endpoint
-  if (pathname === '/api/auth/firebase-status' || pathname === '/api/auth/firebase-status/') {
-    const admin = await initFirebaseAdmin();
-    const hasFirebaseEnvVars = !!(
-      process.env.FIREBASE_PROJECT_ID ||
-      process.env.FIREBASE_SERVICE_ACCOUNT_KEY ||
-      (process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY)
-    );
+  // Firebase Debug endpoint - to diagnose initialization issues
+  if (pathname === '/api/debug/firebase' || pathname === '/api/debug/firebase/') {
+    const admin = initFirebaseAdmin();
+    const hasServiceKey = !!serviceAccountKey;
+    let keyFormat = 'none';
+    let parseError = null;
+
+    if (hasServiceKey) {
+      try {
+        JSON.parse(serviceAccountKey);
+        keyFormat = 'valid-json';
+      } catch (e1) {
+        try {
+          const decoded = Buffer.from(serviceAccountKey, 'base64').toString('utf8');
+          JSON.parse(decoded);
+          keyFormat = 'valid-base64-json';
+        } catch (e2) {
+          keyFormat = 'invalid-format';
+          parseError = e2.message;
+        }
+      }
+    }
 
     return res.status(200).json({
-      configured: !!admin,
-      hasClientConfig: !!(process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY),
-      hasServerConfig: !!admin,
-      projectId: process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || null,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      hasServiceAccountKey: hasServiceKey,
+      serviceKeyLength: hasServiceKey ? serviceAccountKey.length : 0,
+      serviceKeyFormat: keyFormat,
+      parseError,
+      firebaseAdminInitialized: !!admin,
+      firebaseProjectId,
+      appsCount: admin ? admin.apps.length : 0
     });
+  }
+
+  // Firebase status endpoint - MUST NEVER FAIL
+  if (pathname === '/api/auth/firebase-status' || pathname === '/api/auth/firebase-status/') {
+    try {
+      const admin = initFirebaseAdmin();
+      const hasFirebaseEnvVars = !!(
+        process.env.FIREBASE_PROJECT_ID ||
+        process.env.FIREBASE_SERVICE_ACCOUNT_KEY ||
+        (process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY)
+      );
+
+      return res.status(200).json({
+        enabled: !!admin, // Frontend expects 'enabled'
+        configured: !!admin,
+        hasClientConfig: !!(process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY),
+        hasServerConfig: !!admin,
+        projectId: process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || null,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      // Endpoint must never fail - return false if any error
+      console.error('[firebase-status] Error checking Firebase status:', error);
+      return res.status(200).json({
+        enabled: false,
+        configured: false,
+        hasClientConfig: !!(process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_API_KEY),
+        hasServerConfig: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
   }
 
   // Firebase Auth Session endpoint - syncs Firebase auth with backend
   if ((pathname === '/api/auth/session' || pathname === '/api/auth/session/') && method === 'POST') {
     const authHeader = headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Missing or invalid authorization header' });
     }
-    
+
     try {
       const token = authHeader.replace('Bearer ', '');
-      let email, name, uid;
-      
+      let email, name, uid, picture;
+
       // Try Firebase Admin verification first (cryptographically secure)
-      const admin = await initFirebaseAdmin();
+      const admin = initFirebaseAdmin();
       if (admin) {
         try {
           const decodedToken = await admin.auth().verifyIdToken(token);
           email = decodedToken.email;
           name = decodedToken.name;
           uid = decodedToken.uid;
-          console.log('Token verified with Firebase Admin');
+          picture = decodedToken.picture;
+          console.log('Token verified with Firebase Admin for user:', email || uid);
         } catch (verifyError) {
           console.error('Firebase token verification failed:', verifyError.message);
           return res.status(401).json({ error: 'Invalid or expired token' });
         }
       } else {
         // Fallback: Basic JWT validation (NOT cryptographically secure)
-        // This is only for development - production should set FIREBASE_SERVICE_ACCOUNT_KEY
         console.warn('SECURITY WARNING: Firebase Admin not configured, using basic JWT validation');
-        
+
         const tokenParts = token.split('.');
         if (tokenParts.length !== 3) {
           return res.status(401).json({ error: 'Invalid token format' });
         }
-        
+
         let payload;
         try {
           let base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -207,12 +343,13 @@ export default async function handler(req, res) {
         } catch (decodeError) {
           return res.status(401).json({ error: 'Invalid token encoding' });
         }
-        
+
         const { iss, exp, iat } = payload;
         email = payload.email;
         name = payload.name;
         uid = payload.user_id || payload.sub;
-        
+        picture = payload.picture;
+
         // Basic validation checks
         const now = Math.floor(Date.now() / 1000);
         if (exp && exp < now) {
@@ -225,88 +362,87 @@ export default async function handler(req, res) {
           return res.status(401).json({ error: 'Invalid token issuer' });
         }
       }
-      
-      if (!email && !uid) {
-        return res.status(401).json({ error: 'Invalid token: missing user info' });
+
+      if (!uid) {
+        return res.status(401).json({ error: 'Invalid token: missing user ID' });
       }
-      
-      // If we have Supabase, try to find or create the user
+
+      // Prepare basic user data from Firebase token (ALWAYS available)
+      const username = name || email?.split('@')[0] || `user_${uid.substring(0, 8)}`;
+      const userData = {
+        id: uid, // Use Firebase UID as primary ID
+        username,
+        email: email || '',
+        displayName: name || username,
+        photoURL: picture || null,
+        firebaseUid: uid,
+        apiKey: null, // Will be populated from Supabase if available
+        apiSecret: null // Will be populated from Supabase if available
+      };
+
+      // Try to sync with Supabase (OPTIONAL - non-blocking)
       if (supabase) {
-        const username = name || email?.split('@')[0] || `user_${uid?.substring(0, 8)}`;
-        
-        // Check if user exists by Firebase UID
-        let { data: existingUser } = await supabase
-          .from('users')
-          .select('*')
-          .eq('firebase_uid', uid)
-          .single();
-        
-        if (!existingUser && email) {
-          // Try to find by email
-          const { data: userByEmail } = await supabase
+        try {
+          // Check if user exists by Firebase UID
+          const { data: existingUser, error: selectError } = await supabase
             .from('users')
             .select('*')
-            .eq('email', email)
-            .single();
-          
-          if (userByEmail) {
-            // Update existing user with Firebase UID
-            const { data: updatedUser } = await supabase
+            .eq('firebase_uid', uid)
+            .maybeSingle(); // Use maybeSingle() to avoid error if no rows found
+
+          if (selectError) {
+            console.warn('Supabase select error:', selectError.message);
+          } else if (existingUser) {
+            // User exists in Supabase - merge data
+            userData.id = existingUser.id;
+            userData.username = existingUser.username || userData.username;
+            userData.displayName = existingUser.display_name || userData.displayName;
+            userData.photoURL = existingUser.photo_url || userData.photoURL;
+            userData.apiKey = existingUser.api_key ? '***configured***' : null;
+            userData.apiSecret = existingUser.api_secret ? '***configured***' : null;
+
+            console.log('User found in Supabase:', existingUser.id);
+          } else if (email) {
+            // Try to create user in Supabase
+            console.log('Creating new user in Supabase for:', email);
+            const { data: newUser, error: insertError } = await supabase
               .from('users')
-              .update({ firebase_uid: uid })
-              .eq('id', userByEmail.id)
+              .insert([{
+                username,
+                email: email || `${username}@firebase.local`,
+                firebase_uid: uid,
+                display_name: name,
+                photo_url: picture,
+                password: crypto.randomBytes(32).toString('hex') // Random password for Firebase users
+              }])
               .select()
               .single();
-            existingUser = updatedUser || userByEmail;
+
+            if (insertError) {
+              console.warn('Could not create user in Supabase:', insertError.message);
+              // Continue anyway - app works without Supabase
+            } else if (newUser) {
+              userData.id = newUser.id;
+              userData.displayName = newUser.display_name || userData.displayName;
+              userData.photoURL = newUser.photo_url || userData.photoURL;
+              console.log('User created in Supabase:', newUser.id);
+            }
           }
+        } catch (dbError) {
+          console.warn('Supabase operation failed:', dbError.message);
+          // Continue anyway - app works without Supabase
         }
-        
-        if (!existingUser) {
-          // Create new user
-          const { data: newUser, error } = await supabase
-            .from('users')
-            .insert([{ 
-              username, 
-              email: email || `${username}@firebase.local`,
-              firebase_uid: uid,
-              password: crypto.randomBytes(32).toString('hex')
-            }])
-            .select()
-            .single();
-          
-          if (error) {
-            console.error('Error creating user:', error);
-            // Return basic user info even if DB fails
-            return res.status(200).json({
-              id: 0,
-              username,
-              email: email || '',
-              displayName: name || username
-            });
-          }
-          
-          existingUser = newUser;
-        }
-        
-        return res.status(200).json({
-          id: existingUser.id,
-          username: existingUser.username,
-          email: existingUser.email,
-          displayName: name || existingUser.username,
-          apiKey: existingUser.binance_api_key ? '***configured***' : null
-        });
       }
-      
-      // No database - return basic user info from token
-      return res.status(200).json({
-        id: 0,
-        username: name || email?.split('@')[0] || 'user',
-        email: email || '',
-        displayName: name || email?.split('@')[0] || 'User'
-      });
+
+      // ALWAYS return user data, even if Supabase failed
+      return res.status(200).json(userData);
+
     } catch (error) {
-      console.error('Session error:', error);
-      return res.status(500).json({ error: 'Failed to create session' });
+      console.error('Session endpoint error:', error);
+      return res.status(500).json({
+        error: 'Failed to create session',
+        details: error.message
+      });
     }
   }
   
@@ -334,24 +470,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Username already exists' });
       }
       
-      // Create user
+      // Create user with bcrypt hashed password
       const hashedPassword = await hashPassword(password);
       const { data: newUser, error } = await supabase
         .from('users')
         .insert([{ username, password: hashedPassword, email }])
         .select()
         .single();
-        
+
       if (error) throw error;
-      
-      // Create session
-      const sessionId = createSession(newUser.id);
-      
-      return res.status(201).json({ 
+
+      // Return user data (Firebase JWT handles session)
+      return res.status(201).json({
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        sessionId
+        message: 'User created successfully. Please login with Firebase.'
       });
     } catch (error) {
       return res.status(500).json({ error: error.message });
@@ -371,67 +505,78 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing credentials' });
       }
       
-      // Get user
-      const hashedPassword = await hashPassword(password);
+      // Get user by username
       const { data: user, error } = await supabase
         .from('users')
         .select('*')
         .eq('username', username)
-        .eq('password', hashedPassword)
         .single();
-        
+
       if (error || !user) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
-      
-      // Create session
-      const sessionId = createSession(user.id);
-      
-      return res.status(200).json({ 
+
+      // Verify password with bcrypt
+      const isValidPassword = await comparePassword(password, user.password);
+
+      if (!isValidPassword) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      // Return user data (Firebase JWT handles session)
+      return res.status(200).json({
         id: user.id,
         username: user.username,
         email: user.email,
-        sessionId
+        message: 'Login successful. Use Firebase authentication.'
       });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
   }
   
-  // Logout endpoint
+  // Logout endpoint (Firebase handles session on client-side)
   if ((pathname === '/api/logout' || pathname === '/api/logout/') && method === 'POST') {
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    if (sessionId) {
-      sessions.delete(sessionId);
-    }
-    return res.status(200).json({ message: 'Logged out successfully' });
+    // With JWT-based auth, logout is handled on the client by clearing the Firebase token
+    return res.status(200).json({
+      message: 'Logout successful. Clear Firebase token on client.',
+      success: true
+    });
   }
   
-  // User endpoint
+  // User endpoint (use /api/auth/session instead for Firebase auth)
   if (pathname === '/api/user' || pathname === '/api/user/') {
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
-    
+
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
-    
+
     try {
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, username, email')
-        .eq('id', userId)
+        .select('id, username, email, firebase_uid, api_key, api_secret')
+        .eq('firebase_uid', firebaseUid)
         .single();
-        
+
       if (error || !user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      
-      return res.status(200).json(user);
+
+      // Return user data with API key status (not the actual keys)
+      return res.status(200).json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firebase_uid: user.firebase_uid,
+        // Indicate if keys are configured without exposing actual values
+        apiKey: user.api_key ? '***configured***' : null,
+        apiSecret: user.api_secret ? '***configured***' : null
+      });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -506,13 +651,21 @@ export default async function handler(req, res) {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
-    
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
+
+    // Get user ID from firebase_uid
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('firebase_uid', firebaseUid)
+      .single();
+
+    const userId = userData?.id;
     
     if (method === 'GET') {
       try {
@@ -550,13 +703,21 @@ export default async function handler(req, res) {
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
-    
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
+
+    // Get user ID from firebase_uid
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('firebase_uid', firebaseUid)
+      .single();
+
+    const userId = userData?.id;
     
     try {
       const { data: trades, error } = await supabase
@@ -572,113 +733,443 @@ export default async function handler(req, res) {
     }
   }
   
-  // Binance account info endpoint
-  if (pathname === '/api/binance/account' || pathname === '/api/binance/account/') {
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+  // Binance account info endpoint (multiple route aliases) - REAL DATA
+  if (pathname === '/api/binance/account' || pathname === '/api/binance/account/' ||
+      pathname === '/api/account/balance' || pathname === '/api/account/balance/') {
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
-    
-    // Return mock account data since we can't store API keys in serverless functions
-    return res.status(200).json({
-      balances: [
-        { asset: 'USDT', free: '1280.00', locked: '0.00' },
-        { asset: 'BTC', free: '0.02850000', locked: '0.00' },
-        { asset: 'ETH', free: '4.75000000', locked: '0.00' }
-      ],
-      totalWalletBalance: '12500.00',
-      totalUnrealizedPnl: '0.00',
-      totalMarginBalance: '12500.00'
-    });
-  }
-  
-  // Binance price endpoint
-  if (pathname === '/api/binance/price' || pathname === '/api/binance/price/') {
-    // Return mock price data
-    return res.status(200).json([
-      { symbol: 'BTCUSDT', price: '43250.00' },
-      { symbol: 'ETHUSDT', price: '2650.00' },
-      { symbol: 'BNBUSDT', price: '310.50' },
-      { symbol: 'ADAUSDT', price: '0.4850' },
-      { symbol: 'DOTUSDT', price: '7.25' }
-    ]);
-  }
-  
-  // Update API keys endpoint
-  if ((pathname === '/api/user/api-keys' || pathname === '/api/user/api-keys/') && method === 'PUT') {
+
     if (!supabase) {
       return res.status(500).json({ error: 'Database not configured' });
     }
-    
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+
+    try {
+      // Get user's encrypted API keys from database
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('api_key, api_secret')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      if (userError || !user || !user.api_key || !user.api_secret) {
+        return res.status(400).json({ error: 'API keys not configured. Please add your Binance API keys in settings.' });
+      }
+
+      // Decrypt API keys
+      const encryptedKey = JSON.parse(user.api_key);
+      const encryptedSecret = JSON.parse(user.api_secret);
+      const apiKey = decrypt(encryptedKey);
+      const apiSecret = decrypt(encryptedSecret);
+
+      // Call Binance API - Account Information
+      const timestamp = Date.now();
+      const queryString = `timestamp=${timestamp}`;
+
+      // Create signature
+      const signature = crypto
+        .createHmac('sha256', apiSecret)
+        .update(queryString)
+        .digest('hex');
+
+      const binanceUrl = `https://api.binance.com/api/v3/account?${queryString}&signature=${signature}`;
+
+      const binanceResponse = await fetch(binanceUrl, {
+        headers: {
+          'X-MBX-APIKEY': apiKey
+        }
+      });
+
+      if (!binanceResponse.ok) {
+        const errorText = await binanceResponse.text();
+        console.error('Binance API error:', errorText);
+        return res.status(500).json({
+          error: 'Failed to fetch Binance account data',
+          details: errorText
+        });
+      }
+
+      const accountData = await binanceResponse.json();
+
+      // Get current prices for USD valuation
+      const pricesResponse = await fetch('https://api.binance.com/api/v3/ticker/price');
+      const prices = await pricesResponse.json();
+      const priceMap = {};
+      prices.forEach(p => {
+        priceMap[p.symbol] = parseFloat(p.price);
+      });
+
+      // Filter and enrich balances with USD values
+      const enrichedBalances = accountData.balances
+        .filter(b => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0)
+        .map(balance => {
+          const free = parseFloat(balance.free);
+          const locked = parseFloat(balance.locked);
+          const total = free + locked;
+
+          // Calculate USD value
+          let usdValue = 0;
+          if (balance.asset === 'USDT' || balance.asset === 'BUSD' || balance.asset === 'USDC') {
+            usdValue = total;
+          } else {
+            const pairSymbol = `${balance.asset}USDT`;
+            const price = priceMap[pairSymbol];
+            if (price) {
+              usdValue = total * price;
+            }
+          }
+
+          return {
+            asset: balance.asset,
+            free: balance.free,
+            locked: balance.locked,
+            total,
+            usdValue: usdValue.toFixed(2)
+          };
+        })
+        .sort((a, b) => parseFloat(b.usdValue) - parseFloat(a.usdValue)); // Sort by USD value descending
+
+      const totalBalanceUSD = enrichedBalances.reduce((sum, b) => sum + parseFloat(b.usdValue), 0);
+
+      return res.status(200).json({
+        makerCommission: accountData.makerCommission,
+        takerCommission: accountData.takerCommission,
+        buyerCommission: accountData.buyerCommission,
+        sellerCommission: accountData.sellerCommission,
+        canTrade: accountData.canTrade,
+        canWithdraw: accountData.canWithdraw,
+        canDeposit: accountData.canDeposit,
+        updateTime: accountData.updateTime,
+        accountType: accountData.accountType,
+        balances: enrichedBalances,
+        permissions: accountData.permissions,
+        totalBalanceUSD
+      });
+    } catch (error) {
+      console.error('Error fetching Binance account:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch account balance',
+        details: error.message
+      });
     }
-    
+  }
+  
+  // Binance price endpoint - REAL DATA
+  if (pathname === '/api/binance/price' || pathname === '/api/binance/price/') {
+    try {
+      // Get ALL current prices from Binance
+      const response = await fetch('https://api.binance.com/api/v3/ticker/price');
+
+      if (!response.ok) {
+        throw new Error(`Binance API error: ${response.status}`);
+      }
+
+      const prices = await response.json();
+
+      // Cache for 10 seconds
+      res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
+
+      return res.status(200).json(prices);
+    } catch (error) {
+      console.error('Error fetching Binance prices:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch prices',
+        details: error.message
+      });
+    }
+  }
+
+  // Crypto icon endpoint - Maps symbols to CoinGecko IDs
+  if (pathname === '/api/crypto/icon' || pathname === '/api/crypto/icon/') {
+    try {
+      const symbol = urlObj.searchParams.get('symbol');
+
+      if (!symbol) {
+        return res.status(400).json({ error: 'Symbol parameter required' });
+      }
+
+      // Map common crypto symbols to CoinGecko IDs
+      const symbolToId = {
+        'BTC': 'bitcoin',
+        'ETH': 'ethereum',
+        'BNB': 'binancecoin',
+        'SOL': 'solana',
+        'XRP': 'ripple',
+        'ADA': 'cardano',
+        'DOT': 'polkadot',
+        'DOGE': 'dogecoin',
+        'LTC': 'litecoin',
+        'LINK': 'chainlink',
+        'XLM': 'stellar',
+        'USDT': 'tether',
+        'USDC': 'usd-coin',
+        'AVAX': 'avalanche-2',
+        'MATIC': 'matic-network',
+        'TRX': 'tron',
+        'UNI': 'uniswap',
+        'ATOM': 'cosmos',
+        'XMR': 'monero',
+        'FTM': 'fantom',
+        'AAVE': 'aave',
+        'XTZ': 'tezos',
+        'ALGO': 'algorand',
+        'NEAR': 'near',
+        'NEO': 'neo',
+        'DASH': 'dash',
+        'ZEC': 'zcash',
+        'SHIB': 'shiba-inu',
+        'APE': 'apecoin',
+        'CRO': 'crypto-com-chain',
+        'FIL': 'filecoin',
+        'HBAR': 'hedera-hashgraph',
+        'VET': 'vechain',
+        'ICP': 'internet-computer',
+        'APT': 'aptos',
+        'ARB': 'arbitrum',
+        'OP': 'optimism',
+        'LDO': 'lido-dao',
+        'INJ': 'injective-protocol',
+        'MKR': 'maker',
+        'GRT': 'the-graph',
+        'SAND': 'the-sandbox',
+        'MANA': 'decentraland',
+        'ETC': 'ethereum-classic',
+        'THETA': 'theta-token',
+        'RUNE': 'thorchain',
+        'PEPE': 'pepe',
+        'STX': 'blockstack'
+      };
+
+      const cleanSymbol = symbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const coinId = symbolToId[cleanSymbol] || cleanSymbol.toLowerCase();
+
+      // Fetch from CoinGecko
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`
+      );
+
+      if (!response.ok) {
+        return res.status(404).json({ error: 'Icon not found' });
+      }
+
+      const data = await response.json();
+      const imageUrl = data.image?.small || data.image?.thumb;
+
+      if (!imageUrl) {
+        return res.status(404).json({ error: 'No image available' });
+      }
+
+      // Cache for 24 hours (icons don't change)
+      res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+
+      return res.status(200).json({
+        symbol: cleanSymbol,
+        iconUrl: imageUrl,
+        coinId: coinId
+      });
+    } catch (error) {
+      console.error('Error fetching crypto icon:', error);
+      return res.status(404).json({
+        error: 'Icon not found',
+        details: error.message
+      });
+    }
+  }
+
+  // Update API keys endpoint - NOW WITH AES-256 ENCRYPTION
+  // Support both /api/user/api-keys and /api/user/apikeys for compatibility
+  if ((pathname === '/api/user/api-keys' || pathname === '/api/user/api-keys/' ||
+       pathname === '/api/user/apikeys' || pathname === '/api/user/apikeys/') &&
+      (method === 'PUT' || method === 'POST')) {
+
+    console.log('[API Keys] Endpoint called, method:', method);
+    console.log('[API Keys] Has Authorization header:', !!headers.authorization);
+
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database not configured' });
+    }
+
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    console.log('[API Keys] Firebase UID from token:', firebaseUid);
+
+    if (!firebaseUid) {
+      return res.status(401).json({
+        error: 'Not authenticated. Use Firebase JWT token.',
+        debug: {
+          hasAuthHeader: !!headers.authorization,
+          hasServiceAccountKey: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+          authHeaderFormat: headers.authorization ? headers.authorization.substring(0, 20) + '...' : 'missing'
+        }
+      });
+    }
+
     try {
       const { apiKey, apiSecret } = body;
-      
-      // In a real implementation, encrypt these keys
+
+      if (!apiKey || !apiSecret) {
+        return res.status(400).json({ error: 'API key and secret are required' });
+      }
+
+      // ENCRYPT API keys before storing (AES-256-GCM)
+      const encryptedKey = encrypt(apiKey);
+      const encryptedSecret = encrypt(apiSecret);
+
+      // Store encrypted data as JSON string
       const { data: user, error } = await supabase
         .from('users')
-        .update({ 
-          binance_api_key: apiKey,
-          binance_api_secret: apiSecret 
+        .update({
+          api_key: JSON.stringify(encryptedKey),
+          api_secret: JSON.stringify(encryptedSecret)
         })
-        .eq('id', userId)
-        .select('id, username, email')
+        .eq('firebase_uid', firebaseUid)
+        .select('id, username, email, firebase_uid')
         .single();
-        
+
       if (error) throw error;
-      return res.status(200).json(user);
+
+      return res.status(200).json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firebase_uid: user.firebase_uid,
+        // Indicate keys are now configured
+        apiKey: '***configured***',
+        apiSecret: '***configured***',
+        message: 'API keys encrypted and saved successfully'
+      });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
   }
   
-  // Cryptocurrency list endpoint
-  if (pathname === '/api/cryptocurrencies' || pathname === '/api/cryptocurrencies/') {
-    // Return a subset of popular cryptocurrencies
-    const cryptos = [
-      { symbol: 'BTC', name: 'Bitcoin', price: '43250.00', change: '+2.45%' },
-      { symbol: 'ETH', name: 'Ethereum', price: '2650.00', change: '+1.85%' },
-      { symbol: 'BNB', name: 'BNB', price: '310.50', change: '+0.95%' },
-      { symbol: 'ADA', name: 'Cardano', price: '0.4850', change: '-0.75%' },
-      { symbol: 'DOT', name: 'Polkadot', price: '7.25', change: '+1.25%' },
-      { symbol: 'SOL', name: 'Solana', price: '95.75', change: '+3.15%' },
-      { symbol: 'MATIC', name: 'Polygon', price: '0.8950', change: '+2.05%' },
-      { symbol: 'AVAX', name: 'Avalanche', price: '36.50', change: '+1.95%' }
-    ];
-    return res.status(200).json(cryptos);
+  // Cryptocurrency list endpoint - REAL DATA FROM BINANCE
+  if (pathname === '/api/cryptocurrencies' || pathname === '/api/cryptocurrencies/' ||
+      pathname === '/api/market/cryptocurrencies' || pathname === '/api/market/cryptocurrencies/') {
+    try {
+      // Get 24hr ticker data for ALL trading pairs
+      const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+
+      if (!response.ok) {
+        throw new Error(`Binance API error: ${response.status}`);
+      }
+
+      const allTickers = await response.json();
+
+      // Filter only USDT pairs and enrich with data
+      const usdtPairs = allTickers
+        .filter(ticker => ticker.symbol.endsWith('USDT'))
+        .map(ticker => {
+          // Extract base asset (e.g., BTC from BTCUSDT)
+          const baseAsset = ticker.symbol.replace('USDT', '');
+
+          return {
+            symbol: baseAsset,
+            fullSymbol: ticker.symbol,
+            name: baseAsset, // We'll add proper names with icons later
+            price: parseFloat(ticker.lastPrice).toFixed(8),
+            priceChangePercent: parseFloat(ticker.priceChangePercent).toFixed(2),
+            change: parseFloat(ticker.priceChangePercent).toFixed(2) + '%',
+            volume: parseFloat(ticker.volume).toFixed(2),
+            quoteVolume: parseFloat(ticker.quoteVolume).toFixed(2),
+            high24h: parseFloat(ticker.highPrice).toFixed(8),
+            low24h: parseFloat(ticker.lowPrice).toFixed(8),
+            trades: ticker.count
+          };
+        })
+        // Sort by quote volume (USD volume) descending
+        .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
+        // Take top 200 by volume
+        .slice(0, 200);
+
+      // Cache for 30 seconds
+      res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+
+      return res.status(200).json(usdtPairs);
+    } catch (error) {
+      console.error('Error fetching cryptocurrencies:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch cryptocurrencies',
+        details: error.message
+      });
+    }
   }
   
-  // Trading pairs endpoint
+  // Trading pairs endpoint - REAL DATA FROM BINANCE
   if (pathname === '/api/trading-pairs' || pathname === '/api/trading-pairs/' ||
       pathname === '/api/market/pairs' || pathname === '/api/market/pairs/') {
-    const pairs = [
-      'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'DOTUSDT',
-      'SOLUSDT', 'MATICUSDT', 'AVAXUSDT', 'LINKUSDT', 'UNIUSDT'
-    ];
-    return res.status(200).json(pairs);
+    try {
+      // Get exchange information from Binance
+      const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+
+      if (!response.ok) {
+        throw new Error(`Binance API error: ${response.status}`);
+      }
+
+      const exchangeInfo = await response.json();
+
+      // Filter for USDT pairs that are actively trading
+      const usdtPairs = exchangeInfo.symbols
+        .filter(symbol =>
+          symbol.quoteAsset === 'USDT' &&
+          symbol.status === 'TRADING' &&
+          symbol.isSpotTradingAllowed
+        )
+        .map(symbol => ({
+          symbol: symbol.symbol,
+          baseAsset: symbol.baseAsset,
+          quoteAsset: symbol.quoteAsset,
+          status: symbol.status,
+          baseAssetPrecision: symbol.baseAssetPrecision,
+          quoteAssetPrecision: symbol.quoteAssetPrecision,
+          orderTypes: symbol.orderTypes,
+          icebergAllowed: symbol.icebergAllowed,
+          ocoAllowed: symbol.ocoAllowed,
+          isSpotTradingAllowed: symbol.isSpotTradingAllowed,
+          isMarginTradingAllowed: symbol.isMarginTradingAllowed,
+          permissions: symbol.permissions
+        }))
+        .sort((a, b) => a.symbol.localeCompare(b.symbol));
+
+      // Cache for 60 seconds (exchange info doesn't change frequently)
+      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+
+      return res.status(200).json(usdtPairs);
+    } catch (error) {
+      console.error('Error fetching Binance exchange info:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch trading pairs',
+        details: error.message
+      });
+    }
   }
   
-  // Additional endpoints that might be needed
+  // WebSocket stats endpoint
+  if (pathname === '/api/ws/stats' || pathname === '/api/ws/stats/') {
+    return res.status(200).json({
+      connected: true,
+      latency: 45,
+      lastUpdate: Date.now(),
+      reconnections: 0,
+      messagesReceived: 1250,
+      status: 'healthy'
+    });
+  }
+
+  // Notifications endpoint
   if (pathname === '/api/notifications' || pathname === '/api/notifications/') {
     return res.status(200).json([]);
   }
-  
+
   if (pathname.startsWith('/api/trades') && pathname.includes('limit')) {
-    const sessionId = headers.authorization?.replace('Bearer ', '');
-    const userId = sessionId ? getUserFromSession(sessionId) : null;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
     }
-    
+
     return res.status(200).json([]);
   }
   

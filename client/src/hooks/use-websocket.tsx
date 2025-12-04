@@ -197,6 +197,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }, [sendMessage]);
 
   // Initialize connection when user is available
+  // Note: Only depend on user.id to avoid reconnection loops from connect/disconnect recreation
   useEffect(() => {
     if (user) {
       connect();
@@ -205,7 +206,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     return () => {
       disconnect();
     };
-  }, [user, connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Only reconnect when user ID changes, not when functions recreate
 
   // Ping every 30 seconds to keep connection alive
   useEffect(() => {
