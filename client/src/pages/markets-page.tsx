@@ -394,7 +394,7 @@ export default function MarketsPage() {
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-lg text-foreground">Volumen de Trading (24h)</CardTitle>
-                <CardDescription className="text-muted-foreground">Top 8 pares por volumen en millones de USDT</CardDescription>
+                <CardDescription className="text-muted-foreground">Top 8 pares por volumen en millones de USDT (escala logarítmica)</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
@@ -402,15 +402,25 @@ export default function MarketsPage() {
                     <BarChart data={volumeChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                      <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <RechartsTooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        scale="log"
+                        domain={['auto', 'auto']}
+                        tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}B` : `${value.toFixed(0)}M`}
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px',
                           color: 'hsl(var(--foreground))'
                         }}
-                        formatter={(value: number) => [`${value.toFixed(2)}M USDT`, 'Volumen']}
+                        formatter={(value: number) => [
+                          value >= 1000
+                            ? `${(value/1000).toFixed(2)}B USDT`
+                            : `${value.toFixed(2)}M USDT`,
+                          'Volumen'
+                        ]}
                       />
                       <Bar dataKey="volume" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
