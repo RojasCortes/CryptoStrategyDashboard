@@ -891,7 +891,7 @@ export default async function handler(req, res) {
       }
 
       // Map common crypto symbols to CoinGecko IDs
-      const symbolToId: Record<string, string> = {
+      const symbolToId = {
         'BTC': 'bitcoin',
         'ETH': 'ethereum',
         'BNB': 'binancecoin',
