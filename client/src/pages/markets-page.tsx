@@ -130,16 +130,13 @@ export default function MarketsPage() {
       };
     }
 
-    // Create a copy once instead of multiple times
-    const dataCopy = [...marketData];
-
-    // Calculate topGainers (sort by priceChangePercent desc)
-    const gainers = dataCopy
+    // Calculate topGainers (sort by priceChangePercent desc) - NEW COPY
+    const gainers = [...marketData]
       .sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent))
       .slice(0, 5);
 
-    // Calculate topLosers (reuse sorted data, just reverse slice)
-    const losers = dataCopy
+    // Calculate topLosers (sort by priceChangePercent asc) - NEW COPY
+    const losers = [...marketData]
       .sort((a, b) => parseFloat(a.priceChangePercent) - parseFloat(b.priceChangePercent))
       .slice(0, 5);
 
@@ -163,6 +160,7 @@ export default function MarketsPage() {
       name: c.symbol.replace('USDT', ''),
       value: Math.round((parseFloat(c.volume) * parseFloat(c.price) / total) * 100)
     }));
+
 
     return {
       topGainers: gainers,

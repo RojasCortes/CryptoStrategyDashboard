@@ -1,14 +1,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { AccountBalance, useAccountBalance } from "@/hooks/use-account";
 import { CryptoIcon } from "@/components/crypto-icon";
-import { Loader2, RefreshCw, AlertCircle, KeyRound, ExternalLink, Settings } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle, KeyRound, ExternalLink, Settings, TrendingUp, TrendingDown, PieChart as PieChartIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { useLanguage } from "@/hooks/use-language";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 export function AccountSummary() {
   const { t } = useLanguage();
@@ -20,6 +23,58 @@ export function AccountSummary() {
     await refetch();
     setTimeout(() => setIsRefreshing(false), 1000);
   };
+
+  // Calculate portfolio distribution and stats
+  const portfolioStats = useMemo(() => {
+    if (!balances || balances.length === 0) {
+      return {
+        distribution: [],
+        topAssets: [],
+        stablecoinTotal: 0,
+        volatileTotal: 0
+      };
+    }
+
+    const stablecoins = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD'];
+
+    // Filter out dust (less than $0.01) and sort by value
+    const significantBalances = balances
+      .filter(b => parseFloat(b.usdValue) >= 0.01)
+      .sort((a, b) => parseFloat(b.usdValue) - parseFloat(a.usdValue));
+
+    // Top 5 assets for pie chart
+    const top5 = significantBalances.slice(0, 5);
+    const othersValue = significantBalances.slice(5).reduce((sum, b) => sum + parseFloat(b.usdValue), 0);
+
+    const distribution = [
+      ...top5.map(b => ({
+        name: b.asset,
+        value: parseFloat(b.usdValue),
+        percentage: ((parseFloat(b.usdValue) / (accountInfo?.totalBalanceUSD || 1)) * 100).toFixed(1)
+      })),
+      ...(othersValue > 0 ? [{
+        name: 'Others',
+        value: othersValue,
+        percentage: ((othersValue / (accountInfo?.totalBalanceUSD || 1)) * 100).toFixed(1)
+      }] : [])
+    ];
+
+    // Separate stablecoins vs volatile assets
+    const stablecoinTotal = significantBalances
+      .filter(b => stablecoins.includes(b.asset))
+      .reduce((sum, b) => sum + parseFloat(b.usdValue), 0);
+
+    const volatileTotal = significantBalances
+      .filter(b => !stablecoins.includes(b.asset))
+      .reduce((sum, b) => sum + parseFloat(b.usdValue), 0);
+
+    return {
+      distribution,
+      topAssets: significantBalances.slice(0, 5),
+      stablecoinTotal,
+      volatileTotal
+    };
+  }, [balances, accountInfo]);
 
   // Extraer el mensaje de error para mostrarlo de forma más amigable
   const getErrorMessage = () => {
@@ -144,9 +199,65 @@ export function AccountSummary() {
                 </div>
               </div>
             )}
-            
+
+            {/* Portfolio distribution stats */}
+            {portfolioStats.distribution.length > 0 && (
+              <>
+                <div className="grid grid-cols-2 gap-4 my-4">
+                  <div className="bg-secondary/30 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <PieChartIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{t("Stablecoins")}</span>
+                    </div>
+                    <div className="text-lg font-bold">
+                      {formatCurrency(portfolioStats.stablecoinTotal)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {((portfolioStats.stablecoinTotal / (accountInfo?.totalBalanceUSD || 1)) * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="bg-secondary/30 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{t("Volatiles")}</span>
+                    </div>
+                    <div className="text-lg font-bold">
+                      {formatCurrency(portfolioStats.volatileTotal)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {((portfolioStats.volatileTotal / (accountInfo?.totalBalanceUSD || 1)) * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pie Chart */}
+                <div className="my-4">
+                  <h4 className="text-sm font-medium mb-2">{t("Distribución del Portfolio")}</h4>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={portfolioStats.distribution}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percentage }) => `${name} ${percentage}%`}
+                        outerRadius={70}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {portfolioStats.distribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            )}
+
             <Separator className="my-2" />
-            
+
             {balances.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-sm text-muted-foreground">
