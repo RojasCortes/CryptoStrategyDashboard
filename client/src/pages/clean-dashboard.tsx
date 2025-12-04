@@ -38,11 +38,11 @@ export default function CleanDashboard() {
   const topCoins = marketData?.slice(0, 6) || [];
 
   return (
-    <DashboardLayout 
+    <DashboardLayout
       title="Dashboard"
       subtitle={`Bienvenido, ${user?.displayName || user?.username || 'Usuario'}`}
     >
-      <div className="space-y-6">
+      <div className="space-y-6 animate-fade-in">
         <div className="flex justify-end">
           <Button 
             variant="outline" 
@@ -57,12 +57,12 @@ export default function CleanDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-card border-border">
+          <Card className="stat-card hover-lift-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Balance Total</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">
+                  <p className="stat-value">
                     {user?.apiKey ? "$0.00" : "--"}
                   </p>
                   {!user?.apiKey && (
@@ -76,12 +76,12 @@ export default function CleanDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          <Card className="stat-card hover-lift-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Estrategias Activas</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">0</p>
+                  <p className="stat-value">0</p>
                   <p className="text-xs text-muted-foreground mt-1">De 0 totales</p>
                 </div>
                 <div className="p-3 bg-blue-500/10 rounded-xl">
@@ -91,12 +91,12 @@ export default function CleanDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          <Card className="stat-card hover-lift-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Trades Hoy</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">0</p>
+                  <p className="stat-value">0</p>
                   <p className="text-xs text-muted-foreground mt-1">Sin actividad</p>
                 </div>
                 <div className="p-3 bg-purple-500/10 rounded-xl">
@@ -106,12 +106,12 @@ export default function CleanDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          <Card className="stat-card hover-lift-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">P&L Hoy</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">$0.00</p>
+                  <p className="stat-value">$0.00</p>
                   <p className="text-xs text-muted-foreground mt-1">0.00%</p>
                 </div>
                 <div className="p-3 bg-primary/10 rounded-xl">
@@ -122,7 +122,7 @@ export default function CleanDashboard() {
           </Card>
         </div>
 
-        <Card className="bg-card border-border">
+        <Card className="dashboard-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-foreground">Mercado en Tiempo Real</CardTitle>
@@ -147,7 +147,7 @@ export default function CleanDashboard() {
                   return (
                     <div
                       key={coin.symbol}
-                      className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors cursor-pointer"
+                      className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 hover-lift-sm transition-all cursor-pointer"
                       onClick={() => handleNavigation("/markets")}
                       data-testid={`market-card-${coin.symbol}`}
                     >
@@ -160,7 +160,7 @@ export default function CleanDashboard() {
                           </p>
                         </div>
                       </div>
-                      <div className={`flex items-center gap-1 ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
+                      <div className={`flex items-center gap-1 ${isPositive ? "ticker-positive" : "ticker-negative"}`}>
                         {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                         <span className="font-medium">{change.toFixed(2)}%</span>
                       </div>
@@ -188,20 +188,20 @@ export default function CleanDashboard() {
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-card border-border">
+          <Card className="dashboard-card">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-foreground">Actividad Reciente</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Activity className="h-12 w-12 mb-3 opacity-50" />
-                <p>No hay actividad reciente</p>
-                <p className="text-sm mt-1">Tus trades aparecerán aquí</p>
+              <div className="empty-state">
+                <Activity className="empty-state-icon" />
+                <p className="empty-state-title">No hay actividad reciente</p>
+                <p className="empty-state-description">Tus trades aparecerán aquí</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          <Card className="dashboard-card">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-foreground">Acciones Rápidas</CardTitle>
             </CardHeader>

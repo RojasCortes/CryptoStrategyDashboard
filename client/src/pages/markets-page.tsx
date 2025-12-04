@@ -248,9 +248,9 @@ export default function MarketsPage() {
       </div>
 
       {activeTab === "overview" && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-card border-border">
+            <Card className="stat-card hover-lift-sm">
               <CardHeader className="pb-2">
                 <CardDescription className="text-muted-foreground flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
@@ -258,12 +258,12 @@ export default function MarketsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">{marketData.length}</div>
-                <p className="text-xs text-muted-foreground">Pares de trading USDT</p>
+                <div className="stat-value">{marketData.length}</div>
+                <p className="stat-label">Pares de trading USDT</p>
               </CardContent>
             </Card>
-            
-            <Card className="bg-card border-border">
+
+            <Card className="stat-card hover-lift-sm">
               <CardHeader className="pb-2">
                 <CardDescription className="text-muted-foreground flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
@@ -279,17 +279,17 @@ export default function MarketsPage() {
                         {topGainer.symbol.replace('USDT', '')}
                       </span>
                     </div>
-                    <Badge className="mt-1 bg-emerald-500/20 text-emerald-400 border-0">
+                    <span className="ticker-positive mt-1 inline-block">
                       +{parseFloat(topGainer.priceChangePercent).toFixed(2)}%
-                    </Badge>
+                    </span>
                   </>
                 ) : (
                   <Skeleton className="h-10 w-24 bg-secondary" />
                 )}
               </CardContent>
             </Card>
-            
-            <Card className="bg-card border-border">
+
+            <Card className="stat-card hover-lift-sm">
               <CardHeader className="pb-2">
                 <CardDescription className="text-muted-foreground flex items-center gap-2">
                   <TrendingDown className="h-4 w-4" />
@@ -305,9 +305,9 @@ export default function MarketsPage() {
                         {topLoser.symbol.replace('USDT', '')}
                       </span>
                     </div>
-                    <Badge className="mt-1 bg-red-500/20 text-red-400 border-0">
+                    <span className="ticker-negative mt-1 inline-block">
                       {parseFloat(topLoser.priceChangePercent).toFixed(2)}%
-                    </Badge>
+                    </span>
                   </>
                 ) : (
                   <Skeleton className="h-10 w-24 bg-secondary" />
@@ -317,7 +317,7 @@ export default function MarketsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-card border-border">
+            <Card className="dashboard-card">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-foreground">
                   <TrendingUp className="h-5 w-5 text-emerald-400" />
@@ -327,12 +327,12 @@ export default function MarketsPage() {
               <CardContent>
                 {isLoadingMarketData ? (
                   <div className="space-y-3">
-                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-12 bg-secondary" />)}
+                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-12 skeleton-shimmer" />)}
                   </div>
                 ) : topGainers.length > 0 ? (
                   <div className="space-y-3">
                     {topGainers.map((crypto, index) => (
-                      <div key={crypto.symbol} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                      <div key={crypto.symbol} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 hover-lift-sm transition-all">
                         <div className="flex items-center gap-3">
                           <span className="text-muted-foreground w-6">{index + 1}</span>
                           <CryptoIcon symbol={crypto.symbol} size={32} />
@@ -341,9 +341,9 @@ export default function MarketsPage() {
                             <p className="text-xs text-muted-foreground">${parseFloat(crypto.price).toLocaleString()}</p>
                           </div>
                         </div>
-                        <Badge className="bg-emerald-500/20 text-emerald-400 border-0">
+                        <span className="ticker-positive">
                           +{parseFloat(crypto.priceChangePercent).toFixed(2)}%
-                        </Badge>
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -353,7 +353,7 @@ export default function MarketsPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="dashboard-card">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-foreground">
                   <TrendingDown className="h-5 w-5 text-red-400" />
@@ -363,12 +363,12 @@ export default function MarketsPage() {
               <CardContent>
                 {isLoadingMarketData ? (
                   <div className="space-y-3">
-                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-12 bg-secondary" />)}
+                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-12 skeleton-shimmer" />)}
                   </div>
                 ) : topLosers.length > 0 ? (
                   <div className="space-y-3">
                     {topLosers.map((crypto, index) => (
-                      <div key={crypto.symbol} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                      <div key={crypto.symbol} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 hover-lift-sm transition-all">
                         <div className="flex items-center gap-3">
                           <span className="text-muted-foreground w-6">{index + 1}</span>
                           <CryptoIcon symbol={crypto.symbol} size={32} />
@@ -377,9 +377,9 @@ export default function MarketsPage() {
                             <p className="text-xs text-muted-foreground">${parseFloat(crypto.price).toLocaleString()}</p>
                           </div>
                         </div>
-                        <Badge className="bg-red-500/20 text-red-400 border-0">
+                        <span className="ticker-negative">
                           {parseFloat(crypto.priceChangePercent).toFixed(2)}%
-                        </Badge>
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -391,7 +391,7 @@ export default function MarketsPage() {
           </div>
 
           {volumeChartData.length > 0 && (
-            <Card className="bg-card border-border">
+            <Card className="chart-container">
               <CardHeader>
                 <CardTitle className="text-lg text-foreground">Volumen de Trading (24h)</CardTitle>
                 <CardDescription className="text-muted-foreground">Top 8 pares por volumen en millones de USDT (escala logarítmica)</CardDescription>
@@ -433,7 +433,7 @@ export default function MarketsPage() {
       )}
 
       {activeTab === "all" && (
-        <Card className="bg-card border-border">
+        <Card className="dashboard-card animate-fade-in">
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
@@ -457,14 +457,14 @@ export default function MarketsPage() {
           <CardContent>
             {isLoadingMarketData ? (
               <div className="space-y-3">
-                {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 bg-secondary" />)}
+                {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 skeleton-shimmer" />)}
               </div>
             ) : (
               <>
                 <div className="overflow-x-auto" role="region" aria-label="Tabla de criptomonedas">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-border hover:bg-transparent">
+                      <TableRow className="table-header border-border hover:bg-transparent">
                         <TableHead className="text-muted-foreground">Par</TableHead>
                         <TableHead className="text-muted-foreground">
                           <Button
@@ -508,7 +508,7 @@ export default function MarketsPage() {
                         return (
                           <TableRow
                             key={crypto.symbol}
-                            className="border-border hover:bg-secondary/50"
+                            className="table-row"
                           >
                             <TableCell>
                               <div className="flex items-center gap-3">
@@ -523,12 +523,12 @@ export default function MarketsPage() {
                               ${parseFloat(crypto.price).toLocaleString(undefined, { maximumFractionDigits: 8 })}
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                className={isPositive ? "bg-emerald-500/20 text-emerald-400 border-0" : "bg-red-500/20 text-red-400 border-0"}
+                              <span
+                                className={isPositive ? "ticker-positive" : "ticker-negative"}
                                 aria-label={`${isPositive ? 'Aumento' : 'Disminución'} de ${Math.abs(change).toFixed(2)} por ciento`}
                               >
                                 {isPositive ? '+' : ''}{change.toFixed(2)}%
-                              </Badge>
+                              </span>
                             </TableCell>
                             <TableCell className="hidden md:table-cell text-muted-foreground">
                               ${(parseFloat(crypto.volume) / 1000000).toFixed(2)}M
