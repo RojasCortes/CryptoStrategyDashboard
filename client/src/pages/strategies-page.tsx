@@ -65,6 +65,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -132,6 +133,7 @@ interface StrategyPerformance {
 // Form schema for strategy creation/editing
 const strategyFormSchema = insertStrategySchema
   .extend({
+    description: z.string().max(500, "La descripción no puede tener más de 500 caracteres").optional(),
     parameters: z.object({
       buyThreshold: z.number().min(-100).max(100).optional(),
       sellThreshold: z.number().min(-100).max(100).optional(),
@@ -171,6 +173,7 @@ export default function StrategiesPage() {
     defaultValues: {
       userId: user?.id,
       name: "",
+      description: "",
       pair: "",
       strategyType: "",
       timeframe: "",
@@ -196,6 +199,7 @@ export default function StrategiesPage() {
       form.reset({
         userId: user?.id,
         name: "",
+        description: "",
         pair: "",
         strategyType: "",
         timeframe: "",
@@ -222,6 +226,7 @@ export default function StrategiesPage() {
       form.reset({
         userId: selectedStrategy.userId,
         name: selectedStrategy.name,
+        description: selectedStrategy.description || "",
         pair: selectedStrategy.pair,
         strategyType: selectedStrategy.strategyType,
         timeframe: selectedStrategy.timeframe,
@@ -534,7 +539,25 @@ export default function StrategiesPage() {
                             </FormItem>
                           )}
                         />
-                        
+
+                        <FormField
+                          control={form.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Descripción (opcional)</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Describe tu estrategia: cuándo compra, cuándo vende, qué indicadores usa..."
+                                  className="input-horizon resize-none min-h-[80px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <FormField
                             control={form.control}

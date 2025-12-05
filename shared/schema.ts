@@ -72,6 +72,7 @@ export const strategies = pgTable("strategies", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   name: text("name").notNull(),
+  description: text("description"),
   pair: text("pair").notNull(),
   strategyType: text("strategy_type").notNull(),
   timeframe: text("timeframe").notNull(),
@@ -85,6 +86,7 @@ export const strategies = pgTable("strategies", {
 export const insertStrategySchema = createInsertSchema(strategies).pick({
   userId: true,
   name: true,
+  description: true,
   pair: true,
   strategyType: true,
   timeframe: true,
