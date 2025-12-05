@@ -1,3 +1,6 @@
+/* HorizonUI Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -61,8 +64,24 @@
     @apply border-border;
   }
 
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+
   body {
-    @apply font-sans antialiased bg-background text-foreground transition-colors duration-200;
+    @apply antialiased bg-background text-foreground transition-colors duration-200;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* HorizonUI Text Selection Styling */
+  ::selection {
+    color: white;
+    background: #09090B;
+  }
+
+  ::-moz-selection {
+    color: white;
+    background: #09090B;
   }
 }
 
@@ -731,4 +750,372 @@
   .hover-brightness:hover {
     filter: brightness(1.1);
   }
+
+  /* ===== NIVEL 3: GRADIENTES Y EFECTOS DE PROFUNDIDAD ===== */
+
+  /* Gradientes para gráficos */
+  .chart-gradient-primary {
+    background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.3) 100%);
+  }
+
+  .chart-gradient-success {
+    background: linear-gradient(180deg, hsl(var(--success)) 0%, hsl(var(--success) / 0.3) 100%);
+  }
+
+  .chart-gradient-warning {
+    background: linear-gradient(180deg, hsl(var(--warning)) 0%, hsl(var(--warning) / 0.3) 100%);
+  }
+
+  /* Efectos de profundidad avanzados */
+  .depth-card {
+    @apply bg-card border border-border rounded-xl;
+    box-shadow:
+      0 1px 3px 0 rgb(0 0 0 / 0.1),
+      0 1px 2px -1px rgb(0 0 0 / 0.1),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.05);
+  }
+
+  .depth-card:hover {
+    box-shadow:
+      0 20px 25px -5px rgb(0 0 0 / 0.1),
+      0 8px 10px -6px rgb(0 0 0 / 0.1),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.1),
+      0 0 0 1px hsl(var(--primary) / 0.1);
+  }
+
+  .depth-card-intense {
+    @apply bg-card border border-border rounded-xl;
+    box-shadow:
+      0 4px 6px -1px rgb(0 0 0 / 0.1),
+      0 2px 4px -2px rgb(0 0 0 / 0.1),
+      inset 0 2px 4px 0 rgb(255 255 255 / 0.03),
+      0 0 0 1px hsl(var(--border));
+    transform-style: preserve-3d;
+  }
+
+  .depth-card-intense:hover {
+    box-shadow:
+      0 25px 50px -12px rgb(0 0 0 / 0.25),
+      0 12px 24px -6px rgb(0 0 0 / 0.15),
+      inset 0 2px 4px 0 rgb(255 255 255 / 0.05),
+      0 0 0 1px hsl(var(--primary) / 0.2);
+    transform: translateY(-4px) translateZ(20px);
+  }
+
+  /* Gradientes de fondo animados */
+  .bg-gradient-animated {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--card)) 0%,
+      hsl(var(--primary) / 0.05) 50%,
+      hsl(var(--card)) 100%
+    );
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  .bg-gradient-mesh {
+    background:
+      radial-gradient(at 0% 0%, hsl(var(--primary) / 0.1) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(var(--success) / 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsl(var(--primary) / 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsl(var(--success) / 0.08) 0px, transparent 50%);
+  }
+
+  /* Mejoras para tooltips de charts */
+  .chart-tooltip {
+    @apply bg-card/95 backdrop-blur-lg border border-border rounded-lg shadow-xl p-3;
+    animation: fade-in-scale 0.15s ease-out;
+  }
+
+  .chart-tooltip-label {
+    @apply text-sm font-semibold text-foreground mb-1;
+  }
+
+  .chart-tooltip-value {
+    @apply text-xs text-muted-foreground;
+  }
+
+  /* Grid mejorado para charts */
+  .chart-grid-elegant {
+    stroke-dasharray: 3 3;
+    stroke-opacity: 0.2;
+    stroke: hsl(var(--border));
+  }
+
+  /* Efectos de scroll sutiles */
+  .scroll-fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+
+  .scroll-fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Cards con gradiente de borde */
+  .card-gradient-border {
+    @apply relative bg-card rounded-xl p-[1px] overflow-hidden;
+  }
+
+  .card-gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--primary)), #14b8a6, hsl(var(--primary)));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .card-gradient-border:hover::before {
+    opacity: 1;
+  }
+
+  /* Efectos de texto mejorados */
+  .text-glow {
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  }
+
+  .text-glow-success {
+    text-shadow: 0 0 20px hsl(var(--success) / 0.5);
+  }
+
+  .text-glow-danger {
+    text-shadow: 0 0 20px hsl(var(--destructive) / 0.5);
+  }
+
+  /* Separadores con gradiente */
+  .divider-gradient {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--border)) 50%,
+      transparent 100%
+    );
+  }
+
+  /* Overlay effects para modals y popovers */
+  .overlay-blur {
+    @apply backdrop-blur-md;
+    background: hsl(var(--background) / 0.8);
+  }
+
+  /* Stats con gradiente de fondo */
+  .stat-gradient-bg {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--card)) 0%,
+      hsl(var(--primary) / 0.03) 100%
+    );
+  }
+
+  /* Pulse ring effect */
+  .pulse-ring {
+    @apply relative;
+  }
+
+  .pulse-ring::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: hsl(var(--primary) / 0.2);
+    animation: scale-pulse 2s ease-in-out infinite;
+    z-index: -1;
+  }
+
+  /* Chart container mejorado */
+  .chart-enhanced {
+    @apply relative overflow-hidden rounded-xl;
+    background: linear-gradient(
+      to bottom,
+      hsl(var(--card)) 0%,
+      hsl(var(--muted) / 0.1) 100%
+    );
+  }
+
+  /* ===== HORIZONUI: PREMIUM GRADIENTS ===== */
+
+  /* Purple gradient (for premium features/CTAs) */
+  .gradient-purple {
+    background: linear-gradient(135deg, #868CFF 0%, #4318FF 100%);
+  }
+
+  .gradient-purple-subtle {
+    background: linear-gradient(135deg, rgba(134, 140, 255, 0.1) 0%, rgba(67, 24, 255, 0.1) 100%);
+  }
+
+  /* Blue gradient (for accents) */
+  .gradient-blue {
+    background: linear-gradient(90deg, #4481EB 0%, #04BEFE 100%);
+  }
+
+  .gradient-blue-subtle {
+    background: linear-gradient(90deg, rgba(68, 129, 235, 0.1) 0%, rgba(4, 190, 254, 0.1) 100%);
+  }
+
+  /* Brand gradient overlay */
+  .gradient-brand-overlay {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.1) 0%,
+      hsl(var(--primary) / 0.05) 50%,
+      transparent 100%
+    );
+  }
+
+  /* ===== HORIZONUI: INPUT FIELDS ===== */
+
+  .input-horizon {
+    @apply rounded-2xl border border-zinc-200 dark:border-zinc-800 px-5 py-4;
+    @apply placeholder:text-zinc-500 dark:placeholder:text-zinc-400;
+    @apply focus:border-zinc-400 dark:focus:border-zinc-600;
+    @apply transition-colors duration-200;
+    @apply bg-white dark:bg-zinc-900;
+  }
+
+  .input-horizon:focus {
+    @apply outline-none ring-2 ring-primary/20;
+  }
+
+  /* ===== HORIZONUI: BUTTON ENHANCEMENTS ===== */
+
+  .btn-horizon {
+    @apply rounded-2xl px-6 py-3 font-medium transition-all duration-200;
+    box-shadow: 45px 76px 113px 7px rgba(112, 144, 176, 0.08);
+  }
+
+  .btn-horizon:hover {
+    box-shadow: 45px 76px 113px 7px rgba(112, 144, 176, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .btn-horizon:active {
+    transform: translateY(0);
+  }
+
+  /* ===== HORIZONUI: CARD ENHANCEMENTS ===== */
+
+  .card-horizon {
+    @apply rounded-2xl border border-zinc-200 dark:border-zinc-800;
+    @apply bg-white dark:bg-zinc-900;
+    @apply transition-all duration-300;
+  }
+
+  .card-horizon:hover {
+    @apply border-zinc-300 dark:border-zinc-700;
+  }
+
+  /* Subtle card with zinc borders */
+  .card-zinc {
+    @apply border border-zinc-200/50 dark:border-zinc-800/50;
+    @apply bg-white/50 dark:bg-zinc-900/50;
+    @apply backdrop-blur-sm;
+  }
+
+  /* ===== HORIZONUI: STAT CARDS ===== */
+
+  .stat-card-horizon {
+    @apply card-horizon p-6;
+    @apply flex items-center gap-4;
+  }
+
+  .stat-icon-container {
+    @apply flex h-14 w-14 items-center justify-center;
+    @apply rounded-2xl;
+    @apply transition-transform duration-300;
+  }
+
+  .stat-icon-container:hover {
+    @apply scale-110;
+  }
+
+  /* ===== HORIZONUI: NAVBAR ELEMENTS ===== */
+
+  .navbar-item {
+    @apply flex items-center gap-2 px-4 py-2 rounded-xl;
+    @apply text-zinc-700 dark:text-zinc-300;
+    @apply hover:bg-zinc-100 dark:hover:bg-zinc-800;
+    @apply transition-colors duration-200;
+  }
+
+  .navbar-item.active {
+    @apply bg-zinc-100 dark:bg-zinc-800;
+    @apply text-zinc-900 dark:text-white;
+    @apply font-medium;
+  }
+
+  /* ===== HORIZONUI: AVATAR ===== */
+
+  .avatar-ring {
+    @apply ring-2 ring-zinc-200 dark:ring-zinc-800;
+    @apply ring-offset-2 ring-offset-background;
+  }
+
+  .avatar-ring:hover {
+    @apply ring-primary/50;
+  }
+
+  /* ===== HORIZONUI: DROPDOWN ===== */
+
+  .dropdown-horizon {
+    @apply rounded-2xl border border-zinc-200 dark:border-zinc-800;
+    @apply bg-white dark:bg-zinc-900;
+    @apply shadow-xl;
+    @apply p-2;
+  }
+
+  .dropdown-item {
+    @apply rounded-xl px-3 py-2;
+    @apply text-sm text-zinc-700 dark:text-zinc-300;
+    @apply hover:bg-zinc-100 dark:hover:bg-zinc-800;
+    @apply transition-colors duration-150;
+    @apply cursor-pointer;
+  }
+
+  .dropdown-divider {
+    @apply my-2 h-px bg-zinc-200 dark:bg-zinc-800;
+  }
+
+  /* ===== HORIZONUI: BADGES ===== */
+
+  .badge-horizon {
+    @apply inline-flex items-center gap-1.5 px-3 py-1;
+    @apply rounded-full text-xs font-medium;
+    @apply transition-all duration-200;
+  }
+
+  .badge-horizon-success {
+    @apply bg-emerald-100 dark:bg-emerald-900/30;
+    @apply text-emerald-700 dark:text-emerald-400;
+    @apply border border-emerald-200 dark:border-emerald-800;
+  }
+
+  .badge-horizon-warning {
+    @apply bg-amber-100 dark:bg-amber-900/30;
+    @apply text-amber-700 dark:text-amber-400;
+    @apply border border-amber-200 dark:border-amber-800;
+  }
+
+  .badge-horizon-error {
+    @apply bg-red-100 dark:bg-red-900/30;
+    @apply text-red-700 dark:text-red-400;
+    @apply border border-red-200 dark:border-red-800;
+  }
+
+  .badge-horizon-primary {
+    @apply bg-blue-100 dark:bg-blue-900/30;
+    @apply text-blue-700 dark:text-blue-400;
+    @apply border border-blue-200 dark:border-blue-800;
+  }
 }
+
+

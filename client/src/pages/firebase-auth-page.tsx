@@ -14,7 +14,6 @@ import {
   BarChart3
 } from "lucide-react";
 import { Redirect } from "wouter";
-import { SiGoogle } from "react-icons/si";
 import {
   Form,
   FormControl,
@@ -28,8 +27,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
+import OauthSignIn from "@/components/auth/OauthSignIn";
+import AuthSeparator from "@/components/auth/Separator";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -176,29 +176,11 @@ export default function FirebaseAuthPage() {
             <CardContent className="p-8">
               {firebaseEnabled !== false && (
                 <>
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-12 mb-6 bg-white hover:bg-gray-100 text-gray-900 border-0 font-medium"
-                    onClick={handleGoogleSignIn}
-                    disabled={signInWithGoogleMutation.isPending}
-                    data-testid="button-google-signin"
-                  >
-                    {signInWithGoogleMutation.isPending ? (
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    ) : (
-                      <SiGoogle className="h-5 w-5 mr-2" />
-                    )}
-                    Continuar con Google
-                  </Button>
-                  
-                  <div className="relative mb-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <Separator className="w-full bg-border" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-3 text-muted-foreground">o continúa con email</span>
-                    </div>
-                  </div>
+                  <OauthSignIn
+                    onGoogleSignIn={handleGoogleSignIn}
+                    isLoading={signInWithGoogleMutation.isPending}
+                  />
+                  <AuthSeparator text="o continúa con email" />
                 </>
               )}
 
@@ -236,12 +218,12 @@ export default function FirebaseAuthPage() {
                             <FormLabel className="text-foreground">Email</FormLabel>
                             <FormControl>
                               <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  placeholder="tu@email.com" 
-                                  className="pl-10 h-11 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
+                                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  placeholder="tu@email.com"
+                                  className="input-horizon pl-12"
                                   data-testid="input-login-email"
-                                  {...field} 
+                                  {...field}
                                 />
                               </div>
                             </FormControl>
@@ -258,19 +240,19 @@ export default function FirebaseAuthPage() {
                             <FormLabel className="text-foreground">Contraseña</FormLabel>
                             <FormControl>
                               <div className="relative">
-                                <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
+                                <KeyRound className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
                                   type={showPassword ? "text" : "password"}
-                                  placeholder="••••••••" 
-                                  className="pl-10 pr-10 h-11 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
+                                  placeholder="••••••••"
+                                  className="input-horizon pl-12 pr-12"
                                   data-testid="input-login-password"
-                                  {...field} 
+                                  {...field}
                                 />
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="absolute right-1 top-1 h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl"
                                   onClick={() => setShowPassword(!showPassword)}
                                 >
                                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -282,9 +264,9 @@ export default function FirebaseAuthPage() {
                         )}
                       />
                       
-                      <Button 
-                        type="submit" 
-                        className="w-full h-11 bg-gradient-to-r from-primary to-cyan-500 hover:from-primary/90 hover:to-cyan-600 text-white font-medium"
+                      <Button
+                        type="submit"
+                        className="w-full btn-horizon bg-gradient-to-r from-primary to-cyan-500 hover:from-primary/90 hover:to-cyan-600 text-white font-medium"
                         disabled={signInWithEmailMutation.isPending}
                         data-testid="button-login-submit"
                       >
@@ -308,12 +290,12 @@ export default function FirebaseAuthPage() {
                             <FormLabel className="text-foreground">Nombre de Usuario</FormLabel>
                             <FormControl>
                               <div className="relative">
-                                <UserIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  placeholder="tu_usuario" 
-                                  className="pl-10 h-11 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
+                                <UserIcon className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  placeholder="tu_usuario"
+                                  className="input-horizon pl-12"
                                   data-testid="input-register-username"
-                                  {...field} 
+                                  {...field}
                                 />
                               </div>
                             </FormControl>
@@ -330,13 +312,13 @@ export default function FirebaseAuthPage() {
                             <FormLabel className="text-foreground">Email</FormLabel>
                             <FormControl>
                               <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  type="email" 
-                                  placeholder="tu@email.com" 
-                                  className="pl-10 h-11 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
+                                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  type="email"
+                                  placeholder="tu@email.com"
+                                  className="input-horizon pl-12"
                                   data-testid="input-register-email"
-                                  {...field} 
+                                  {...field}
                                 />
                               </div>
                             </FormControl>
@@ -353,19 +335,19 @@ export default function FirebaseAuthPage() {
                             <FormLabel className="text-foreground">Contraseña</FormLabel>
                             <FormControl>
                               <div className="relative">
-                                <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  type={showPassword ? "text" : "password"} 
-                                  placeholder="••••••••" 
-                                  className="pl-10 pr-10 h-11 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
+                                <KeyRound className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  type={showPassword ? "text" : "password"}
+                                  placeholder="••••••••"
+                                  className="input-horizon pl-12 pr-12"
                                   data-testid="input-register-password"
-                                  {...field} 
+                                  {...field}
                                 />
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="absolute right-1 top-1 h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl"
                                   onClick={() => setShowPassword(!showPassword)}
                                 >
                                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -385,19 +367,19 @@ export default function FirebaseAuthPage() {
                             <FormLabel className="text-foreground">Confirmar Contraseña</FormLabel>
                             <FormControl>
                               <div className="relative">
-                                <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  type={showConfirmPassword ? "text" : "password"} 
-                                  placeholder="••••••••" 
-                                  className="pl-10 pr-10 h-11 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
+                                <KeyRound className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  type={showConfirmPassword ? "text" : "password"}
+                                  placeholder="••••••••"
+                                  className="input-horizon pl-12 pr-12"
                                   data-testid="input-register-confirm-password"
-                                  {...field} 
+                                  {...field}
                                 />
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="absolute right-1 top-1 h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl"
                                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 >
                                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

@@ -317,7 +317,7 @@ export default function MarketsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="dashboard-card">
+            <Card className="depth-card bg-gradient-animated">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-foreground">
                   <TrendingUp className="h-5 w-5 icon-success animate-bounce-soft" />
@@ -353,7 +353,7 @@ export default function MarketsPage() {
               </CardContent>
             </Card>
 
-            <Card className="dashboard-card">
+            <Card className="depth-card bg-gradient-animated">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-foreground">
                   <TrendingDown className="h-5 w-5 icon-danger animate-bounce-soft" />
@@ -391,40 +391,66 @@ export default function MarketsPage() {
           </div>
 
           {volumeChartData.length > 0 && (
-            <Card className="chart-container">
+            <Card className="depth-card-intense">
               <CardHeader>
-                <CardTitle className="text-lg text-foreground">Volumen de Trading (24h)</CardTitle>
+                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 icon-primary" />
+                  Volumen de Trading (24h)
+                </CardTitle>
                 <CardDescription className="text-muted-foreground">Top 8 pares por volumen en millones de USDT (escala logarítmica)</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={volumeChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                      <YAxis
-                        stroke="hsl(var(--muted-foreground))"
-                        scale="log"
-                        domain={['auto', 'auto']}
-                        tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}B` : `${value.toFixed(0)}M`}
-                      />
-                      <RechartsTooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
-                          color: 'hsl(var(--foreground))'
-                        }}
-                        formatter={(value: number) => [
-                          value >= 1000
-                            ? `${(value/1000).toFixed(2)}B USDT`
-                            : `${value.toFixed(2)}M USDT`,
-                          'Volumen'
-                        ]}
-                      />
-                      <Bar dataKey="volume" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="chart-enhanced p-4">
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={volumeChartData}>
+                        <defs>
+                          <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
+                            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                        <XAxis
+                          dataKey="name"
+                          stroke="hsl(var(--muted-foreground))"
+                          tick={{ fontSize: 12 }}
+                        />
+                        <YAxis
+                          stroke="hsl(var(--muted-foreground))"
+                          scale="log"
+                          domain={['auto', 'auto']}
+                          tick={{ fontSize: 12 }}
+                          tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}B` : `${value.toFixed(0)}M`}
+                        />
+                        <RechartsTooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card) / 0.95)',
+                            backdropFilter: 'blur(12px)',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '12px',
+                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                            color: 'hsl(var(--foreground))',
+                            padding: '12px'
+                          }}
+                          formatter={(value: number) => [
+                            value >= 1000
+                              ? `${(value/1000).toFixed(2)}B USDT`
+                              : `${value.toFixed(2)}M USDT`,
+                            'Volumen'
+                          ]}
+                          labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                        />
+                        <Bar
+                          dataKey="volume"
+                          fill="url(#volumeGradient)"
+                          radius={[8, 8, 0, 0]}
+                          animationDuration={800}
+                          animationEasing="ease-out"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </CardContent>
             </Card>

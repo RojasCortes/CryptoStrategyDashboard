@@ -37,9 +37,9 @@ export default function PortfolioPage(): JSX.Element {
           <AlertDescription className="text-muted-foreground">
             {t("No has configurado tus claves API de Binance. Ve a la página de configuración para configurar tus claves API.")}
           </AlertDescription>
-          <Button 
-            variant="outline" 
-            className="mt-2 border-primary text-primary hover:bg-primary/10" 
+          <Button
+            variant="outline"
+            className="btn-horizon mt-2 border-primary text-primary hover:bg-primary/10"
             onClick={() => window.location.href = "/settings"}
           >
             <Settings className="h-4 w-4 mr-2" />
@@ -56,22 +56,22 @@ export default function PortfolioPage(): JSX.Element {
         <div className="lg:col-span-2">
           <div className="grid grid-cols-1 gap-4">
             {!hasApiKeys ? (
-              <div className="bg-card border border-border p-6 rounded-lg text-center">
+              <div className="card-horizon bg-card border border-border p-6 text-center">
                 <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2 text-foreground">{t("Configura tus claves API")}</h3>
                 <p className="text-muted-foreground mb-4">
                   {t("Para ver el detalle de tu portafolio, necesitas configurar tus claves API de Binance con permisos de lectura.")}
                 </p>
-                <Button 
+                <Button
                   onClick={() => window.location.href = "/settings"}
-                  className="bg-primary hover:bg-primary/90"
+                  className="btn-horizon bg-primary hover:bg-primary/90"
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   {t("Configurar Ahora")}
                 </Button>
               </div>
             ) : (
-              <div className="bg-card border border-border p-6 rounded-lg">
+              <div className="card-horizon bg-card border border-border p-6">
                 <h3 className="text-lg font-medium mb-4 text-foreground">{t("Información Detallada")}</h3>
                 <p className="text-muted-foreground mb-4">
                   {t("Aquí verás información detallada de tu portafolio una vez que la conexión con Binance sea establecida.")}

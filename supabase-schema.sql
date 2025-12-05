@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS public.strategies (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  description TEXT,
   pair TEXT NOT NULL,
   strategy_type TEXT NOT NULL,
   timeframe TEXT NOT NULL,
@@ -57,6 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_strategies_is_active ON public.strategies(is_acti
 
 -- Comentarios
 COMMENT ON TABLE public.strategies IS 'Estrategias de trading configuradas por usuarios (opcional).';
+COMMENT ON COLUMN public.strategies.description IS 'Descripción opcional de la estrategia (qué hace, cuándo compra/vende, etc.).';
 
 -- ============================================================
 -- TABLA: trades (OPCIONAL)
