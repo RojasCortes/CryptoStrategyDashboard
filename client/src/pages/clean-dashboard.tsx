@@ -57,12 +57,12 @@ export default function CleanDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="stat-card hover-lift-sm">
+          <Card className="stat-card hover-lift-sm stat-gradient-bg">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Balance Total</p>
-                  <p className="stat-value">
+                  <p className="stat-value text-glow">
                     {user?.apiKey ? "$0.00" : "--"}
                   </p>
                   {!user?.apiKey && (
@@ -76,7 +76,7 @@ export default function CleanDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="stat-card hover-lift-sm">
+          <Card className="stat-card hover-lift-sm stat-gradient-bg">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -91,7 +91,7 @@ export default function CleanDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="stat-card hover-lift-sm">
+          <Card className="stat-card hover-lift-sm stat-gradient-bg">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -106,7 +106,7 @@ export default function CleanDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="stat-card hover-lift-sm">
+          <Card className="stat-card hover-lift-sm stat-gradient-bg">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -122,11 +122,13 @@ export default function CleanDashboard() {
           </Card>
         </div>
 
-        <Card className="dashboard-card">
+        <div className="divider-gradient my-8"></div>
+
+        <Card className="depth-card-intense">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-foreground">Mercado en Tiempo Real</CardTitle>
-              <Badge variant="outline" className="badge-success-glow animate-glow-pulse">
+              <Badge variant="outline" className="badge-success-glow animate-glow-pulse pulse-ring">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
                 En vivo
               </Badge>
@@ -186,6 +188,8 @@ export default function CleanDashboard() {
             </Button>
           </CardContent>
         </Card>
+
+        <div className="divider-gradient my-8"></div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="dashboard-card">
