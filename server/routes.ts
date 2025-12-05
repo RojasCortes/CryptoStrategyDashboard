@@ -494,20 +494,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    
+
     try {
+      console.log("[POST /api/strategies] Request body:", JSON.stringify(req.body, null, 2));
+
       const parseResult = insertStrategySchema.safeParse({
         ...req.body,
         userId: req.user.id
       });
-      
+
       if (!parseResult.success) {
-        return res.status(400).json({ message: "Invalid strategy data" });
+        console.log("[POST /api/strategies] Validation errors:", parseResult.error.issues);
+        return res.status(400).json({
+          message: "Invalid strategy data",
+          errors: parseResult.error.issues
+        });
       }
-      
+
+      console.log("[POST /api/strategies] Parsed data:", JSON.stringify(parseResult.data, null, 2));
+
       const strategy = await storage.createStrategy(parseResult.data);
       res.status(201).json(strategy);
     } catch (error) {
+      console.error("[POST /api/strategies] Error:", error);
       next(error);
     }
   });

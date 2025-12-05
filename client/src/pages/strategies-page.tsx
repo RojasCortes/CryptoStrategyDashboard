@@ -133,6 +133,10 @@ interface StrategyPerformance {
 // Form schema for strategy creation/editing
 const strategyFormSchema = insertStrategySchema
   .extend({
+    name: z.string().min(1, "El nombre es requerido"),
+    pair: z.string().min(1, "Debes seleccionar un par de trading"),
+    strategyType: z.string().min(1, "Debes seleccionar un tipo de estrategia"),
+    timeframe: z.string().min(1, "Debes seleccionar un timeframe"),
     description: z.string().max(500, "La descripción no puede tener más de 500 caracteres").optional(),
     parameters: z.object({
       buyThreshold: z.number().min(-100).max(100).optional(),
@@ -420,6 +424,8 @@ export default function StrategiesPage() {
 
   // Handle form submission for creating/editing strategy
   const onSubmit = (values: StrategyFormValues) => {
+    console.log("[onSubmit] Form values:", JSON.stringify(values, null, 2));
+
     if (editDialogOpen && selectedStrategy) {
       updateStrategyMutation.mutate({
         ...values,
