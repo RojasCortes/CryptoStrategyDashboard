@@ -567,6 +567,7 @@ export default function StrategiesPage() {
                                 <FormLabel>Par de Trading</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
+                                  value={field.value}
                                   defaultValue={field.value}
                                 >
                                   <FormControl>
@@ -595,6 +596,7 @@ export default function StrategiesPage() {
                                 <FormLabel>Tipo de Estrategia</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
+                                  value={field.value}
                                   defaultValue={field.value}
                                 >
                                   <FormControl>
@@ -625,6 +627,7 @@ export default function StrategiesPage() {
                                 <FormLabel>Timeframe</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
+                                  value={field.value}
                                   defaultValue={field.value}
                                 >
                                   <FormControl>
