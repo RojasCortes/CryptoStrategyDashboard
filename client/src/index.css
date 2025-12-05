@@ -941,5 +941,181 @@
       hsl(var(--muted) / 0.1) 100%
     );
   }
+
+  /* ===== HORIZONUI: PREMIUM GRADIENTS ===== */
+
+  /* Purple gradient (for premium features/CTAs) */
+  .gradient-purple {
+    background: linear-gradient(135deg, #868CFF 0%, #4318FF 100%);
+  }
+
+  .gradient-purple-subtle {
+    background: linear-gradient(135deg, rgba(134, 140, 255, 0.1) 0%, rgba(67, 24, 255, 0.1) 100%);
+  }
+
+  /* Blue gradient (for accents) */
+  .gradient-blue {
+    background: linear-gradient(90deg, #4481EB 0%, #04BEFE 100%);
+  }
+
+  .gradient-blue-subtle {
+    background: linear-gradient(90deg, rgba(68, 129, 235, 0.1) 0%, rgba(4, 190, 254, 0.1) 100%);
+  }
+
+  /* Brand gradient overlay */
+  .gradient-brand-overlay {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.1) 0%,
+      hsl(var(--primary) / 0.05) 50%,
+      transparent 100%
+    );
+  }
+
+  /* ===== HORIZONUI: INPUT FIELDS ===== */
+
+  .input-horizon {
+    @apply rounded-2xl border border-zinc-200 dark:border-zinc-800 px-5 py-4;
+    @apply placeholder:text-zinc-500 dark:placeholder:text-zinc-400;
+    @apply focus:border-zinc-400 dark:focus:border-zinc-600;
+    @apply transition-colors duration-200;
+    @apply bg-white dark:bg-zinc-900;
+  }
+
+  .input-horizon:focus {
+    @apply outline-none ring-2 ring-primary/20;
+  }
+
+  /* ===== HORIZONUI: BUTTON ENHANCEMENTS ===== */
+
+  .btn-horizon {
+    @apply rounded-2xl px-6 py-3 font-medium transition-all duration-250;
+    box-shadow: 45px 76px 113px 7px rgba(112, 144, 176, 0.08);
+  }
+
+  .btn-horizon:hover {
+    box-shadow: 45px 76px 113px 7px rgba(112, 144, 176, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .btn-horizon:active {
+    transform: translateY(0);
+  }
+
+  /* ===== HORIZONUI: CARD ENHANCEMENTS ===== */
+
+  .card-horizon {
+    @apply rounded-2xl border border-zinc-200 dark:border-zinc-800;
+    @apply bg-white dark:bg-zinc-900;
+    @apply transition-all duration-300;
+  }
+
+  .card-horizon:hover {
+    @apply border-zinc-300 dark:border-zinc-700;
+  }
+
+  /* Subtle card with zinc borders */
+  .card-zinc {
+    @apply border border-zinc-200/50 dark:border-zinc-800/50;
+    @apply bg-white/50 dark:bg-zinc-900/50;
+    @apply backdrop-blur-sm;
+  }
+
+  /* ===== HORIZONUI: STAT CARDS ===== */
+
+  .stat-card-horizon {
+    @apply card-horizon p-6;
+    @apply flex items-center gap-4;
+  }
+
+  .stat-icon-container {
+    @apply flex h-14 w-14 items-center justify-center;
+    @apply rounded-2xl;
+    @apply transition-transform duration-300;
+  }
+
+  .stat-icon-container:hover {
+    @apply scale-110;
+  }
+
+  /* ===== HORIZONUI: NAVBAR ELEMENTS ===== */
+
+  .navbar-item {
+    @apply flex items-center gap-2 px-4 py-2 rounded-xl;
+    @apply text-zinc-700 dark:text-zinc-300;
+    @apply hover:bg-zinc-100 dark:hover:bg-zinc-800;
+    @apply transition-colors duration-200;
+  }
+
+  .navbar-item.active {
+    @apply bg-zinc-100 dark:bg-zinc-800;
+    @apply text-zinc-900 dark:text-white;
+    @apply font-medium;
+  }
+
+  /* ===== HORIZONUI: AVATAR ===== */
+
+  .avatar-ring {
+    @apply ring-2 ring-zinc-200 dark:ring-zinc-800;
+    @apply ring-offset-2 ring-offset-background;
+  }
+
+  .avatar-ring:hover {
+    @apply ring-primary/50;
+  }
+
+  /* ===== HORIZONUI: DROPDOWN ===== */
+
+  .dropdown-horizon {
+    @apply rounded-2xl border border-zinc-200 dark:border-zinc-800;
+    @apply bg-white dark:bg-zinc-900;
+    @apply shadow-xl;
+    @apply p-2;
+  }
+
+  .dropdown-item {
+    @apply rounded-xl px-3 py-2;
+    @apply text-sm text-zinc-700 dark:text-zinc-300;
+    @apply hover:bg-zinc-100 dark:hover:bg-zinc-800;
+    @apply transition-colors duration-150;
+    @apply cursor-pointer;
+  }
+
+  .dropdown-divider {
+    @apply my-2 h-px bg-zinc-200 dark:bg-zinc-800;
+  }
+
+  /* ===== HORIZONUI: BADGES ===== */
+
+  .badge-horizon {
+    @apply inline-flex items-center gap-1.5 px-3 py-1;
+    @apply rounded-full text-xs font-medium;
+    @apply transition-all duration-200;
+  }
+
+  .badge-horizon-success {
+    @apply bg-emerald-100 dark:bg-emerald-900/30;
+    @apply text-emerald-700 dark:text-emerald-400;
+    @apply border border-emerald-200 dark:border-emerald-800;
+  }
+
+  .badge-horizon-warning {
+    @apply bg-amber-100 dark:bg-amber-900/30;
+    @apply text-amber-700 dark:text-amber-400;
+    @apply border border-amber-200 dark:border-amber-800;
+  }
+
+  .badge-horizon-error {
+    @apply bg-red-100 dark:bg-red-900/30;
+    @apply text-red-700 dark:text-red-400;
+    @apply border border-red-200 dark:border-red-800;
+  }
+
+  .badge-horizon-primary {
+    @apply bg-blue-100 dark:bg-blue-900/30;
+    @apply text-blue-700 dark:text-blue-400;
+    @apply border border-blue-200 dark:border-blue-800;
+  }
 }
+
 
