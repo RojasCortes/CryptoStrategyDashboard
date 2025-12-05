@@ -573,8 +573,7 @@ export default function StrategiesPage() {
                                 <FormLabel>Par de Trading</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
-                                  value={field.value}
-                                  defaultValue={field.value}
+                                  value={field.value || undefined}
                                 >
                                   <FormControl>
                                     <SelectTrigger>
@@ -602,8 +601,7 @@ export default function StrategiesPage() {
                                 <FormLabel>Tipo de Estrategia</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
-                                  value={field.value}
-                                  defaultValue={field.value}
+                                  value={field.value || undefined}
                                 >
                                   <FormControl>
                                     <SelectTrigger>
@@ -633,8 +631,7 @@ export default function StrategiesPage() {
                                 <FormLabel>Timeframe</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
-                                  value={field.value}
-                                  defaultValue={field.value}
+                                  value={field.value || undefined}
                                 >
                                   <FormControl>
                                     <SelectTrigger>
@@ -974,7 +971,7 @@ export default function StrategiesPage() {
                       <FormLabel>Trading Pair</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value || undefined}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -1002,7 +999,7 @@ export default function StrategiesPage() {
                       <FormLabel>Strategy Type</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value || undefined}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -1032,7 +1029,7 @@ export default function StrategiesPage() {
                       <FormLabel>Timeframe</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value || undefined}
                       >
                         <FormControl>
                           <SelectTrigger>
