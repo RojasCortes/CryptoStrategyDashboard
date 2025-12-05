@@ -14,7 +14,6 @@ import {
   BarChart3
 } from "lucide-react";
 import { Redirect } from "wouter";
-import { SiGoogle } from "react-icons/si";
 import {
   Form,
   FormControl,
@@ -28,8 +27,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
+import OauthSignIn from "@/components/auth/OauthSignIn";
+import AuthSeparator from "@/components/auth/Separator";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -176,29 +176,11 @@ export default function FirebaseAuthPage() {
             <CardContent className="p-8">
               {firebaseEnabled !== false && (
                 <>
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-12 mb-6 bg-white hover:bg-gray-100 text-gray-900 border-0 font-medium"
-                    onClick={handleGoogleSignIn}
-                    disabled={signInWithGoogleMutation.isPending}
-                    data-testid="button-google-signin"
-                  >
-                    {signInWithGoogleMutation.isPending ? (
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    ) : (
-                      <SiGoogle className="h-5 w-5 mr-2" />
-                    )}
-                    Continuar con Google
-                  </Button>
-                  
-                  <div className="relative mb-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <Separator className="w-full bg-border" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-3 text-muted-foreground">o continúa con email</span>
-                    </div>
-                  </div>
+                  <OauthSignIn
+                    onGoogleSignIn={handleGoogleSignIn}
+                    isLoading={signInWithGoogleMutation.isPending}
+                  />
+                  <AuthSeparator text="o continúa con email" />
                 </>
               )}
 
