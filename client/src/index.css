@@ -989,7 +989,7 @@
   /* ===== HORIZONUI: BUTTON ENHANCEMENTS ===== */
 
   .btn-horizon {
-    @apply rounded-2xl px-6 py-3 font-medium transition-all duration-250;
+    @apply rounded-2xl px-6 py-3 font-medium transition-all duration-200;
     box-shadow: 45px 76px 113px 7px rgba(112, 144, 176, 0.08);
   }
 
