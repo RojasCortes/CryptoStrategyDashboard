@@ -47,7 +47,7 @@ export default function CleanDashboard() {
           <Button
             variant="outline"
             size="sm"
-            className="text-muted-foreground hover:text-foreground transition-smooth"
+            className="btn-horizon text-muted-foreground hover:text-foreground transition-smooth"
             onClick={() => refetch()}
             data-testid="button-refresh"
           >
@@ -57,7 +57,7 @@ export default function CleanDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="stat-card hover-lift-sm stat-gradient-bg">
+          <Card className="card-horizon stat-card-horizon hover-lift-sm stat-gradient-bg">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -69,14 +69,14 @@ export default function CleanDashboard() {
                     <p className="text-xs text-primary mt-1">Configura API Keys</p>
                   )}
                 </div>
-                <div className="p-3 bg-emerald-500/10 rounded-xl transition-smooth hover-scale">
+                <div className="stat-icon-container bg-emerald-500/10">
                   <Wallet className="h-6 w-6 icon-success" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="stat-card hover-lift-sm stat-gradient-bg">
+          <Card className="card-horizon stat-card-horizon hover-lift-sm stat-gradient-bg">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -84,14 +84,14 @@ export default function CleanDashboard() {
                   <p className="stat-value">0</p>
                   <p className="text-xs text-muted-foreground mt-1">De 0 totales</p>
                 </div>
-                <div className="p-3 bg-blue-500/10 rounded-xl transition-smooth hover-scale">
+                <div className="stat-icon-container bg-blue-500/10">
                   <Target className="h-6 w-6 text-blue-400 animate-pulse-glow" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="stat-card hover-lift-sm stat-gradient-bg">
+          <Card className="card-horizon stat-card-horizon hover-lift-sm stat-gradient-bg">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -99,14 +99,14 @@ export default function CleanDashboard() {
                   <p className="stat-value">0</p>
                   <p className="text-xs text-muted-foreground mt-1">Sin actividad</p>
                 </div>
-                <div className="p-3 bg-purple-500/10 rounded-xl transition-smooth hover-scale">
+                <div className="stat-icon-container bg-purple-500/10">
                   <Activity className="h-6 w-6 text-purple-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="stat-card hover-lift-sm stat-gradient-bg">
+          <Card className="card-horizon stat-card-horizon hover-lift-sm stat-gradient-bg">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -114,7 +114,7 @@ export default function CleanDashboard() {
                   <p className="stat-value">$0.00</p>
                   <p className="text-xs text-muted-foreground mt-1">0.00%</p>
                 </div>
-                <div className="p-3 bg-primary/10 rounded-xl transition-smooth hover-scale">
+                <div className="stat-icon-container bg-primary/10">
                   <TrendingUp className="h-6 w-6 icon-primary" />
                 </div>
               </div>
@@ -124,11 +124,11 @@ export default function CleanDashboard() {
 
         <div className="divider-gradient my-8"></div>
 
-        <Card className="depth-card-intense">
+        <Card className="card-horizon depth-card-intense">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-foreground">Mercado en Tiempo Real</CardTitle>
-              <Badge variant="outline" className="badge-success-glow animate-glow-pulse pulse-ring">
+              <Badge variant="outline" className="badge-horizon-success animate-glow-pulse pulse-ring">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
                 En vivo
               </Badge>
@@ -179,7 +179,7 @@ export default function CleanDashboard() {
             
             <Button
               variant="ghost"
-              className="w-full mt-4 text-primary hover:text-primary/80 hover:bg-primary/10"
+              className="btn-horizon w-full mt-4 text-primary hover:text-primary/80 hover:bg-primary/10"
               onClick={() => handleNavigation("/markets")}
               data-testid="button-view-all-markets"
             >
@@ -192,7 +192,7 @@ export default function CleanDashboard() {
         <div className="divider-gradient my-8"></div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="dashboard-card">
+          <Card className="card-horizon dashboard-card">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-foreground">Actividad Reciente</CardTitle>
             </CardHeader>
@@ -205,14 +205,14 @@ export default function CleanDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="dashboard-card">
+          <Card className="card-horizon dashboard-card">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-foreground">Acciones Rápidas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
                 variant="outline"
-                className="w-full justify-start h-14 transition-smooth hover-scale group"
+                className="btn-horizon w-full justify-start h-14 transition-smooth hover-scale group"
                 onClick={() => handleNavigation("/strategies")}
               >
                 <Target className="h-5 w-5 mr-3 icon-primary group-hover:animate-wiggle" />
@@ -223,7 +223,7 @@ export default function CleanDashboard() {
               </Button>
               <Button
                 variant="outline"
-                className="w-full justify-start h-14 transition-smooth hover-scale group"
+                className="btn-horizon w-full justify-start h-14 transition-smooth hover-scale group"
                 onClick={() => handleNavigation("/portfolio")}
               >
                 <Wallet className="h-5 w-5 mr-3 icon-success group-hover:animate-wiggle" />
@@ -234,7 +234,7 @@ export default function CleanDashboard() {
               </Button>
               <Button
                 variant="outline"
-                className="w-full justify-start h-14 transition-smooth hover-scale group"
+                className="btn-horizon w-full justify-start h-14 transition-smooth hover-scale group"
                 onClick={() => handleNavigation("/settings")}
               >
                 <Activity className="h-5 w-5 mr-3 text-purple-400 group-hover:animate-wiggle" />
