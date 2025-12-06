@@ -83,17 +83,18 @@ export const strategies = pgTable("strategies", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertStrategySchema = createInsertSchema(strategies).pick({
-  userId: true,
-  name: true,
-  description: true,
-  pair: true,
-  strategyType: true,
-  timeframe: true,
-  parameters: true,
-  riskPerTrade: true,
-  isActive: true,
-  emailNotifications: true,
+// Explicit schema to avoid drizzle-zod transformations
+export const insertStrategySchema = z.object({
+  userId: z.number(),
+  name: z.string().min(1),
+  description: z.string().optional().nullable(),
+  pair: z.string().min(1),
+  strategyType: z.string().min(1),
+  timeframe: z.string().min(1),
+  parameters: z.any(),
+  riskPerTrade: z.number(),
+  isActive: z.boolean().default(false),
+  emailNotifications: z.boolean().default(true),
 });
 
 export const trades = pgTable("trades", {
