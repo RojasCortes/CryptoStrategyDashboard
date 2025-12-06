@@ -134,10 +134,16 @@ interface StrategyPerformance {
 const strategyFormSchema = insertStrategySchema
   .extend({
     name: z.string().min(1, "El nombre es requerido"),
-    pair: z.string().min(1, "Debes seleccionar un par de trading"),
-    strategyType: z.string().min(1, "Debes seleccionar un tipo de estrategia"),
-    timeframe: z.string().min(1, "Debes seleccionar un timeframe"),
-    description: z.string().max(500, "La descripción no puede tener más de 500 caracteres").optional(),
+    pair: z.string().optional().refine((val) => val && val.length > 0, {
+      message: "Debes seleccionar un par de trading",
+    }),
+    strategyType: z.string().optional().refine((val) => val && val.length > 0, {
+      message: "Debes seleccionar un tipo de estrategia",
+    }),
+    timeframe: z.string().optional().refine((val) => val && val.length > 0, {
+      message: "Debes seleccionar un timeframe",
+    }),
+    description: z.string().max(500, "La descripción no puede tener más de 500 caracteres").optional().or(z.literal("")),
     parameters: z.object({
       buyThreshold: z.number().min(-100).max(100).optional(),
       sellThreshold: z.number().min(-100).max(100).optional(),
@@ -426,13 +432,21 @@ export default function StrategiesPage() {
   const onSubmit = (values: StrategyFormValues) => {
     console.log("[onSubmit] Form values:", JSON.stringify(values, null, 2));
 
+    // Clean up empty strings to undefined for optional fields
+    const cleanedValues = {
+      ...values,
+      description: values.description?.trim() || undefined,
+    };
+
+    console.log("[onSubmit] Cleaned values:", JSON.stringify(cleanedValues, null, 2));
+
     if (editDialogOpen && selectedStrategy) {
       updateStrategyMutation.mutate({
-        ...values,
+        ...cleanedValues,
         id: selectedStrategy.id,
       });
     } else {
-      createStrategyMutation.mutate(values);
+      createStrategyMutation.mutate(cleanedValues);
     }
   };
 
