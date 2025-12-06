@@ -491,11 +491,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/strategies", async (req, res, next) => {
+    console.log("[POST /api/strategies] ========== ENDPOINT HIT ==========");
+
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
     try {
+      console.log("[POST /api/strategies] User authenticated, ID:", req.user?.id);
       console.log("[POST /api/strategies] Request body:", JSON.stringify(req.body, null, 2));
 
       const parseResult = insertStrategySchema.safeParse({
