@@ -683,16 +683,59 @@ export default async function handler(req, res) {
     
     if (method === 'POST') {
       try {
-        const { name, description, parameters } = body;
+        console.log('[POST /api/strategies] Request body:', JSON.stringify(body, null, 2));
+
+        const {
+          name,
+          description,
+          pair,
+          strategyType,
+          timeframe,
+          parameters,
+          riskPerTrade,
+          isActive,
+          emailNotifications
+        } = body;
+
+        // Validate required fields
+        if (!name || !pair || !strategyType || !timeframe || !parameters || riskPerTrade === undefined) {
+          console.log('[POST /api/strategies] Missing required fields');
+          return res.status(400).json({
+            error: 'Missing required fields',
+            required: ['name', 'pair', 'strategyType', 'timeframe', 'parameters', 'riskPerTrade']
+          });
+        }
+
+        const strategyData = {
+          name,
+          description: description || null,
+          pair,
+          strategy_type: strategyType,  // Convert camelCase to snake_case
+          timeframe,
+          parameters,
+          risk_per_trade: riskPerTrade,  // Convert camelCase to snake_case
+          is_active: isActive ?? false,  // Convert camelCase to snake_case
+          email_notifications: emailNotifications ?? true,  // Convert camelCase to snake_case
+          user_id: userId
+        };
+
+        console.log('[POST /api/strategies] Inserting:', JSON.stringify(strategyData, null, 2));
+
         const { data: strategy, error } = await supabase
           .from('strategies')
-          .insert([{ name, description, parameters, user_id: userId }])
+          .insert([strategyData])
           .select()
           .single();
-          
-        if (error) throw error;
+
+        if (error) {
+          console.error('[POST /api/strategies] Supabase error:', error);
+          throw error;
+        }
+
+        console.log('[POST /api/strategies] Success:', strategy);
         return res.status(201).json(strategy);
       } catch (error) {
+        console.error('[POST /api/strategies] Error:', error);
         return res.status(500).json({ error: error.message });
       }
     }
