@@ -151,18 +151,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createStrategy(insertStrategy: InsertStrategy): Promise<Strategy> {
-    // Ensure default values for isActive and emailNotifications
+    console.log("[db-storage.ts createStrategy] Raw insertStrategy received:", JSON.stringify(insertStrategy, null, 2));
+
+    // Explicitly map all fields to ensure proper typing
+    // This ensures Drizzle correctly maps camelCase to snake_case column names
     const strategyData = {
-      ...insertStrategy,
+      userId: insertStrategy.userId,
+      name: insertStrategy.name,
+      description: insertStrategy.description || null,
+      pair: insertStrategy.pair,
+      strategyType: insertStrategy.strategyType,
+      timeframe: insertStrategy.timeframe,
+      parameters: insertStrategy.parameters,
+      riskPerTrade: insertStrategy.riskPerTrade,
       isActive: insertStrategy.isActive ?? false,
       emailNotifications: insertStrategy.emailNotifications ?? true
     };
-    
+
+    console.log("[db-storage.ts createStrategy] Prepared strategyData for insert:", JSON.stringify(strategyData, null, 2));
+    console.log("[db-storage.ts createStrategy] Field values - pair:", strategyData.pair, "strategyType:", strategyData.strategyType, "timeframe:", strategyData.timeframe);
+    console.log("[db-storage.ts createStrategy] Field types - pair:", typeof strategyData.pair, "strategyType:", typeof strategyData.strategyType, "timeframe:", typeof strategyData.timeframe);
+
     const [strategy] = await db
       .insert(strategies)
       .values(strategyData)
       .returning();
-      
+
+    console.log("[db-storage.ts createStrategy] Returned strategy from DB:", JSON.stringify(strategy, null, 2));
+
     return strategy;
   }
 
