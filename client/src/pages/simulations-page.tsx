@@ -197,21 +197,21 @@ export default function SimulationsPage() {
                     <TableCell>${simulation.initialBalance.toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell>${simulation.currentBalance.toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell>
-                      <div className={`flex items-center ${simulation.returnPercentage >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        {simulation.returnPercentage >= 0 ? (
+                      <div className={`flex items-center ${(simulation.returnPercentage ?? 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        {(simulation.returnPercentage ?? 0) >= 0 ? (
                           <TrendingUp className="h-4 w-4 mr-1" />
                         ) : (
                           <TrendingDown className="h-4 w-4 mr-1" />
                         )}
-                        {simulation.returnPercentage >= 0 ? "+" : ""}
-                        {simulation.returnPercentage.toFixed(2)}%
+                        {(simulation.returnPercentage ?? 0) >= 0 ? "+" : ""}
+                        {(simulation.returnPercentage ?? 0).toFixed(2)}%
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col text-sm">
-                        <span>{simulation.totalTrades} total</span>
+                        <span>{simulation.totalTrades ?? 0} total</span>
                         <span className="text-muted-foreground">
-                          {simulation.winningTrades}W / {simulation.losingTrades}L
+                          {simulation.winningTrades ?? 0}W / {simulation.losingTrades ?? 0}L
                         </span>
                       </div>
                     </TableCell>
