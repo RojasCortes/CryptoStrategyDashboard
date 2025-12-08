@@ -673,9 +673,26 @@ export default async function handler(req, res) {
           .from('strategies')
           .select('*')
           .eq('user_id', userId);
-          
+
         if (error) throw error;
-        return res.status(200).json(strategies || []);
+
+        // Convert snake_case to camelCase for frontend
+        const formattedStrategies = (strategies || []).map(strategy => ({
+          id: strategy.id,
+          userId: strategy.user_id,
+          name: strategy.name,
+          description: strategy.description,
+          pair: strategy.pair,
+          strategyType: strategy.strategy_type,
+          timeframe: strategy.timeframe,
+          parameters: strategy.parameters,
+          riskPerTrade: strategy.risk_per_trade,
+          isActive: strategy.is_active,
+          emailNotifications: strategy.email_notifications,
+          createdAt: strategy.created_at
+        }));
+
+        return res.status(200).json(formattedStrategies);
       } catch (error) {
         return res.status(500).json({ error: error.message });
       }
@@ -683,21 +700,293 @@ export default async function handler(req, res) {
     
     if (method === 'POST') {
       try {
-        const { name, description, parameters } = body;
+        console.log('[POST /api/strategies] Request body:', JSON.stringify(body, null, 2));
+
+        const {
+          name,
+          description,
+          pair,
+          strategyType,
+          timeframe,
+          parameters,
+          riskPerTrade,
+          isActive,
+          emailNotifications
+        } = body;
+
+        // Validate required fields
+        if (!name || !pair || !strategyType || !timeframe || !parameters || riskPerTrade === undefined) {
+          console.log('[POST /api/strategies] Missing required fields');
+          return res.status(400).json({
+            error: 'Missing required fields',
+            required: ['name', 'pair', 'strategyType', 'timeframe', 'parameters', 'riskPerTrade']
+          });
+        }
+
+        const strategyData = {
+          name,
+          description: description || null,
+          pair,
+          strategy_type: strategyType,  // Convert camelCase to snake_case
+          timeframe,
+          parameters,
+          risk_per_trade: riskPerTrade,  // Convert camelCase to snake_case
+          is_active: isActive ?? false,  // Convert camelCase to snake_case
+          email_notifications: emailNotifications ?? true,  // Convert camelCase to snake_case
+          user_id: userId
+        };
+
+        console.log('[POST /api/strategies] Inserting:', JSON.stringify(strategyData, null, 2));
+
         const { data: strategy, error } = await supabase
           .from('strategies')
-          .insert([{ name, description, parameters, user_id: userId }])
+          .insert([strategyData])
           .select()
           .single();
-          
-        if (error) throw error;
-        return res.status(201).json(strategy);
+
+        if (error) {
+          console.error('[POST /api/strategies] Supabase error:', error);
+          throw error;
+        }
+
+        // Convert snake_case to camelCase for frontend
+        const formattedStrategy = {
+          id: strategy.id,
+          userId: strategy.user_id,
+          name: strategy.name,
+          description: strategy.description,
+          pair: strategy.pair,
+          strategyType: strategy.strategy_type,
+          timeframe: strategy.timeframe,
+          parameters: strategy.parameters,
+          riskPerTrade: strategy.risk_per_trade,
+          isActive: strategy.is_active,
+          emailNotifications: strategy.email_notifications,
+          createdAt: strategy.created_at
+        };
+
+        console.log('[POST /api/strategies] Success:', formattedStrategy);
+        return res.status(201).json(formattedStrategy);
       } catch (error) {
+        console.error('[POST /api/strategies] Error:', error);
         return res.status(500).json({ error: error.message });
       }
     }
   }
-  
+
+  // Update strategy endpoint - PUT /api/strategies/:id
+  if (pathname.match(/^\/api\/strategies\/\d+\/?$/) && (method === 'PUT' || method === 'PATCH')) {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database not configured' });
+    }
+
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      // Extract strategy ID from URL
+      const strategyId = parseInt(pathname.match(/\/api\/strategies\/(\d+)/)[1], 10);
+
+      console.log('[PUT /api/strategies/:id] Strategy ID:', strategyId);
+      console.log('[PUT /api/strategies/:id] Request body:', JSON.stringify(body, null, 2));
+
+      // Get user ID from firebase_uid
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      const userId = userData?.id;
+
+      // Verify strategy belongs to user
+      const { data: existingStrategy, error: fetchError } = await supabase
+        .from('strategies')
+        .select('*')
+        .eq('id', strategyId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !existingStrategy) {
+        return res.status(404).json({ error: 'Strategy not found or not authorized' });
+      }
+
+      // Prepare update data with camelCase to snake_case conversion
+      const updateData = {};
+      if (body.name !== undefined) updateData.name = body.name;
+      if (body.description !== undefined) updateData.description = body.description || null;
+      if (body.pair !== undefined) updateData.pair = body.pair;
+      if (body.strategyType !== undefined) updateData.strategy_type = body.strategyType;
+      if (body.timeframe !== undefined) updateData.timeframe = body.timeframe;
+      if (body.parameters !== undefined) updateData.parameters = body.parameters;
+      if (body.riskPerTrade !== undefined) updateData.risk_per_trade = body.riskPerTrade;
+      if (body.isActive !== undefined) updateData.is_active = body.isActive;
+      if (body.emailNotifications !== undefined) updateData.email_notifications = body.emailNotifications;
+
+      console.log('[PUT /api/strategies/:id] Update data:', JSON.stringify(updateData, null, 2));
+
+      const { data: updatedStrategy, error } = await supabase
+        .from('strategies')
+        .update(updateData)
+        .eq('id', strategyId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[PUT /api/strategies/:id] Supabase error:', error);
+        throw error;
+      }
+
+      // Convert snake_case to camelCase for frontend
+      const formattedStrategy = {
+        id: updatedStrategy.id,
+        userId: updatedStrategy.user_id,
+        name: updatedStrategy.name,
+        description: updatedStrategy.description,
+        pair: updatedStrategy.pair,
+        strategyType: updatedStrategy.strategy_type,
+        timeframe: updatedStrategy.timeframe,
+        parameters: updatedStrategy.parameters,
+        riskPerTrade: updatedStrategy.risk_per_trade,
+        isActive: updatedStrategy.is_active,
+        emailNotifications: updatedStrategy.email_notifications,
+        createdAt: updatedStrategy.created_at
+      };
+
+      console.log('[PUT /api/strategies/:id] Success:', formattedStrategy);
+      return res.status(200).json(formattedStrategy);
+    } catch (error) {
+      console.error('[PUT /api/strategies/:id] Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // Toggle strategy status - PUT /api/strategies/:id/toggle
+  if (pathname.match(/^\/api\/strategies\/\d+\/toggle\/?$/) && (method === 'PUT' || method === 'PATCH')) {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database not configured' });
+    }
+
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      // Extract strategy ID from URL
+      const strategyId = parseInt(pathname.match(/\/api\/strategies\/(\d+)/)[1], 10);
+
+      console.log('[PUT /api/strategies/:id/toggle] Strategy ID:', strategyId);
+      console.log('[PUT /api/strategies/:id/toggle] Request body:', JSON.stringify(body, null, 2));
+
+      // Get user ID from firebase_uid
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      const userId = userData?.id;
+
+      // Validate isActive field
+      if (typeof body.isActive !== 'boolean') {
+        return res.status(400).json({ error: 'isActive must be a boolean' });
+      }
+
+      // Update strategy status
+      const { data: updatedStrategy, error } = await supabase
+        .from('strategies')
+        .update({ is_active: body.isActive })
+        .eq('id', strategyId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[PUT /api/strategies/:id/toggle] Supabase error:', error);
+        throw error;
+      }
+
+      if (!updatedStrategy) {
+        return res.status(404).json({ error: 'Strategy not found or not authorized' });
+      }
+
+      // Convert snake_case to camelCase for frontend
+      const formattedStrategy = {
+        id: updatedStrategy.id,
+        userId: updatedStrategy.user_id,
+        name: updatedStrategy.name,
+        description: updatedStrategy.description,
+        pair: updatedStrategy.pair,
+        strategyType: updatedStrategy.strategy_type,
+        timeframe: updatedStrategy.timeframe,
+        parameters: updatedStrategy.parameters,
+        riskPerTrade: updatedStrategy.risk_per_trade,
+        isActive: updatedStrategy.is_active,
+        emailNotifications: updatedStrategy.email_notifications,
+        createdAt: updatedStrategy.created_at
+      };
+
+      console.log('[PUT /api/strategies/:id/toggle] Success:', formattedStrategy);
+      return res.status(200).json(formattedStrategy);
+    } catch (error) {
+      console.error('[PUT /api/strategies/:id/toggle] Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // Delete strategy endpoint - DELETE /api/strategies/:id
+  if (pathname.match(/^\/api\/strategies\/\d+\/?$/) && method === 'DELETE') {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database not configured' });
+    }
+
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      // Extract strategy ID from URL
+      const strategyId = parseInt(pathname.match(/\/api\/strategies\/(\d+)/)[1], 10);
+
+      console.log('[DELETE /api/strategies/:id] Strategy ID:', strategyId);
+
+      // Get user ID from firebase_uid
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      const userId = userData?.id;
+
+      // Delete strategy (Supabase RLS or our check ensures user can only delete their own)
+      const { error } = await supabase
+        .from('strategies')
+        .delete()
+        .eq('id', strategyId)
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('[DELETE /api/strategies/:id] Supabase error:', error);
+        throw error;
+      }
+
+      console.log('[DELETE /api/strategies/:id] Success');
+      return res.status(204).end();  // No content
+    } catch (error) {
+      console.error('[DELETE /api/strategies/:id] Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
   // Trades endpoint
   if (pathname === '/api/trades' || pathname === '/api/trades/') {
     if (!supabase) {
@@ -718,18 +1007,104 @@ export default async function handler(req, res) {
       .single();
 
     const userId = userData?.id;
-    
-    try {
-      const { data: trades, error } = await supabase
-        .from('trades')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-        
-      if (error) throw error;
-      return res.status(200).json(trades || []);
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
+
+    if (method === 'GET') {
+      try {
+        const { data: trades, error } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Convert snake_case to camelCase for frontend
+        const formattedTrades = (trades || []).map(trade => ({
+          id: trade.id,
+          userId: trade.user_id,
+          strategyId: trade.strategy_id,
+          pair: trade.pair,
+          type: trade.type,
+          price: trade.price,
+          amount: trade.amount,
+          status: trade.status,
+          profitLoss: trade.profit_loss,
+          createdAt: trade.created_at
+        }));
+
+        return res.status(200).json(formattedTrades);
+      } catch (error) {
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    if (method === 'POST') {
+      try {
+        console.log('[POST /api/trades] Request body:', JSON.stringify(body, null, 2));
+
+        const {
+          strategyId,
+          pair,
+          type,
+          price,
+          amount,
+          status,
+          profitLoss
+        } = body;
+
+        // Validate required fields
+        if (!strategyId || !pair || !type || price === undefined || amount === undefined || !status) {
+          console.log('[POST /api/trades] Missing required fields');
+          return res.status(400).json({
+            error: 'Missing required fields',
+            required: ['strategyId', 'pair', 'type', 'price', 'amount', 'status']
+          });
+        }
+
+        const tradeData = {
+          user_id: userId,
+          strategy_id: strategyId,
+          pair,
+          type,
+          price,
+          amount,
+          status,
+          profit_loss: profitLoss || null
+        };
+
+        console.log('[POST /api/trades] Inserting:', JSON.stringify(tradeData, null, 2));
+
+        const { data: trade, error } = await supabase
+          .from('trades')
+          .insert([tradeData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('[POST /api/trades] Supabase error:', error);
+          throw error;
+        }
+
+        // Convert snake_case to camelCase for frontend
+        const formattedTrade = {
+          id: trade.id,
+          userId: trade.user_id,
+          strategyId: trade.strategy_id,
+          pair: trade.pair,
+          type: trade.type,
+          price: trade.price,
+          amount: trade.amount,
+          status: trade.status,
+          profitLoss: trade.profit_loss,
+          createdAt: trade.created_at
+        };
+
+        console.log('[POST /api/trades] Success:', formattedTrade);
+        return res.status(201).json(formattedTrade);
+      } catch (error) {
+        console.error('[POST /api/trades] Error:', error);
+        return res.status(500).json({ error: error.message });
+      }
     }
   }
   
