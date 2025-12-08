@@ -15,6 +15,7 @@ import SettingsPage from "@/pages/settings-page";
 import NotificationsPage from "@/pages/notifications-page";
 import PortfolioPage from "@/pages/portfolio-page";
 import StrategiesPage from "@/pages/strategies-page";
+import SimulationsPage from "@/pages/simulations-page";
 import MarketsPage from "@/pages/markets-page";
 import PerformancePage from "@/pages/performance-page";
 import OpportunitiesPage from "@/pages/opportunities-page";
@@ -28,6 +29,7 @@ function Router() {
       <FirebaseProtectedRoute path="/" component={CleanDashboard} />
       <FirebaseProtectedRoute path="/portfolio" component={PortfolioPage} />
       <FirebaseProtectedRoute path="/strategies" component={StrategiesPage} />
+      <FirebaseProtectedRoute path="/simulations" component={SimulationsPage} />
       <FirebaseProtectedRoute path="/cryptocurrencies" component={CryptocurrenciesPage} />
       <FirebaseProtectedRoute path="/settings" component={SettingsPage} />
       <FirebaseProtectedRoute path="/notifications" component={NotificationsPage} />

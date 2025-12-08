@@ -120,6 +120,89 @@ export const insertTradeSchema = createInsertSchema(trades).pick({
   profitLoss: true,
 });
 
+// Simulation Tables
+export const simulationSessions = pgTable("simulation_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  strategyId: integer("strategy_id").notNull(),
+  name: text("name").notNull(),
+  initialBalance: doublePrecision("initial_balance").notNull().default(10000.0),
+  currentBalance: doublePrecision("current_balance").notNull().default(10000.0),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  status: text("status").notNull().default("running"), // 'running', 'completed', 'stopped'
+  totalTrades: integer("total_trades").default(0),
+  winningTrades: integer("winning_trades").default(0),
+  losingTrades: integer("losing_trades").default(0),
+  totalProfitLoss: doublePrecision("total_profit_loss").default(0.0),
+  maxDrawdown: doublePrecision("max_drawdown").default(0.0),
+  returnPercentage: doublePrecision("return_percentage").default(0.0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const simulationTrades = pgTable("simulation_trades", {
+  id: serial("id").primaryKey(),
+  simulationId: integer("simulation_id").notNull(),
+  userId: integer("user_id").notNull(),
+  strategyId: integer("strategy_id").notNull(),
+  pair: text("pair").notNull(),
+  type: text("type").notNull(), // 'BUY' or 'SELL'
+  price: doublePrecision("price").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  fee: doublePrecision("fee").default(0.0),
+  total: doublePrecision("total").notNull(),
+  balanceAfter: doublePrecision("balance_after").notNull(),
+  profitLoss: doublePrecision("profit_loss").default(0.0),
+  reason: text("reason"), // Why the trade was made
+  executedAt: timestamp("executed_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const simulationPortfolio = pgTable("simulation_portfolio", {
+  id: serial("id").primaryKey(),
+  simulationId: integer("simulation_id").notNull(),
+  asset: text("asset").notNull(),
+  amount: doublePrecision("amount").notNull().default(0.0),
+  averagePrice: doublePrecision("average_price").notNull().default(0.0),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const simulationBalanceHistory = pgTable("simulation_balance_history", {
+  id: serial("id").primaryKey(),
+  simulationId: integer("simulation_id").notNull(),
+  balance: doublePrecision("balance").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSimulationSessionSchema = createInsertSchema(simulationSessions).pick({
+  userId: true,
+  strategyId: true,
+  name: true,
+  initialBalance: true,
+  currentBalance: true,
+  startDate: true,
+  endDate: true,
+  status: true,
+});
+
+export const insertSimulationTradeSchema = createInsertSchema(simulationTrades).pick({
+  simulationId: true,
+  userId: true,
+  strategyId: true,
+  pair: true,
+  type: true,
+  price: true,
+  amount: true,
+  fee: true,
+  total: true,
+  balanceAfter: true,
+  profitLoss: true,
+  reason: true,
+  executedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type RegisterUser = z.infer<typeof registerUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -127,6 +210,12 @@ export type Strategy = typeof strategies.$inferSelect;
 export type InsertStrategy = z.infer<typeof insertStrategySchema>;
 export type Trade = typeof trades.$inferSelect;
 export type InsertTrade = z.infer<typeof insertTradeSchema>;
+export type SimulationSession = typeof simulationSessions.$inferSelect;
+export type InsertSimulationSession = z.infer<typeof insertSimulationSessionSchema>;
+export type SimulationTrade = typeof simulationTrades.$inferSelect;
+export type InsertSimulationTrade = z.infer<typeof insertSimulationTradeSchema>;
+export type SimulationPortfolio = typeof simulationPortfolio.$inferSelect;
+export type SimulationBalanceHistory = typeof simulationBalanceHistory.$inferSelect;
 
 export const loginUserSchema = z.object({
   username: z.string().min(1, "El nombre de usuario es requerido"),
