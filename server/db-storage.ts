@@ -1,6 +1,16 @@
-import { users, strategies, trades, type User, type InsertUser, type Strategy, type InsertStrategy, type Trade, type InsertTrade } from "@shared/schema";
+import {
+  users, strategies, trades,
+  simulationSessions, simulationTrades, simulationPortfolio, simulationBalanceHistory,
+  type User, type InsertUser,
+  type Strategy, type InsertStrategy,
+  type Trade, type InsertTrade,
+  type SimulationSession, type InsertSimulationSession,
+  type SimulationTrade, type InsertSimulationTrade,
+  type SimulationPortfolio,
+  type SimulationBalanceHistory
+} from "@shared/schema";
 import { db, pool } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { IStorage } from "./storage";
@@ -232,17 +242,194 @@ export class DatabaseStorage implements IStorage {
   async updateTradeStatus(id: number, status: string, profitLoss?: number): Promise<Trade | undefined> {
     // If profitLoss is not provided, just update the status
     const updateData: { status: string; profitLoss?: number } = { status };
-    
+
     if (profitLoss !== undefined) {
       updateData.profitLoss = profitLoss;
     }
-    
+
     const [updatedTrade] = await db
       .update(trades)
       .set(updateData)
       .where(eq(trades.id, id))
       .returning();
-      
+
     return updatedTrade || undefined;
+  }
+
+  // Simulation methods
+  async getSimulationSessions(userId: number): Promise<SimulationSession[]> {
+    return db
+      .select()
+      .from(simulationSessions)
+      .where(eq(simulationSessions.userId, userId))
+      .orderBy(desc(simulationSessions.createdAt));
+  }
+
+  async getSimulationSession(id: number): Promise<SimulationSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(simulationSessions)
+      .where(eq(simulationSessions.id, id));
+
+    return session || undefined;
+  }
+
+  async createSimulationSession(insertSession: InsertSimulationSession): Promise<SimulationSession> {
+    const sessionData = {
+      ...insertSession,
+      initialBalance: insertSession.initialBalance || 10000.0,
+      currentBalance: insertSession.currentBalance || insertSession.initialBalance || 10000.0,
+      endDate: insertSession.endDate || null,
+      status: insertSession.status || "running",
+    };
+
+    const [session] = await db
+      .insert(simulationSessions)
+      .values(sessionData)
+      .returning();
+
+    return session;
+  }
+
+  async updateSimulationSession(
+    id: number,
+    data: Partial<SimulationSession>
+  ): Promise<SimulationSession | undefined> {
+    const [updatedSession] = await db
+      .update(simulationSessions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(simulationSessions.id, id))
+      .returning();
+
+    return updatedSession || undefined;
+  }
+
+  async deleteSimulationSession(id: number): Promise<boolean> {
+    await db
+      .delete(simulationSessions)
+      .where(eq(simulationSessions.id, id));
+
+    const session = await this.getSimulationSession(id);
+    return session === undefined;
+  }
+
+  async getSimulationTrades(simulationId: number): Promise<SimulationTrade[]> {
+    return db
+      .select()
+      .from(simulationTrades)
+      .where(eq(simulationTrades.simulationId, simulationId))
+      .orderBy(simulationTrades.executedAt);
+  }
+
+  async createSimulationTrade(insertTrade: InsertSimulationTrade): Promise<SimulationTrade> {
+    const tradeData = {
+      ...insertTrade,
+      fee: insertTrade.fee || 0.0,
+      profitLoss: insertTrade.profitLoss || 0.0,
+      reason: insertTrade.reason || null,
+    };
+
+    const [trade] = await db
+      .insert(simulationTrades)
+      .values(tradeData)
+      .returning();
+
+    return trade;
+  }
+
+  async bulkCreateSimulationTrades(trades: InsertSimulationTrade[]): Promise<SimulationTrade[]> {
+    if (trades.length === 0) {
+      return [];
+    }
+
+    const tradesData = trades.map(trade => ({
+      ...trade,
+      fee: trade.fee || 0.0,
+      profitLoss: trade.profitLoss || 0.0,
+      reason: trade.reason || null,
+    }));
+
+    return db
+      .insert(simulationTrades)
+      .values(tradesData)
+      .returning();
+  }
+
+  async getSimulationPortfolio(simulationId: number): Promise<SimulationPortfolio[]> {
+    return db
+      .select()
+      .from(simulationPortfolio)
+      .where(eq(simulationPortfolio.simulationId, simulationId));
+  }
+
+  async upsertSimulationPortfolio(
+    simulationId: number,
+    asset: string,
+    amount: number,
+    averagePrice: number
+  ): Promise<SimulationPortfolio> {
+    // Check if portfolio entry exists
+    const [existing] = await db
+      .select()
+      .from(simulationPortfolio)
+      .where(
+        and(
+          eq(simulationPortfolio.simulationId, simulationId),
+          eq(simulationPortfolio.asset, asset)
+        )
+      );
+
+    if (existing) {
+      // Update existing
+      const [updated] = await db
+        .update(simulationPortfolio)
+        .set({ amount, averagePrice, updatedAt: new Date() })
+        .where(eq(simulationPortfolio.id, existing.id))
+        .returning();
+
+      return updated;
+    } else {
+      // Insert new
+      const [created] = await db
+        .insert(simulationPortfolio)
+        .values({ simulationId, asset, amount, averagePrice })
+        .returning();
+
+      return created;
+    }
+  }
+
+  async getSimulationBalanceHistory(simulationId: number): Promise<SimulationBalanceHistory[]> {
+    return db
+      .select()
+      .from(simulationBalanceHistory)
+      .where(eq(simulationBalanceHistory.simulationId, simulationId))
+      .orderBy(simulationBalanceHistory.timestamp);
+  }
+
+  async createSimulationBalanceHistory(
+    simulationId: number,
+    balance: number,
+    timestamp: Date
+  ): Promise<SimulationBalanceHistory> {
+    const [history] = await db
+      .insert(simulationBalanceHistory)
+      .values({ simulationId, balance, timestamp })
+      .returning();
+
+    return history;
+  }
+
+  async bulkCreateSimulationBalanceHistory(
+    items: { simulationId: number; balance: number; timestamp: Date }[]
+  ): Promise<SimulationBalanceHistory[]> {
+    if (items.length === 0) {
+      return [];
+    }
+
+    return db
+      .insert(simulationBalanceHistory)
+      .values(items)
+      .returning();
   }
 }

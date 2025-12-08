@@ -4,10 +4,11 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { createBinanceService } from "./binance";
 import { emailService } from "./email";
-import { insertStrategySchema, insertTradeSchema } from "@shared/schema";
+import { insertStrategySchema, insertTradeSchema, insertSimulationSessionSchema } from "@shared/schema";
 import { z } from "zod";
 import { comparePasswords, hashPassword } from "./auth";
 import { BinanceWebSocketService } from "./websocket";
+import { SimulationEngine } from "./simulation-engine";
 
 // Store notifications in memory since we don't have a database table for them yet
 let notifications = [
@@ -945,28 +946,311 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    
+
     try {
       const { apiKey, apiSecret } = req.body;
-      
+
       if (!apiKey || !apiSecret) {
         return res.status(400).json({ message: "API key and secret are required" });
       }
-      
+
       // Test the connection before saving
       const binanceService = createBinanceService(apiKey, apiSecret);
       const isConnected = await binanceService.testConnection();
-      
+
       if (!isConnected) {
         return res.status(400).json({ message: "Invalid API credentials" });
       }
-      
+
       const updatedUser = await storage.updateUserApiKeys(req.user.id, apiKey, apiSecret);
-      
+
       // Remove sensitive data from response
       const { password: _, apiSecret: __, ...userWithoutSensitiveData } = updatedUser;
-      
+
       res.json(userWithoutSensitiveData);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== SIMULATION ROUTES ====================
+
+  // Get all simulations for user
+  app.get("/api/simulations", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const simulations = await storage.getSimulationSessions(req.user.id);
+      res.json(simulations);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get specific simulation
+  app.get("/api/simulations/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const simulationId = parseInt(req.params.id);
+      const simulation = await storage.getSimulationSession(simulationId);
+
+      if (!simulation) {
+        return res.status(404).json({ message: "Simulation not found" });
+      }
+
+      // Check authorization
+      if (simulation.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      res.json(simulation);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Run a simulation
+  app.post("/api/simulations/run", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const { strategyId, name, initialBalance, startDate, endDate } = req.body;
+
+      if (!strategyId || !name) {
+        return res.status(400).json({ message: "Strategy ID and name are required" });
+      }
+
+      // Validate strategy exists and belongs to user
+      const strategy = await storage.getStrategy(strategyId);
+      if (!strategy) {
+        return res.status(404).json({ message: "Strategy not found" });
+      }
+
+      if (strategy.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized to use this strategy" });
+      }
+
+      // Create Binance service (no auth needed for historical data)
+      const binanceService = createBinanceService("", "");
+
+      // Parse dates
+      const start = startDate ? new Date(startDate) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // 90 days ago
+      const end = endDate ? new Date(endDate) : new Date();
+
+      // Create simulation session
+      const session = await storage.createSimulationSession({
+        userId: req.user.id,
+        strategyId: strategy.id,
+        name,
+        initialBalance: initialBalance || 10000,
+        currentBalance: initialBalance || 10000,
+        startDate: start,
+        endDate: end,
+        status: "running",
+      });
+
+      // Run simulation in background (don't wait)
+      (async () => {
+        try {
+          console.log(`Starting simulation ${session.id} for strategy ${strategy.name}`);
+
+          const engine = new SimulationEngine(strategy, {
+            strategyId: strategy.id,
+            initialBalance: session.initialBalance,
+            startDate: start,
+            endDate: end,
+            binanceService,
+          });
+
+          const result = await engine.run();
+
+          console.log(`Simulation ${session.id} completed. Final balance: $${result.finalBalance.toFixed(2)}`);
+
+          // Update session with results
+          await storage.updateSimulationSession(session.id, {
+            currentBalance: result.finalBalance,
+            totalTrades: result.trades.length,
+            winningTrades: result.winningTrades,
+            losingTrades: result.losingTrades,
+            totalProfitLoss: result.totalProfitLoss,
+            maxDrawdown: result.maxDrawdown,
+            returnPercentage: result.returnPercentage,
+            status: "completed",
+            endDate: end,
+          });
+
+          // Save trades
+          const tradesToInsert = result.trades.map(trade => ({
+            simulationId: session.id,
+            userId: req.user.id,
+            strategyId: strategy.id,
+            pair: trade.pair,
+            type: trade.type,
+            price: trade.price,
+            amount: trade.amount,
+            fee: trade.fee,
+            total: trade.total,
+            balanceAfter: trade.balanceAfter,
+            profitLoss: trade.profitLoss,
+            reason: trade.reason,
+            executedAt: trade.executedAt,
+          }));
+
+          if (tradesToInsert.length > 0) {
+            await storage.bulkCreateSimulationTrades(tradesToInsert);
+          }
+
+          // Save balance history
+          const historyToInsert = result.balanceHistory.map(item => ({
+            simulationId: session.id,
+            balance: item.balance,
+            timestamp: item.timestamp,
+          }));
+
+          if (historyToInsert.length > 0) {
+            await storage.bulkCreateSimulationBalanceHistory(historyToInsert);
+          }
+
+          // Save portfolio
+          for (const [asset, position] of result.portfolio.entries()) {
+            if (position.amount > 0) {
+              await storage.upsertSimulationPortfolio(
+                session.id,
+                asset,
+                position.amount,
+                position.averagePrice
+              );
+            }
+          }
+
+          console.log(`Simulation ${session.id} data saved successfully`);
+        } catch (error) {
+          console.error(`Simulation ${session.id} failed:`, error);
+
+          // Update session status to failed
+          await storage.updateSimulationSession(session.id, {
+            status: "stopped",
+          });
+        }
+      })();
+
+      // Return session immediately
+      res.json({
+        message: "Simulation started",
+        simulation: session,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get simulation trades
+  app.get("/api/simulations/:id/trades", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const simulationId = parseInt(req.params.id);
+      const simulation = await storage.getSimulationSession(simulationId);
+
+      if (!simulation) {
+        return res.status(404).json({ message: "Simulation not found" });
+      }
+
+      if (simulation.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const trades = await storage.getSimulationTrades(simulationId);
+      res.json(trades);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get simulation balance history
+  app.get("/api/simulations/:id/balance-history", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const simulationId = parseInt(req.params.id);
+      const simulation = await storage.getSimulationSession(simulationId);
+
+      if (!simulation) {
+        return res.status(404).json({ message: "Simulation not found" });
+      }
+
+      if (simulation.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const history = await storage.getSimulationBalanceHistory(simulationId);
+      res.json(history);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get simulation portfolio
+  app.get("/api/simulations/:id/portfolio", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const simulationId = parseInt(req.params.id);
+      const simulation = await storage.getSimulationSession(simulationId);
+
+      if (!simulation) {
+        return res.status(404).json({ message: "Simulation not found" });
+      }
+
+      if (simulation.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const portfolio = await storage.getSimulationPortfolio(simulationId);
+      res.json(portfolio);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Delete simulation
+  app.delete("/api/simulations/:id", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const simulationId = parseInt(req.params.id);
+      const simulation = await storage.getSimulationSession(simulationId);
+
+      if (!simulation) {
+        return res.status(404).json({ message: "Simulation not found" });
+      }
+
+      if (simulation.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const deleted = await storage.deleteSimulationSession(simulationId);
+
+      if (deleted) {
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ message: "Failed to delete simulation" });
+      }
     } catch (error) {
       next(error);
     }

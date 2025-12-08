@@ -20,6 +20,7 @@ import {
   CandlestickChart,
   Coins,
   TrendingUp,
+  Play,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -135,6 +136,13 @@ export function Sidebar({ isMobile, isOpen }: SidebarProps) {
             label="Estrategias"
             href="/strategies"
             active={location === "/strategies"}
+            isOpen={isOpen}
+          />
+          <SidebarItem
+            icon={<Play className="h-5 w-5" />}
+            label="Simulaciones"
+            href="/simulations"
+            active={location === "/simulations"}
             isOpen={isOpen}
           />
           <SidebarItem
