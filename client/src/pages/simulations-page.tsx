@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function SimulationsPage() {
   const { toast } = useToast();
@@ -42,14 +43,7 @@ export default function SimulationsPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`/api/simulations/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete simulation");
-      }
+      await apiRequest("DELETE", `/api/simulations/${id}`);
 
       toast({
         title: "Simulación eliminada",

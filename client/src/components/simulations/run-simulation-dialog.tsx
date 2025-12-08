@@ -21,6 +21,7 @@ import {
 import { Strategy } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Play } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface RunSimulationDialogProps {
   open: boolean;
@@ -60,23 +61,13 @@ export function RunSimulationDialog({
         throw new Error("Ingresa un nombre para la simulación");
       }
 
-      const response = await fetch("/api/simulations/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          strategyId: parseInt(formData.strategyId),
-          name: formData.name,
-          initialBalance: parseFloat(formData.initialBalance),
-          startDate: formData.startDate || undefined,
-          endDate: formData.endDate || undefined,
-        }),
+      const response = await apiRequest("POST", "/api/simulations/run", {
+        strategyId: parseInt(formData.strategyId),
+        name: formData.name,
+        initialBalance: parseFloat(formData.initialBalance),
+        startDate: formData.startDate || undefined,
+        endDate: formData.endDate || undefined,
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to start simulation");
-      }
 
       toast({
         title: "Simulación iniciada",
