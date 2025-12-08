@@ -207,6 +207,30 @@ async function parseBody(req) {
   });
 }
 
+// Helper to transform simulation data from snake_case to camelCase
+function transformSimulation(session) {
+  if (!session) return null;
+  return {
+    id: session.id,
+    userId: session.user_id,
+    strategyId: session.strategy_id,
+    name: session.name,
+    initialBalance: session.initial_balance,
+    currentBalance: session.current_balance,
+    startDate: session.start_date,
+    endDate: session.end_date,
+    status: session.status,
+    totalTrades: session.total_trades ?? 0,
+    winningTrades: session.winning_trades ?? 0,
+    losingTrades: session.losing_trades ?? 0,
+    totalProfitLoss: session.total_profit_loss ?? 0,
+    maxDrawdown: session.max_drawdown ?? 0,
+    returnPercentage: session.return_percentage ?? 0,
+    createdAt: session.created_at,
+    updatedAt: session.updated_at,
+  };
+}
+
 export default async function handler(req, res) {
   const { url, method, body, headers } = req;
 
@@ -1232,7 +1256,10 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
-      return res.status(200).json(simulations || []);
+      // Transform all simulations to camelCase
+      const transformedSimulations = (simulations || []).map(transformSimulation);
+
+      return res.status(200).json(transformedSimulations);
     } catch (error) {
       console.error('Error fetching simulations:', error);
       return res.status(500).json({ error: error.message });
@@ -1298,12 +1325,12 @@ export default async function handler(req, res) {
 
       if (sessionError) throw sessionError;
 
-      // Note: The simulation will run in background on the client side using historical data
-      // This is a simplified version - full simulation engine would run server-side
+      // Transform snake_case to camelCase for frontend
+      const simulationResponse = transformSimulation(session);
 
       return res.status(200).json({
         message: 'Simulation created. Use client-side engine to run the simulation.',
-        simulation: session,
+        simulation: simulationResponse,
       });
     } catch (error) {
       console.error('Error starting simulation:', error);
@@ -1342,7 +1369,10 @@ export default async function handler(req, res) {
         return res.status(404).json({ message: 'Simulation not found' });
       }
 
-      return res.status(200).json(simulation);
+      // Transform to camelCase
+      const transformedSimulation = transformSimulation(simulation);
+
+      return res.status(200).json(transformedSimulation);
     } catch (error) {
       console.error('Error fetching simulation:', error);
       return res.status(500).json({ error: error.message });
