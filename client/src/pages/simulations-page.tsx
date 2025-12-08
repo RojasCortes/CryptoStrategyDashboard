@@ -194,8 +194,8 @@ export default function SimulationsPage() {
                   <TableRow key={simulation.id}>
                     <TableCell className="font-medium">{simulation.name}</TableCell>
                     <TableCell>{getStatusBadge(simulation.status)}</TableCell>
-                    <TableCell>${simulation.initialBalance.toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
-                    <TableCell>${simulation.currentBalance.toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell>${(simulation.initialBalance ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell>${(simulation.currentBalance ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell>
                       <div className={`flex items-center ${(simulation.returnPercentage ?? 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
                         {(simulation.returnPercentage ?? 0) >= 0 ? (
