@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 
 export default function SimulationsPage() {
   const { toast } = useToast();
@@ -77,19 +78,18 @@ export default function SimulationsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Simulaciones</h1>
-          <p className="text-muted-foreground">
-            Prueba tus estrategias con datos históricos sin arriesgar dinero real
-          </p>
-        </div>
-        <Button onClick={() => setRunDialogOpen(true)}>
-          <Play className="mr-2 h-4 w-4" />
-          Nueva Simulación
-        </Button>
-      </div>
+    <DashboardLayout
+      title="Simulaciones"
+      subtitle="Prueba tus estrategias con datos históricos sin arriesgar dinero real"
+    >
+      <div className="max-w-7xl mx-auto">
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <Button onClick={() => setRunDialogOpen(true)}>
+              <Play className="mr-2 h-4 w-4" />
+              Nueva Simulación
+            </Button>
+          </div>
 
       {/* Statistics Cards */}
       {simulations && simulations.length > 0 && (
@@ -285,6 +285,8 @@ export default function SimulationsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }
