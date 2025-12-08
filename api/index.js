@@ -1182,12 +1182,296 @@ export default async function handler(req, res) {
       change: (Math.random() * 10 - 5).toFixed(2) + '%',
       volume: Math.floor(Math.random() * 10000000).toString()
     }));
-    
+
     return res.status(200).json({ symbols: mockData, timestamp: new Date().toISOString() });
   }
-  
+
+  // ==================== SIMULATION ROUTES ====================
+
+  // GET /api/simulations - List all simulations for user
+  if (pathname === '/api/simulations' && method === 'GET') {
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const { data: simulations, error } = await supabase
+        .from('simulation_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return res.status(200).json(simulations || []);
+    } catch (error) {
+      console.error('Error fetching simulations:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // POST /api/simulations/run - Start a new simulation
+  if (pathname === '/api/simulations/run' && method === 'POST') {
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      const body = await parseBody(req);
+      const { strategyId, name, initialBalance, startDate, endDate } = body;
+
+      if (!strategyId || !name) {
+        return res.status(400).json({ message: 'Strategy ID and name are required' });
+      }
+
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Validate strategy exists and belongs to user
+      const { data: strategy, error: strategyError } = await supabase
+        .from('strategies')
+        .select('*')
+        .eq('id', strategyId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (strategyError || !strategy) {
+        return res.status(404).json({ message: 'Strategy not found' });
+      }
+
+      // Parse dates
+      const start = startDate ? new Date(startDate) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(endDate) : new Date();
+
+      // Create simulation session
+      const { data: session, error: sessionError } = await supabase
+        .from('simulation_sessions')
+        .insert({
+          user_id: user.id,
+          strategy_id: strategy.id,
+          name,
+          initial_balance: initialBalance || 10000,
+          current_balance: initialBalance || 10000,
+          start_date: start.toISOString(),
+          end_date: end.toISOString(),
+          status: 'running',
+        })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // Note: The simulation will run in background on the client side using historical data
+      // This is a simplified version - full simulation engine would run server-side
+
+      return res.status(200).json({
+        message: 'Simulation created. Use client-side engine to run the simulation.',
+        simulation: session,
+      });
+    } catch (error) {
+      console.error('Error starting simulation:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // GET /api/simulations/:id - Get simulation details
+  if (pathname.match(/^\/api\/simulations\/\d+$/) && method === 'GET') {
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      const simulationId = parseInt(pathname.split('/').pop());
+
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const { data: simulation, error } = await supabase
+        .from('simulation_sessions')
+        .select('*')
+        .eq('id', simulationId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error || !simulation) {
+        return res.status(404).json({ message: 'Simulation not found' });
+      }
+
+      return res.status(200).json(simulation);
+    } catch (error) {
+      console.error('Error fetching simulation:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // GET /api/simulations/:id/trades - Get simulation trades
+  if (pathname.match(/^\/api\/simulations\/\d+\/trades$/) && method === 'GET') {
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      const parts = pathname.split('/');
+      const simulationId = parseInt(parts[parts.length - 2]);
+
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const { data: simulation, error: simError } = await supabase
+        .from('simulation_sessions')
+        .select('id')
+        .eq('id', simulationId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (simError || !simulation) {
+        return res.status(404).json({ message: 'Simulation not found' });
+      }
+
+      const { data: trades, error } = await supabase
+        .from('simulation_trades')
+        .select('*')
+        .eq('simulation_id', simulationId)
+        .order('executed_at', { ascending: true });
+
+      if (error) throw error;
+
+      return res.status(200).json(trades || []);
+    } catch (error) {
+      console.error('Error fetching simulation trades:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // GET /api/simulations/:id/balance-history - Get balance history
+  if (pathname.match(/^\/api\/simulations\/\d+\/balance-history$/) && method === 'GET') {
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      const parts = pathname.split('/');
+      const simulationId = parseInt(parts[parts.length - 2]);
+
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const { data: simulation, error: simError } = await supabase
+        .from('simulation_sessions')
+        .select('id')
+        .eq('id', simulationId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (simError || !simulation) {
+        return res.status(404).json({ message: 'Simulation not found' });
+      }
+
+      const { data: history, error } = await supabase
+        .from('simulation_balance_history')
+        .select('*')
+        .eq('simulation_id', simulationId)
+        .order('timestamp', { ascending: true });
+
+      if (error) throw error;
+
+      return res.status(200).json(history || []);
+    } catch (error) {
+      console.error('Error fetching balance history:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // DELETE /api/simulations/:id - Delete simulation
+  if (pathname.match(/^\/api\/simulations\/\d+$/) && method === 'DELETE') {
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      const simulationId = parseInt(pathname.split('/').pop());
+
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const { data: simulation, error: simError } = await supabase
+        .from('simulation_sessions')
+        .select('id')
+        .eq('id', simulationId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (simError || !simulation) {
+        return res.status(404).json({ message: 'Simulation not found' });
+      }
+
+      const { error } = await supabase
+        .from('simulation_sessions')
+        .delete()
+        .eq('id', simulationId);
+
+      if (error) throw error;
+
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.error('Error deleting simulation:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
   // Default 404 for unknown API routes
-  return res.status(404).json({ 
+  return res.status(404).json({
     error: 'API route not found',
     path: pathname,
     fullUrl: url
