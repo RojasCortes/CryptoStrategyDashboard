@@ -308,5 +308,31 @@ export class EtherealEmailService implements EmailService {
   }
 }
 
-// Exportamos una instancia de EtherealEmailService para pruebas
-export const emailService = new EtherealEmailService();
+// Configurar el servicio de email según las variables de entorno
+function createEmailService(): EmailService {
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = process.env.SMTP_PORT;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+
+  // Si están configuradas las variables SMTP, usar NodemailerService
+  if (smtpHost && smtpPort && smtpUser && smtpPass) {
+    console.log('📧 Configurando email con SMTP:', smtpHost);
+    return new NodemailerService({
+      host: smtpHost,
+      port: parseInt(smtpPort),
+      secure: false, // true para puerto 465, false para otros puertos
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
+  }
+
+  // Si no hay configuración SMTP, usar EtherealEmailService para pruebas
+  console.log('📧 Usando servicio de email de prueba (Ethereal)');
+  return new EtherealEmailService();
+}
+
+// Exportamos la instancia del servicio de email
+export const emailService = createEmailService();
