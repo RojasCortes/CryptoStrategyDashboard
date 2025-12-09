@@ -28,6 +28,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 
 export default function SimulationsPage() {
   const { toast } = useToast();
@@ -42,14 +44,7 @@ export default function SimulationsPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`/api/simulations/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete simulation");
-      }
+      await apiRequest("DELETE", `/api/simulations/${id}`);
 
       toast({
         title: "Simulación eliminada",
@@ -83,19 +78,18 @@ export default function SimulationsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Simulaciones</h1>
-          <p className="text-muted-foreground">
-            Prueba tus estrategias con datos históricos sin arriesgar dinero real
-          </p>
-        </div>
-        <Button onClick={() => setRunDialogOpen(true)}>
-          <Play className="mr-2 h-4 w-4" />
-          Nueva Simulación
-        </Button>
-      </div>
+    <DashboardLayout
+      title="Simulaciones"
+      subtitle="Prueba tus estrategias con datos históricos sin arriesgar dinero real"
+    >
+      <div className="max-w-7xl mx-auto">
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <Button onClick={() => setRunDialogOpen(true)}>
+              <Play className="mr-2 h-4 w-4" />
+              Nueva Simulación
+            </Button>
+          </div>
 
       {/* Statistics Cards */}
       {simulations && simulations.length > 0 && (
@@ -200,24 +194,24 @@ export default function SimulationsPage() {
                   <TableRow key={simulation.id}>
                     <TableCell className="font-medium">{simulation.name}</TableCell>
                     <TableCell>{getStatusBadge(simulation.status)}</TableCell>
-                    <TableCell>${simulation.initialBalance.toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
-                    <TableCell>${simulation.currentBalance.toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell>${(simulation.initialBalance ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell>${(simulation.currentBalance ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell>
-                      <div className={`flex items-center ${simulation.returnPercentage >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        {simulation.returnPercentage >= 0 ? (
+                      <div className={`flex items-center ${(simulation.returnPercentage ?? 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        {(simulation.returnPercentage ?? 0) >= 0 ? (
                           <TrendingUp className="h-4 w-4 mr-1" />
                         ) : (
                           <TrendingDown className="h-4 w-4 mr-1" />
                         )}
-                        {simulation.returnPercentage >= 0 ? "+" : ""}
-                        {simulation.returnPercentage.toFixed(2)}%
+                        {(simulation.returnPercentage ?? 0) >= 0 ? "+" : ""}
+                        {(simulation.returnPercentage ?? 0).toFixed(2)}%
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col text-sm">
-                        <span>{simulation.totalTrades} total</span>
+                        <span>{simulation.totalTrades ?? 0} total</span>
                         <span className="text-muted-foreground">
-                          {simulation.winningTrades}W / {simulation.losingTrades}L
+                          {simulation.winningTrades ?? 0}W / {simulation.losingTrades ?? 0}L
                         </span>
                       </div>
                     </TableCell>
@@ -291,6 +285,8 @@ export default function SimulationsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }
