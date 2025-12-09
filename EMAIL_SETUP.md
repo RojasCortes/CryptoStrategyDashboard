@@ -50,10 +50,44 @@ SMTP_PASS=your-brevo-smtp-api-key
 | `SMTP_PORT` | `587` | Production, Preview, Development |
 | `SMTP_USER` | `9db321001@smtp-brevo.com` | Production, Preview, Development |
 | `SMTP_PASS` | `xsmtpsib-6d907b88...` (tu clave completa) | Production, Preview, Development |
+| `SMTP_FROM_EMAIL` | `juanrojas0399@gmail.com` (email validado en Brevo) | Production, Preview, Development |
+| `SMTP_FROM_NAME` | `Binance Trading Dashboard` | Production, Preview, Development |
 
 5. Después de agregar las variables, **despliega de nuevo** (redeploy) tu aplicación para que los cambios tomen efecto
 
 **Nota**: Asegúrate de marcar las variables para los 3 entornos (Production, Preview, Development) para que funcionen en todas las ramas.
+
+### ⚠️ IMPORTANTE: Validar Remitente en Brevo
+
+**Problema Común**: Si recibes el error "Sending has been rejected because the sender you used is not valid", significa que el email del remitente no está validado en Brevo.
+
+**Solución**:
+
+#### Opción 1: Usar tu email de Gmail validado (Recomendado) ✅
+
+Usa el email con el que te registraste en Brevo (probablemente `juanrojas0399@gmail.com`):
+
+1. En Vercel, agrega la variable:
+   - `SMTP_FROM_EMAIL` = `juanrojas0399@gmail.com`
+
+2. Redespliega tu aplicación
+
+Este email ya está validado automáticamente en Brevo cuando creaste tu cuenta.
+
+#### Opción 2: Validar un nuevo remitente en Brevo
+
+Si quieres usar un email personalizado (como `no-reply@tudominio.com`):
+
+1. Ve a Brevo Dashboard → **Senders** → **Add a sender**
+2. Ingresa el email que quieres usar
+3. Brevo enviará un email de verificación
+4. Haz clic en el enlace de verificación
+5. Una vez validado, configura `SMTP_FROM_EMAIL` con ese email
+6. Redespliega tu aplicación en Vercel
+
+#### Opción 3: No configurar SMTP_FROM_EMAIL
+
+Si no configuras `SMTP_FROM_EMAIL`, el sistema usará automáticamente `SMTP_USER` (tu usuario SMTP) como remitente, que también funciona.
 
 ## 🧪 Probar la Configuración
 
@@ -235,6 +269,29 @@ Si recibes errores de autenticación:
 - Asegúrate de que no hay espacios extras en las variables
 - La clave debe empezar con `xsmtpsib-`
 - **Reinicia el servidor** después de cambiar las credenciales
+
+### ❌ Error: "Sender not valid" o "Sender rejected"
+
+**Error en Brevo**: "Sending has been rejected because the sender you used is not valid"
+
+**Causa**: El email del remitente (`SMTP_FROM_EMAIL`) no está validado en tu cuenta de Brevo.
+
+**Solución**:
+1. **Opción rápida**: Usa tu email de Gmail:
+   - En Vercel: Agrega `SMTP_FROM_EMAIL` = `juanrojas0399@gmail.com`
+   - Este email ya está validado en Brevo
+
+2. **Opción alternativa**: Valida el remitente en Brevo:
+   - Ve a Brevo Dashboard → **Senders** → **Add a sender**
+   - Agrega el email que quieres usar
+   - Verifica el email haciendo clic en el enlace que Brevo te envió
+   - Configura `SMTP_FROM_EMAIL` con ese email validado
+
+3. **Verifica en Brevo**:
+   - Ve a **Senders** en Brevo Dashboard
+   - Asegúrate de que el email tiene un check verde ✓ (validado)
+
+4. **Redespliega** tu aplicación en Vercel después de agregar la variable
 
 ## 📊 Límites de Brevo
 

@@ -10,6 +10,13 @@ export interface EmailConfig {
   };
 }
 
+// Helper function to get sender email from environment or default
+function getSenderEmail(): string {
+  const senderEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@example.com';
+  const senderName = process.env.SMTP_FROM_NAME || 'Binance Trading Dashboard';
+  return `"${senderName}" <${senderEmail}>`;
+}
+
 export interface EmailService {
   sendStrategyNotification(to: string, subject: string, content: string): Promise<boolean>;
   sendTradeNotification(to: string, tradeDetails: any): Promise<boolean>;
@@ -26,12 +33,12 @@ export class NodemailerService implements EmailService {
   async sendStrategyNotification(to: string, subject: string, content: string): Promise<boolean> {
     try {
       const info = await this.transporter.sendMail({
-        from: '"Binance Trading Dashboard" <no-reply@binance-dashboard.com>',
+        from: getSenderEmail(),
         to,
         subject,
         html: content,
       });
-      
+
       console.log('Strategy notification email sent:', info.messageId);
       return true;
     } catch (error) {
@@ -86,7 +93,7 @@ export class NodemailerService implements EmailService {
     
     try {
       const info = await this.transporter.sendMail({
-        from: '"Binance Trading Dashboard" <no-reply@binance-dashboard.com>',
+        from: getSenderEmail(),
         to,
         subject,
         html: content,
@@ -126,7 +133,7 @@ export class NodemailerService implements EmailService {
     
     try {
       const info = await this.transporter.sendMail({
-        from: '"Binance Trading Dashboard" <no-reply@binance-dashboard.com>',
+        from: getSenderEmail(),
         to,
         subject,
         html: content,
@@ -180,7 +187,7 @@ export class EtherealEmailService implements EmailService {
     
     try {
       const info = await this.transporter.sendMail({
-        from: '"Binance Trading Dashboard" <test@binance-dashboard.com>',
+        from: getSenderEmail(),
         to,
         subject,
         html: content,
@@ -246,7 +253,7 @@ export class EtherealEmailService implements EmailService {
     
     try {
       const info = await this.transporter.sendMail({
-        from: '"Binance Trading Dashboard" <test@binance-dashboard.com>',
+        from: getSenderEmail(),
         to,
         subject,
         html: content,
@@ -292,7 +299,7 @@ export class EtherealEmailService implements EmailService {
     
     try {
       const info = await this.transporter.sendMail({
-        from: '"Binance Trading Dashboard" <test@binance-dashboard.com>',
+        from: getSenderEmail(),
         to,
         subject,
         html: content,

@@ -630,6 +630,10 @@ async function sendTestEmail(transporter, toEmail) {
     throw new Error('Email service not configured');
   }
 
+  // Get sender email from environment variable or use default
+  const senderEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@example.com';
+  const senderName = process.env.SMTP_FROM_NAME || 'Binance Trading Dashboard';
+
   const subject = 'Prueba de Notificación - Binance Trading Dashboard';
   const content = `
     <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
@@ -653,7 +657,7 @@ async function sendTestEmail(transporter, toEmail) {
   `;
 
   const info = await transporter.sendMail({
-    from: '"Binance Trading Dashboard" <no-reply@binance-dashboard.com>',
+    from: `"${senderName}" <${senderEmail}>`,
     to: toEmail,
     subject,
     html: content,
