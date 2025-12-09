@@ -231,6 +231,40 @@ function transformSimulation(session) {
   };
 }
 
+// Helper to transform trade data from snake_case to camelCase
+function transformTrade(trade) {
+  if (!trade) return null;
+  return {
+    id: trade.id,
+    simulationId: trade.simulation_id,
+    userId: trade.user_id,
+    strategyId: trade.strategy_id,
+    pair: trade.pair,
+    type: trade.type,
+    price: trade.price,
+    amount: trade.amount,
+    fee: trade.fee ?? 0,
+    total: trade.total,
+    balanceAfter: trade.balance_after,
+    profitLoss: trade.profit_loss ?? 0,
+    reason: trade.reason,
+    executedAt: trade.executed_at,
+    createdAt: trade.created_at,
+  };
+}
+
+// Helper to transform balance history from snake_case to camelCase
+function transformBalanceHistory(item) {
+  if (!item) return null;
+  return {
+    id: item.id,
+    simulationId: item.simulation_id,
+    balance: item.balance ?? 0,
+    timestamp: item.timestamp,
+    createdAt: item.created_at,
+  };
+}
+
 // Helper to fetch historical data from Binance
 async function fetchBinanceKlines(symbol, interval, startTime, endTime) {
   try {
@@ -2142,7 +2176,10 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
-      return res.status(200).json(trades || []);
+      // Transform to camelCase
+      const transformedTrades = (trades || []).map(transformTrade);
+
+      return res.status(200).json(transformedTrades);
     } catch (error) {
       console.error('Error fetching simulation trades:', error);
       return res.status(500).json({ error: error.message });
@@ -2189,7 +2226,10 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
-      return res.status(200).json(history || []);
+      // Transform to camelCase
+      const transformedHistory = (history || []).map(transformBalanceHistory);
+
+      return res.status(200).json(transformedHistory);
     } catch (error) {
       console.error('Error fetching balance history:', error);
       return res.status(500).json({ error: error.message });
