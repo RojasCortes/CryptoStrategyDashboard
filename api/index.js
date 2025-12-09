@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import admin from 'firebase-admin';
+import nodemailer from 'nodemailer';
 
 // Firebase Admin initialization for token verification
 let firebaseAdmin = null;
@@ -598,6 +599,68 @@ async function runSimulation(simulationId, strategy, config, supabase) {
 
     throw error;
   }
+}
+
+// Email Service Configuration with Nodemailer (Brevo SMTP)
+function createEmailTransporter() {
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = process.env.SMTP_PORT;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+
+  if (smtpHost && smtpPort && smtpUser && smtpPass) {
+    console.log('[Email] Configuring SMTP with:', smtpHost);
+    return nodemailer.createTransport({
+      host: smtpHost,
+      port: parseInt(smtpPort),
+      secure: false, // true for port 465, false for other ports
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
+  }
+
+  console.log('[Email] SMTP not configured, email features will be unavailable');
+  return null;
+}
+
+async function sendTestEmail(transporter, toEmail) {
+  if (!transporter) {
+    throw new Error('Email service not configured');
+  }
+
+  const subject = 'Prueba de Notificación - Binance Trading Dashboard';
+  const content = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+      <h2 style="color: #1976D2;">Correo de Prueba</h2>
+      <p>Este es un correo de prueba de tu Binance Trading Dashboard.</p>
+      <p>Si has recibido este correo, significa que las notificaciones por email están configuradas correctamente.</p>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #f9f9f9; border-radius: 5px;">
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Fecha y Hora</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">${new Date().toLocaleString()}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Destinatario</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">${toEmail}</td>
+        </tr>
+      </table>
+      <p style="margin-top: 20px; color: #666;">
+        Este es un mensaje automático de tu Binance Trading Dashboard. No responder a este correo.
+      </p>
+    </div>
+  `;
+
+  const info = await transporter.sendMail({
+    from: '"Binance Trading Dashboard" <no-reply@binance-dashboard.com>',
+    to: toEmail,
+    subject,
+    html: content,
+  });
+
+  console.log('[Email] Test email sent to:', toEmail, '| Message ID:', info.messageId);
+  return true;
 }
 
 export default async function handler(req, res) {
@@ -2278,6 +2341,52 @@ export default async function handler(req, res) {
     } catch (error) {
       console.error('Error deleting simulation:', error);
       return res.status(500).json({ error: error.message });
+    }
+  }
+
+  // POST /api/email/test - Send test email
+  if (pathname === '/api/email/test' && method === 'POST') {
+    const firebaseUid = await verifyFirebaseToken(headers.authorization);
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Not authenticated. Use Firebase JWT token.' });
+    }
+
+    try {
+      // Get user email from Supabase
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('firebase_uid', firebaseUid)
+        .single();
+
+      if (userError || !user || !user.email) {
+        return res.status(404).json({ error: 'User email not found' });
+      }
+
+      // Create email transporter
+      const transporter = createEmailTransporter();
+
+      if (!transporter) {
+        return res.status(500).json({
+          success: false,
+          message: 'Email service not configured. Please contact administrator.'
+        });
+      }
+
+      // Send test email
+      const targetEmail = body.email || user.email;
+      await sendTestEmail(transporter, targetEmail);
+
+      return res.status(200).json({
+        success: true,
+        message: `Email de prueba enviado con éxito a ${targetEmail}`
+      });
+    } catch (error) {
+      console.error('[Email] Error sending test email:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al enviar el email de prueba: ' + error.message
+      });
     }
   }
 

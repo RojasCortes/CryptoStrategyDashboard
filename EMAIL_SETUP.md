@@ -16,7 +16,9 @@ El sistema soporta múltiples opciones de servicio de email:
 
 ## 🔧 Variables de Entorno
 
-Las siguientes variables están configuradas en el archivo `.env`:
+### Para Desarrollo Local
+
+Las siguientes variables están configuradas en el archivo `.env` (desarrollo local):
 
 ```bash
 # Email Service - Brevo SMTP Configuration
@@ -32,6 +34,26 @@ SMTP_PASS=your-brevo-smtp-api-key
 - **Puerto**: 587 (TLS/STARTTLS)
 - **Usuario**: Tu usuario SMTP de Brevo (formato: xxxxxxx@smtp-brevo.com)
 - **Contraseña**: Tu clave API SMTP de Brevo (comienza con xsmtpsib-)
+
+### Para Despliegue en Vercel (PRODUCCIÓN) ⚠️
+
+**IMPORTANTE**: En Vercel, las variables de entorno NO se leen del archivo `.env`. Debes configurarlas desde el Dashboard de Vercel:
+
+1. Ve a tu proyecto en [Vercel Dashboard](https://vercel.com/dashboard)
+2. Selecciona tu proyecto "CryptoStrategyDashboard"
+3. Ve a **Settings** → **Environment Variables**
+4. Agrega las siguientes variables:
+
+| Variable | Valor | Environment |
+|----------|-------|-------------|
+| `SMTP_HOST` | `smtp-relay.brevo.com` | Production, Preview, Development |
+| `SMTP_PORT` | `587` | Production, Preview, Development |
+| `SMTP_USER` | `9db321001@smtp-brevo.com` | Production, Preview, Development |
+| `SMTP_PASS` | `xsmtpsib-6d907b88...` (tu clave completa) | Production, Preview, Development |
+
+5. Después de agregar las variables, **despliega de nuevo** (redeploy) tu aplicación para que los cambios tomen efecto
+
+**Nota**: Asegúrate de marcar las variables para los 3 entornos (Production, Preview, Development) para que funcionen en todas las ramas.
 
 ## 🧪 Probar la Configuración
 
@@ -62,15 +84,24 @@ Este comando:
 
 También puedes probar el envío de emails desde la interfaz web:
 
+**Para Desarrollo Local:**
 1. **Asegúrate de que el servidor esté ejecutándose**: `npm run dev`
 2. Ve a la página de **Settings** (Configuración)
 3. Haz clic en el botón **"Enviar correo de prueba"**
 4. El sistema enviará un email de prueba a tu dirección registrada
 
-**Nota**: Si ves el error "Error al enviar email", verifica:
-- ✅ Que reiniciaste el servidor después de configurar `.env`
-- ✅ Que las variables SMTP están correctamente configuradas
-- ✅ Revisa los logs del servidor en la consola
+**Para Vercel (Producción):**
+1. **Configura las variables de entorno en Vercel** (ver sección anterior)
+2. **Despliega de nuevo** tu aplicación (redeploy)
+3. Ve a tu aplicación desplegada en Vercel
+4. Navega a **Settings** (Configuración)
+5. Haz clic en **"Enviar correo de prueba"**
+
+**Nota**: Si ves el error "Error al enviar email":
+- ✅ **Desarrollo Local**: Reinicia el servidor después de configurar `.env`
+- ✅ **Vercel**: Verifica que configuraste las variables en Vercel Dashboard y redesplegaste
+- ✅ Revisa los logs del servidor/función en Vercel Dashboard → Logs
+- ✅ Verifica que las 4 variables SMTP están configuradas correctamente
 
 ## 📬 Funcionalidades de Email
 
@@ -137,6 +168,8 @@ SENDGRID_API_KEY=SG.xxxxxxxxxx
 
 ### ❌ Error: "Error al enviar email" o "API route not found"
 
+#### Desarrollo Local
+
 **Causa**: El servidor no ha cargado las variables de entorno del archivo `.env`
 
 **Solución**:
@@ -155,6 +188,28 @@ SENDGRID_API_KEY=SG.xxxxxxxxxx
    - El archivo `.env` existe en la raíz del proyecto
    - Las variables `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` están configuradas
    - No hay errores de sintaxis en `.env`
+
+#### Vercel (Producción) 🌐
+
+**Causa**: Las variables de entorno no están configuradas en Vercel Dashboard
+
+**Solución**:
+1. Ve a [Vercel Dashboard](https://vercel.com/dashboard) → Tu Proyecto → Settings → Environment Variables
+2. Verifica que las 4 variables SMTP están agregadas:
+   - `SMTP_HOST` = `smtp-relay.brevo.com`
+   - `SMTP_PORT` = `587`
+   - `SMTP_USER` = tu usuario de Brevo
+   - `SMTP_PASS` = tu clave API de Brevo
+3. **Importante**: Marca las variables para los 3 entornos (Production, Preview, Development)
+4. **Redespliega** tu aplicación:
+   - Ve a la pestaña **Deployments**
+   - Haz clic en el botón de menú (**...**) del último deployment
+   - Selecciona **Redeploy**
+5. Revisa los logs en Vercel Dashboard → Logs:
+   - Deberías ver: `[Email] Configuring SMTP with: smtp-relay.brevo.com`
+   - Si ves: `[Email] SMTP not configured`, las variables no se cargaron
+
+**Tip**: Puedes verificar que las variables están disponibles agregando temporalmente un console.log en tu código y revisando los logs de Vercel.
 
 ### El email no se envía
 
