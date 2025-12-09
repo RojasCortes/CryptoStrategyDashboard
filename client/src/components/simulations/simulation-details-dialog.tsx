@@ -58,8 +58,8 @@ export function SimulationDetailsDialog({
   });
 
   const chartData = balanceHistory?.map((item) => ({
-    date: format(new Date(item.timestamp), "dd MMM", { locale: es }),
-    balance: item.balance,
+    date: item.timestamp ? format(new Date(item.timestamp), "dd MMM", { locale: es }) : "N/A",
+    balance: item.balance ?? 0,
   }));
 
   const winRate = simulation.totalTrades > 0
@@ -72,10 +72,9 @@ export function SimulationDetailsDialog({
         <DialogHeader>
           <DialogTitle>{simulation.name}</DialogTitle>
           <DialogDescription>
-            Simulación ejecutada el{" "}
-            {format(new Date(simulation.createdAt), "dd MMMM yyyy", {
-              locale: es,
-            })}
+            {simulation.createdAt
+              ? `Simulación ejecutada el ${format(new Date(simulation.createdAt), "dd MMMM yyyy", { locale: es })}`
+              : "Simulación ejecutada"}
           </DialogDescription>
         </DialogHeader>
 
@@ -262,11 +261,9 @@ export function SimulationDetailsDialog({
                         {trades.map((trade) => (
                           <TableRow key={trade.id}>
                             <TableCell className="text-sm">
-                              {format(
-                                new Date(trade.executedAt),
-                                "dd MMM HH:mm",
-                                { locale: es }
-                              )}
+                              {trade.executedAt
+                                ? format(new Date(trade.executedAt), "dd MMM HH:mm", { locale: es })
+                                : "N/A"}
                             </TableCell>
                             <TableCell className="font-medium">
                               {trade.pair}
@@ -281,21 +278,21 @@ export function SimulationDetailsDialog({
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              ${trade.price.toLocaleString("es-ES", {
+                              ${(trade.price ?? 0).toLocaleString("es-ES", {
                                 minimumFractionDigits: 2,
                               })}
                             </TableCell>
-                            <TableCell>{trade.amount.toFixed(6)}</TableCell>
+                            <TableCell>{(trade.amount ?? 0).toFixed(6)}</TableCell>
                             <TableCell>
                               <span
                                 className={
-                                  trade.profitLoss >= 0
+                                  (trade.profitLoss ?? 0) >= 0
                                     ? "text-green-600"
                                     : "text-red-600"
                                 }
                               >
-                                {trade.profitLoss >= 0 ? "+" : ""}$
-                                {trade.profitLoss.toFixed(2)}
+                                {(trade.profitLoss ?? 0) >= 0 ? "+" : ""}$
+                                {(trade.profitLoss ?? 0).toFixed(2)}
                               </span>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
