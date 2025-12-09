@@ -37,6 +37,7 @@ import {
   Search,
   User,
   ChevronDown,
+  Play,
 } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -171,6 +172,13 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
                   label="Estrategias"
                   href="/strategies"
                   active={location === "/strategies"}
+                  isOpen={sidebarOpen}
+                />
+                <SidebarItem
+                  icon={<Play className="h-5 w-5" />}
+                  label="Simulaciones"
+                  href="/simulations"
+                  active={location === "/simulations"}
                   isOpen={sidebarOpen}
                 />
                 <SidebarItem
