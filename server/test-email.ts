@@ -1,3 +1,7 @@
+// Load environment variables from .env file
+import { config } from 'dotenv';
+config();
+
 import { emailService } from './email';
 
 async function testEmail() {

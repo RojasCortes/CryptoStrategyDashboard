@@ -35,6 +35,18 @@ SMTP_PASS=your-brevo-smtp-api-key
 
 ## 🧪 Probar la Configuración
 
+### IMPORTANTE: Reiniciar el Servidor
+
+Después de configurar las variables de entorno en `.env`, **DEBES REINICIAR** el servidor para que los cambios surtan efecto:
+
+```bash
+# Detén el servidor actual (Ctrl+C en la terminal donde corre)
+# Luego inicia nuevamente:
+npm run dev
+```
+
+### Prueba desde Terminal
+
 Para verificar que el servicio de email está funcionando correctamente:
 
 ```bash
@@ -46,14 +58,19 @@ Este comando:
 2. Intentará enviar un correo de prueba
 3. Mostrará el resultado en la consola
 
-### Desde la Aplicación
+### Prueba desde la Aplicación Web
 
 También puedes probar el envío de emails desde la interfaz web:
 
-1. Inicia el servidor: `npm run dev`
+1. **Asegúrate de que el servidor esté ejecutándose**: `npm run dev`
 2. Ve a la página de **Settings** (Configuración)
 3. Haz clic en el botón **"Enviar correo de prueba"**
 4. El sistema enviará un email de prueba a tu dirección registrada
+
+**Nota**: Si ves el error "Error al enviar email", verifica:
+- ✅ Que reiniciaste el servidor después de configurar `.env`
+- ✅ Que las variables SMTP están correctamente configuradas
+- ✅ Revisa los logs del servidor en la consola
 
 ## 📬 Funcionalidades de Email
 
@@ -118,13 +135,32 @@ SENDGRID_API_KEY=SG.xxxxxxxxxx
 
 ## 🐛 Troubleshooting
 
+### ❌ Error: "Error al enviar email" o "API route not found"
+
+**Causa**: El servidor no ha cargado las variables de entorno del archivo `.env`
+
+**Solución**:
+1. **Reinicia el servidor** (paso más importante):
+   ```bash
+   # Ctrl+C para detener el servidor
+   npm run dev  # Iniciar de nuevo
+   ```
+
+2. Verifica que deberías ver este mensaje al iniciar:
+   ```
+   📧 Configurando email con SMTP: smtp-relay.brevo.com
+   ```
+
+3. Si ves `📧 Usando servicio de email de prueba (Ethereal)`, significa que las variables no se cargaron. Verifica que:
+   - El archivo `.env` existe en la raíz del proyecto
+   - Las variables `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` están configuradas
+   - No hay errores de sintaxis en `.env`
+
 ### El email no se envía
 
 1. Verifica que las variables de entorno están configuradas:
 ```bash
-echo $SMTP_HOST
-echo $SMTP_PORT
-echo $SMTP_USER
+cat .env | grep SMTP
 ```
 
 2. Revisa los logs del servidor:
@@ -143,6 +179,7 @@ Si recibes errores de autenticación:
 - Verifica que el `SMTP_USER` y `SMTP_PASS` son correctos
 - Asegúrate de que no hay espacios extras en las variables
 - La clave debe empezar con `xsmtpsib-`
+- **Reinicia el servidor** después de cambiar las credenciales
 
 ## 📊 Límites de Brevo
 
