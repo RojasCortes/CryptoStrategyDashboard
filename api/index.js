@@ -231,6 +231,341 @@ function transformSimulation(session) {
   };
 }
 
+// Helper to fetch historical data from Binance
+async function fetchBinanceKlines(symbol, interval, startTime, endTime) {
+  try {
+    const limit = 1000; // Binance max
+    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&startTime=${startTime}&endTime=${endTime}&limit=${limit}`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Binance API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.map(candle => ({
+      openTime: candle[0],
+      open: parseFloat(candle[1]),
+      high: parseFloat(candle[2]),
+      low: parseFloat(candle[3]),
+      close: parseFloat(candle[4]),
+      volume: parseFloat(candle[5]),
+      closeTime: candle[6],
+    }));
+  } catch (error) {
+    console.error('Error fetching Binance data:', error);
+    return [];
+  }
+}
+
+// Calculate RSI indicator
+function calculateRSI(prices, period = 14) {
+  if (prices.length < period + 1) return null;
+
+  const changes = [];
+  for (let i = 1; i < prices.length; i++) {
+    changes.push(prices[i] - prices[i - 1]);
+  }
+
+  let gains = 0;
+  let losses = 0;
+
+  for (let i = 0; i < period; i++) {
+    if (changes[i] > 0) gains += changes[i];
+    else losses += Math.abs(changes[i]);
+  }
+
+  let avgGain = gains / period;
+  let avgLoss = losses / period;
+
+  if (avgLoss === 0) return 100;
+
+  const rs = avgGain / avgLoss;
+  const rsi = 100 - (100 / (1 + rs));
+
+  return rsi;
+}
+
+// Simulation engine - runs the strategy simulation
+async function runSimulation(simulationId, strategy, config, supabase) {
+  try {
+    console.log(`[Simulation ${simulationId}] Starting simulation...`);
+
+    const { initial_balance, start_date, end_date } = config;
+    const symbol = strategy.pair.replace('/', '');
+    const interval = strategy.interval || '1h';
+
+    const startTime = new Date(start_date).getTime();
+    const endTime = new Date(end_date).getTime();
+
+    // Fetch historical data
+    console.log(`[Simulation ${simulationId}] Fetching data for ${symbol}...`);
+    const candles = await fetchBinanceKlines(symbol, interval, startTime, endTime);
+
+    if (candles.length === 0) {
+      throw new Error('No historical data available');
+    }
+
+    console.log(`[Simulation ${simulationId}] Processing ${candles.length} candles...`);
+
+    // Simulation state
+    let balance = initial_balance;
+    let position = null; // { amount, entryPrice, entryTime }
+    const trades = [];
+    const balanceHistory = [];
+    let peakBalance = initial_balance;
+    let maxDrawdown = 0;
+
+    // Add initial balance to history
+    balanceHistory.push({
+      simulation_id: simulationId,
+      balance: balance,
+      timestamp: new Date(candles[0].openTime).toISOString(),
+    });
+
+    // Process each candle
+    for (let i = 14; i < candles.length; i++) {
+      const candle = candles[i];
+      const prices = candles.slice(Math.max(0, i - 50), i + 1).map(c => c.close);
+      const currentPrice = candle.close;
+      const timestamp = new Date(candle.closeTime).toISOString();
+
+      // Calculate indicators based on strategy type
+      const rsi = calculateRSI(prices);
+
+      // Generate trading signals based on strategy
+      let shouldBuy = false;
+      let shouldSell = false;
+      let reason = '';
+
+      if (strategy.strategy_type === 'rsi_oversold' && rsi !== null) {
+        const rsiOversold = strategy.rsi_oversold || 30;
+        const rsiOverbought = strategy.rsi_overbought || 70;
+
+        if (!position && rsi < rsiOversold) {
+          shouldBuy = true;
+          reason = `RSI oversold (${rsi.toFixed(2)})`;
+        } else if (position && rsi > rsiOverbought) {
+          shouldSell = true;
+          reason = `RSI overbought (${rsi.toFixed(2)})`;
+        }
+      } else if (strategy.strategy_type === 'price_threshold') {
+        const buyPrice = strategy.buy_price;
+        const sellPrice = strategy.sell_price;
+
+        if (!position && buyPrice && currentPrice <= buyPrice) {
+          shouldBuy = true;
+          reason = `Price at or below buy threshold ($${buyPrice})`;
+        } else if (position && sellPrice && currentPrice >= sellPrice) {
+          shouldSell = true;
+          reason = `Price at or above sell threshold ($${sellPrice})`;
+        }
+      } else {
+        // Default simple strategy: buy low, sell high
+        if (!position && i % 20 === 0) {
+          shouldBuy = true;
+          reason = 'Strategy trigger';
+        } else if (position && i % 15 === 0) {
+          shouldSell = true;
+          reason = 'Strategy trigger';
+        }
+      }
+
+      // Execute buy
+      if (shouldBuy && balance > 0) {
+        const fee = balance * 0.001; // 0.1% fee
+        const amountToInvest = balance - fee;
+        const amount = amountToInvest / currentPrice;
+
+        position = {
+          amount,
+          entryPrice: currentPrice,
+          entryTime: timestamp,
+        };
+
+        balance = 0;
+
+        trades.push({
+          simulation_id: simulationId,
+          user_id: config.user_id,
+          strategy_id: strategy.id,
+          pair: strategy.pair,
+          type: 'BUY',
+          price: currentPrice,
+          amount,
+          fee,
+          total: amountToInvest,
+          balance_after: balance,
+          profit_loss: 0,
+          reason,
+          executed_at: timestamp,
+        });
+
+        console.log(`[Simulation ${simulationId}] BUY at $${currentPrice.toFixed(2)} - ${reason}`);
+      }
+
+      // Execute sell
+      if (shouldSell && position) {
+        const sellValue = position.amount * currentPrice;
+        const fee = sellValue * 0.001; // 0.1% fee
+        const profit = sellValue - fee - (position.amount * position.entryPrice);
+
+        balance = sellValue - fee;
+
+        trades.push({
+          simulation_id: simulationId,
+          user_id: config.user_id,
+          strategy_id: strategy.id,
+          pair: strategy.pair,
+          type: 'SELL',
+          price: currentPrice,
+          amount: position.amount,
+          fee,
+          total: sellValue - fee,
+          balance_after: balance,
+          profit_loss: profit,
+          reason,
+          executed_at: timestamp,
+        });
+
+        console.log(`[Simulation ${simulationId}] SELL at $${currentPrice.toFixed(2)} - Profit: $${profit.toFixed(2)} - ${reason}`);
+
+        position = null;
+      }
+
+      // Calculate current total value
+      const currentValue = balance + (position ? position.amount * currentPrice : 0);
+
+      // Update peak and drawdown
+      if (currentValue > peakBalance) {
+        peakBalance = currentValue;
+      }
+      const drawdown = ((peakBalance - currentValue) / peakBalance) * 100;
+      if (drawdown > maxDrawdown) {
+        maxDrawdown = drawdown;
+      }
+
+      // Record balance every 10 candles
+      if (i % 10 === 0) {
+        balanceHistory.push({
+          simulation_id: simulationId,
+          balance: currentValue,
+          timestamp,
+        });
+      }
+    }
+
+    // Close any open position at the end
+    if (position) {
+      const finalPrice = candles[candles.length - 1].close;
+      const sellValue = position.amount * finalPrice;
+      const fee = sellValue * 0.001;
+      const profit = sellValue - fee - (position.amount * position.entryPrice);
+
+      balance = sellValue - fee;
+
+      trades.push({
+        simulation_id: simulationId,
+        user_id: config.user_id,
+        strategy_id: strategy.id,
+        pair: strategy.pair,
+        type: 'SELL',
+        price: finalPrice,
+        amount: position.amount,
+        fee,
+        total: sellValue - fee,
+        balance_after: balance,
+        profit_loss: profit,
+        reason: 'Simulation end - closing position',
+        executed_at: new Date(candles[candles.length - 1].closeTime).toISOString(),
+      });
+    }
+
+    const finalBalance = balance;
+
+    // Add final balance to history
+    balanceHistory.push({
+      simulation_id: simulationId,
+      balance: finalBalance,
+      timestamp: new Date(candles[candles.length - 1].closeTime).toISOString(),
+    });
+
+    // Calculate metrics
+    const totalTrades = trades.length;
+    const winningTrades = trades.filter(t => t.type === 'SELL' && t.profit_loss > 0).length;
+    const losingTrades = trades.filter(t => t.type === 'SELL' && t.profit_loss < 0).length;
+    const totalProfitLoss = finalBalance - initial_balance;
+    const returnPercentage = ((finalBalance - initial_balance) / initial_balance) * 100;
+
+    console.log(`[Simulation ${simulationId}] Completed - Trades: ${totalTrades}, P/L: $${totalProfitLoss.toFixed(2)}, Return: ${returnPercentage.toFixed(2)}%`);
+
+    // Save trades to database
+    if (trades.length > 0) {
+      const { error: tradesError } = await supabase
+        .from('simulation_trades')
+        .insert(trades);
+
+      if (tradesError) {
+        console.error(`[Simulation ${simulationId}] Error saving trades:`, tradesError);
+      }
+    }
+
+    // Save balance history
+    if (balanceHistory.length > 0) {
+      const { error: historyError } = await supabase
+        .from('simulation_balance_history')
+        .insert(balanceHistory);
+
+      if (historyError) {
+        console.error(`[Simulation ${simulationId}] Error saving balance history:`, historyError);
+      }
+    }
+
+    // Update simulation session
+    const { error: updateError } = await supabase
+      .from('simulation_sessions')
+      .update({
+        status: 'completed',
+        current_balance: finalBalance,
+        total_trades: totalTrades,
+        winning_trades: winningTrades,
+        losing_trades: losingTrades,
+        total_profit_loss: totalProfitLoss,
+        max_drawdown: maxDrawdown,
+        return_percentage: returnPercentage,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', simulationId);
+
+    if (updateError) {
+      console.error(`[Simulation ${simulationId}] Error updating session:`, updateError);
+      throw updateError;
+    }
+
+    console.log(`[Simulation ${simulationId}] Successfully saved to database`);
+
+    return {
+      success: true,
+      totalTrades,
+      finalBalance,
+      returnPercentage,
+    };
+  } catch (error) {
+    console.error(`[Simulation ${simulationId}] Error:`, error);
+
+    // Update simulation as failed
+    await supabase
+      .from('simulation_sessions')
+      .update({
+        status: 'stopped',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', simulationId);
+
+    throw error;
+  }
+}
+
 export default async function handler(req, res) {
   const { url, method, body, headers } = req;
 
@@ -1700,11 +2035,24 @@ export default async function handler(req, res) {
 
       if (sessionError) throw sessionError;
 
+      // Run simulation in background (don't await)
+      const config = {
+        user_id: user.id,
+        initial_balance: initialBalance || 10000,
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
+      };
+
+      // Execute simulation asynchronously
+      runSimulation(session.id, strategy, config, supabase).catch(error => {
+        console.error(`[Background] Simulation ${session.id} failed:`, error);
+      });
+
       // Transform snake_case to camelCase for frontend
       const simulationResponse = transformSimulation(session);
 
       return res.status(200).json({
-        message: 'Simulation created. Use client-side engine to run the simulation.',
+        message: 'Simulation started successfully. It will run in the background.',
         simulation: simulationResponse,
       });
     } catch (error) {
