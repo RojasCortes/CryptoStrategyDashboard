@@ -9,6 +9,7 @@ import { z } from "zod";
 import { comparePasswords, hashPassword } from "./auth";
 import { BinanceWebSocketService } from "./websocket";
 import { SimulationEngine } from "./simulation-engine";
+import { getIconUrl } from "./crypto-icon-mapping";
 
 // Store notifications in memory since we don't have a database table for them yet
 let notifications = [
@@ -206,6 +207,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Para acceder a todas las criptomonedas disponibles en Binance, se requieren claves API válidas. Configúralas en la sección de Ajustes.",
         requiresApiKey: true
       });
+    }
+  });
+
+  // Crypto icon endpoint
+  app.get("/api/crypto/icon", async (req, res) => {
+    try {
+      const symbol = req.query.symbol as string;
+
+      if (!symbol) {
+        return res.status(400).json({ error: "Symbol parameter is required" });
+      }
+
+      const iconUrl = getIconUrl(symbol);
+
+      if (!iconUrl) {
+        return res.status(404).json({ error: "Icon not found for symbol" });
+      }
+
+      res.json({ iconUrl });
+    } catch (error) {
+      console.error("Error fetching crypto icon:", error);
+      res.status(500).json({ error: "Failed to fetch icon" });
     }
   });
 
